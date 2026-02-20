@@ -151,6 +151,8 @@ const AgenteIA = () => {
   const [isListening, setIsListening] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<Attachment[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounterRef = useRef(0);
   const [settings, setSettings] = useState<AgentSettings>(() => {
     try {
       const saved = localStorage.getItem("agent-settings");
@@ -224,6 +226,58 @@ const AgenteIA = () => {
       if (removed.preview) URL.revokeObjectURL(removed.preview);
       return prev.filter((_, i) => i !== index);
     });
+  };
+
+  const processDroppedFiles = (files: FileList | File[]) => {
+    const newAttachments: Attachment[] = [];
+    for (const file of Array.from(files)) {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        toast({ title: "Formato não suportado", description: `${file.name}: Use PDF, PNG, JPG ou WebP.`, variant: "destructive" });
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast({ title: "Arquivo muito grande", description: `${file.name}: máximo 10MB.`, variant: "destructive" });
+        continue;
+      }
+      const preview = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
+      newAttachments.push({ file, preview });
+    }
+    if (newAttachments.length > 0) {
+      setPendingFiles(prev => [...prev, ...newAttachments]);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.types.includes("Files")) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processDroppedFiles(e.dataTransfer.files);
+    }
   };
 
   const send = useCallback(async (text: string) => {
@@ -377,7 +431,24 @@ const AgenteIA = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-[calc(100vh-80px)] max-w-4xl mx-auto">
+      <div
+        className="flex flex-col h-[calc(100vh-80px)] max-w-4xl mx-auto relative"
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        {/* Drag overlay */}
+        {isDragging && (
+          <div className="absolute inset-0 z-50 bg-primary/10 border-2 border-dashed border-primary rounded-xl flex items-center justify-center backdrop-blur-sm">
+            <div className="text-center">
+              <Paperclip className="w-10 h-10 text-primary mx-auto mb-2" />
+              <p className="text-sm font-semibold text-primary">Solte o arquivo aqui</p>
+              <p className="text-xs text-muted-foreground">PDF, PNG, JPG ou WebP (máx. 10MB)</p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
