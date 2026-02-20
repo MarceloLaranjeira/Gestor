@@ -147,15 +147,15 @@ const Dashboard = () => {
 
         {/* Stats */}
         <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Pessoas Cadastradas" value={1247} subtitle="32 novos esta semana" icon={<Users className="w-5 h-5 text-primary" />} trend={{ value: 12, positive: true }} />
-          <StatCard title="Demandas Ativas" value={63} subtitle="18 pendentes de resposta" icon={<ClipboardList className="w-5 h-5 text-secondary" />} trend={{ value: 8, positive: true }} />
-          <StatCard title="Eventos do Mês" value={14} subtitle="3 esta semana" icon={<Calendar className="w-5 h-5 text-accent" />} />
-          <StatCard title="Taxa de Resolução" value="87%" subtitle="124 de 142 resolvidas" icon={<TrendingUp className="w-5 h-5 text-success" />} trend={{ value: 5, positive: true }} />
+          <StatCard title="Pessoas Cadastradas" value={1247} subtitle="32 novos esta semana" icon={<Users className="w-5 h-5 text-primary" />} trend={{ value: 12, positive: true }} href="/pessoas" />
+          <StatCard title="Demandas Ativas" value={63} subtitle="18 pendentes de resposta" icon={<ClipboardList className="w-5 h-5 text-secondary" />} trend={{ value: 8, positive: true }} href="/demandas" />
+          <StatCard title="Eventos do Mês" value={14} subtitle="3 esta semana" icon={<Calendar className="w-5 h-5 text-accent" />} href="/eventos" />
+          <StatCard title="Taxa de Resolução" value="87%" subtitle="124 de 142 resolvidas" icon={<TrendingUp className="w-5 h-5 text-success" />} trend={{ value: 5, positive: true }} href="/relatorios" />
         </motion.div>
 
         {/* Charts Row */}
         <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 glass-card rounded-xl p-5">
+          <div className="lg:col-span-2 glass-card rounded-xl p-5 cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/demandas")}>
             <h3 className="text-sm font-semibold text-foreground mb-4 font-display">Demandas por Mês</h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={demandaData}>
@@ -167,7 +167,7 @@ const Dashboard = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="glass-card rounded-xl p-5">
+          <div className="glass-card rounded-xl p-5 cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/relatorios")}>
             <h3 className="text-sm font-semibold text-foreground mb-4 font-display">Status das Demandas</h3>
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
@@ -193,10 +193,10 @@ const Dashboard = () => {
 
         {/* Tables Row */}
         <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 glass-card rounded-xl">
+          <div className="lg:col-span-2 glass-card rounded-xl cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/demandas")}>
             <div className="flex items-center justify-between p-5 pb-3">
               <h3 className="text-sm font-semibold text-foreground font-display">Demandas Recentes</h3>
-              <button className="text-xs text-primary font-medium flex items-center gap-1 hover:underline">Ver todas <ArrowRight className="w-3 h-3" /></button>
+              <span className="text-xs text-primary font-medium flex items-center gap-1 hover:underline">Ver todas <ArrowRight className="w-3 h-3" /></span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -229,7 +229,7 @@ const Dashboard = () => {
               </table>
             </div>
           </div>
-          <div className="glass-card rounded-xl p-5">
+          <div className="glass-card rounded-xl p-5 cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/eventos")}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-foreground font-display">Próximos Eventos</h3>
             </div>
@@ -285,12 +285,12 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { icon: ClipboardList, label: "Nova Demanda", color: "bg-primary/10 text-primary" },
-            { icon: Users, label: "Cadastrar Pessoa", color: "bg-secondary/10 text-secondary" },
-            { icon: Calendar, label: "Agendar Evento", color: "bg-accent/10 text-accent-foreground" },
-            { icon: AlertTriangle, label: "Demandas Urgentes", color: "bg-destructive/10 text-destructive" },
+            { icon: ClipboardList, label: "Nova Demanda", color: "bg-primary/10 text-primary", path: "/demandas" },
+            { icon: Users, label: "Cadastrar Pessoa", color: "bg-secondary/10 text-secondary", path: "/pessoas" },
+            { icon: Calendar, label: "Agendar Evento", color: "bg-accent/10 text-accent-foreground", path: "/eventos" },
+            { icon: AlertTriangle, label: "Demandas Urgentes", color: "bg-destructive/10 text-destructive", path: "/demandas" },
           ].map((action) => (
-            <button key={action.label} className="glass-card rounded-xl p-4 flex flex-col items-center gap-2 hover:shadow-md transition-shadow">
+            <button key={action.label} onClick={() => navigate(action.path)} className="glass-card rounded-xl p-4 flex flex-col items-center gap-2 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer">
               <div className={`w-10 h-10 rounded-lg ${action.color} flex items-center justify-center`}>
                 <action.icon className="w-5 h-5" />
               </div>
