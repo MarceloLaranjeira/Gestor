@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, UserPlus, Shield } from "lucide-react";
+import { Search, UserPlus, Shield, Trash2 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,10 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -65,6 +69,9 @@ const GerenciarUsuarios = () => {
   const [newCoords, setNewCoords] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
 
+  // Delete state
+  const [deleteUser, setDeleteUser] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const fetchData = async () => {
     setLoading(true);
     const [profilesRes, coordsRes, ucRes, rolesRes] = await Promise.all([
@@ -190,6 +197,27 @@ const GerenciarUsuarios = () => {
     setNewCoords([]);
   };
 
+  const handleDelete = async () => {
+    if (!deleteUser) return;
+    setDeleting(true);
+    try {
+      const res = await supabase.functions.invoke("delete-user", {
+        body: { user_id: deleteUser.user_id },
+      });
+      if (res.error || res.data?.error) {
+        toast({ title: res.data?.error || "Erro ao excluir usuário", variant: "destructive" });
+      } else {
+        toast({ title: "Usuário excluído com sucesso" });
+        setDeleteUser(null);
+        fetchData();
+      }
+    } catch {
+      toast({ title: "Erro ao excluir usuário", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const filtered = users.filter(
     (u) =>
       u.nome.toLowerCase().includes(search.toLowerCase()) ||
@@ -278,9 +306,16 @@ const GerenciarUsuarios = () => {
                     </TableCell>
                     {isGestor && (
                       <TableCell>
-                        <Button size="sm" variant="ghost" onClick={() => openEdit(u)}>
-                          Editar
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => openEdit(u)}>
+                            Editar
+                          </Button>
+                          {u.user_id !== currentUser?.user_id && (
+                            <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setDeleteUser(u)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -400,6 +435,24 @@ const GerenciarUsuarios = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteUser} onOpenChange={(open) => !open && setDeleteUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{deleteUser?.nome}</strong>? Esta ação não pode ser desfeita e removerá todos os dados associados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };
