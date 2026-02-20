@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FileText, CheckCircle2, Clock, ListTodo, Loader2, Download } from "lucide-react";
+import { FileText, CheckCircle2, Clock, ListTodo, Loader2, Download, FileSpreadsheet } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -228,6 +229,58 @@ const RelatorioCoordenacao = () => {
     doc.save(`relatorio-${selectedCoordNome.toLowerCase().replace(/\s+/g, "-")}.pdf`);
   };
 
+  const handleExportExcel = () => {
+    if (!selectedCoordNome) return;
+
+    const wb = XLSX.utils.book_new();
+
+    // Resumo sheet
+    const resumo = [
+      ["Relatório — " + selectedCoordNome],
+      ["Gerado em", new Date().toLocaleDateString("pt-BR")],
+      [],
+      ["Total de tarefas", totalTarefas],
+      ["Concluídas", totalConcluidas],
+      ["Pendentes", totalTarefas - totalConcluidas],
+      ["Progresso", `${percentualGeral}%`],
+    ];
+    const wsResumo = XLSX.utils.aoa_to_sheet(resumo);
+    XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo");
+
+    // Seções sheet
+    const secoesData = [
+      ["Seção", "Total", "Concluídas", "Pendentes", "Progresso"],
+      ...secaoStats.map((s) => [s.titulo, s.total, s.concluidas, s.pendentes, `${s.percentual}%`]),
+    ];
+    const wsSecoes = XLSX.utils.aoa_to_sheet(secoesData);
+    XLSX.utils.book_append_sheet(wb, wsSecoes, "Seções");
+
+    // Responsáveis sheet
+    const respData = [
+      ["Responsável", "Tarefas"],
+      ...responsavelStats.map((r) => [r.nome, r.total]),
+    ];
+    const wsResp = XLSX.utils.aoa_to_sheet(respData);
+    XLSX.utils.book_append_sheet(wb, wsResp, "Responsáveis");
+
+    // Tarefas sheet
+    const tarefasExport = [
+      ["Título", "Status", "Responsável", "Canal", "Data Início", "Data Fim"],
+      ...tarefas.map((t) => [
+        t.titulo,
+        t.status ? "Concluída" : "Pendente",
+        t.responsavel || "—",
+        t.canal || "—",
+        t.data_inicio || "—",
+        t.data_fim || "—",
+      ]),
+    ];
+    const wsTarefas = XLSX.utils.aoa_to_sheet(tarefasExport);
+    XLSX.utils.book_append_sheet(wb, wsTarefas, "Tarefas");
+
+    XLSX.writeFile(wb, `relatorio-${selectedCoordNome.toLowerCase().replace(/\s+/g, "-")}.xlsx`);
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -258,13 +311,22 @@ const RelatorioCoordenacao = () => {
               </SelectContent>
             </Select>
             {selectedCoord && !loadingReport && totalTarefas > 0 && (
-              <button
-                onClick={handleExportPDF}
-                className="h-9 px-4 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:bg-muted flex items-center gap-2 transition-colors shrink-0"
-              >
-                <Download className="w-4 h-4" />
-                PDF
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExportPDF}
+                  className="h-9 px-4 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:bg-muted flex items-center gap-2 transition-colors shrink-0"
+                >
+                  <Download className="w-4 h-4" />
+                  PDF
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="h-9 px-4 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:bg-muted flex items-center gap-2 transition-colors shrink-0"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  Excel
+                </button>
+              </div>
             )}
           </div>
         </div>
