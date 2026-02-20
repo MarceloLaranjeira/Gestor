@@ -9,12 +9,27 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   LogOut,
   Shield,
   MessageSquare,
+  Church,
+  Megaphone,
+  Database,
+  Building2,
+  UsersRound,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+
+const coordenacaoItems = [
+  { icon: Church, label: "Eclesiástica", path: "/coordenacao/eclesiastica" },
+  { icon: Megaphone, label: "Comunicação", path: "/coordenacao/comunicacao" },
+  { icon: Database, label: "Inteligência de Dados", path: "/coordenacao/inteligencia" },
+  { icon: Shield, label: "CSPJD", path: "/coordenacao/cspjd" },
+  { icon: Building2, label: "Gabinete", path: "/coordenacao/gabinete" },
+  { icon: UsersRound, label: "Equipe CMT Dan", path: "/coordenacao/equipe" },
+];
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -22,14 +37,40 @@ const navItems = [
   { icon: ClipboardList, label: "Demandas", path: "/demandas" },
   { icon: Calendar, label: "Eventos", path: "/eventos" },
   { icon: MessageSquare, label: "Movimentos", path: "/movimentos" },
+];
+
+const bottomItems = [
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
 const AppSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [coordOpen, setCoordOpen] = useState(true);
   const location = useLocation();
   const { user, logout } = useAuth();
+
+  const isCoordActive = location.pathname.startsWith("/coordenacao");
+
+  const renderLink = (item: { icon: any; label: string; path: string }, small = false) => {
+    const isActive = location.pathname === item.path;
+    return (
+      <Link
+        key={item.path}
+        to={item.path}
+        className={cn(
+          "flex items-center gap-3 rounded-lg text-sm transition-all duration-200",
+          small ? "px-3 py-2 pl-10" : "px-3 py-2.5",
+          isActive
+            ? "bg-sidebar-accent text-sidebar-primary font-semibold"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+        )}
+      >
+        <item.icon className={cn("shrink-0", small ? "w-4 h-4" : "w-5 h-5")} />
+        {!collapsed && <span className="truncate text-xs">{item.label}</span>}
+      </Link>
+    );
+  };
 
   return (
     <aside
@@ -57,24 +98,36 @@ const AppSidebar = () => {
 
       {/* Nav */}
       <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-primary font-semibold"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-              )}
-            >
-              <item.icon className="w-5 h-5 shrink-0" />
-              {!collapsed && <span className="truncate">{item.label}</span>}
-            </Link>
-          );
-        })}
+        {navItems.map((item) => renderLink(item))}
+
+        {/* Coordenações expandable */}
+        <div>
+          <button
+            onClick={() => setCoordOpen(!coordOpen)}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 w-full",
+              isCoordActive
+                ? "bg-sidebar-accent text-sidebar-primary font-semibold"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            )}
+          >
+            <ClipboardList className="w-5 h-5 shrink-0" />
+            {!collapsed && (
+              <>
+                <span className="truncate flex-1 text-left">Coordenações</span>
+                <ChevronDown className={cn("w-4 h-4 transition-transform", coordOpen && "rotate-180")} />
+              </>
+            )}
+          </button>
+          {coordOpen && !collapsed && (
+            <div className="mt-1 space-y-0.5">
+              {coordenacaoItems.map((item) => renderLink(item, true))}
+            </div>
+          )}
+        </div>
+
+        <div className="my-2 border-t border-sidebar-border/50" />
+        {bottomItems.map((item) => renderLink(item))}
       </nav>
 
       {/* User */}

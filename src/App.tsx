@@ -12,6 +12,7 @@ import Eventos from "./pages/Eventos";
 import Movimentos from "./pages/Movimentos";
 import Relatorios from "./pages/Relatorios";
 import Configuracoes from "./pages/Configuracoes";
+import CoordenacaoPage from "./pages/CoordenacaoPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const AppRoutes = () => (
     <Route path="/movimentos" element={<ProtectedRoute><Movimentos /></ProtectedRoute>} />
     <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
     <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
+    <Route path="/coordenacao/:id" element={<ProtectedRoute><CoordenacaoPage /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
