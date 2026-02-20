@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import logoDan from "@/assets/logo-dan.png";
 import { useSidebarState } from "./AppLayout";
 import {
   LayoutDashboard,
@@ -90,16 +91,15 @@ const AppSidebar = () => {
       className="fixed left-0 top-0 z-40 h-screen flex flex-col transition-all duration-300 gradient-primary"
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
-        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-sidebar-primary shrink-0">
-          <Shield className="w-5 h-5 text-sidebar-primary-foreground" />
-        </div>
+      <div className="flex items-center gap-3 px-3 py-4 border-b border-sidebar-border">
+        <img
+          src={logoDan}
+          alt="Gabinete CMD Dan"
+          className={collapsed ? "w-10 h-10 object-contain shrink-0" : "h-12 w-auto max-w-[160px] object-contain shrink-0"}
+        />
         {!collapsed && (
           <div className="overflow-hidden">
-            <p className="text-sm font-bold text-sidebar-foreground font-display truncate">
-              Gabinete CMD Dan
-            </p>
-            <p className="text-[10px] text-sidebar-foreground/60 truncate">
+            <p className="text-[10px] text-sidebar-foreground/60 truncate leading-tight">
               Sistema de Gestão
             </p>
           </div>
