@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Shield, LogIn, Eye, EyeOff, UserPlus } from "lucide-react";
+import { LogIn, Eye, EyeOff, UserPlus } from "lucide-react";
+import logoDan from "@/assets/logo-dan.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,11 +50,7 @@ const Login = () => {
         </div>
         <div className="relative z-10 text-center px-12">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <div className="w-20 h-20 mx-auto mb-8 rounded-2xl bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center">
-              <Shield className="w-10 h-10 text-sidebar-primary" />
-            </div>
-            <h1 className="text-4xl font-bold font-display text-primary-foreground mb-4">Gabinete Digital</h1>
-            <p className="text-lg text-primary-foreground/70 mb-2">Dep. Estadual Comandante Dan</p>
+            <img src={logoDan} alt="Gabinete CMD Dan" className="w-64 mx-auto mb-8 drop-shadow-lg" />
             <p className="text-sm text-primary-foreground/50 max-w-md">
               Sistema integrado de gestão parlamentar — pessoas, demandas, eventos e inteligência institucional.
             </p>
@@ -64,14 +61,9 @@ const Login = () => {
       {/* Right Panel */}
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <Shield className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div>
-              <p className="font-bold font-display text-foreground">Gabinete Digital</p>
-              <p className="text-xs text-muted-foreground">Comandante Dan</p>
-            </div>
+          {/* Logo centralizada acima do formulário */}
+          <div className="flex flex-col items-center mb-8">
+            <img src={logoDan} alt="Gabinete CMD Dan" className="h-20 w-auto object-contain mb-4" />
           </div>
 
           <h2 className="text-2xl font-bold font-display text-foreground mb-1">
