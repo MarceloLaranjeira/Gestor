@@ -52,6 +52,7 @@ const GerenciarUsuarios = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [coordenacoes, setCoordenacoes] = useState<Coordenacao[]>([]);
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
   const [loading, setLoading] = useState(true);
 
   // Edit state
@@ -242,8 +243,9 @@ const GerenciarUsuarios = () => {
 
   const filtered = users.filter(
     (u) =>
-      u.nome.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
+      (roleFilter === "all" || u.role === roleFilter) &&
+      (u.nome.toLowerCase().includes(search.toLowerCase()) ||
+       u.email.toLowerCase().includes(search.toLowerCase()))
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -251,7 +253,7 @@ const GerenciarUsuarios = () => {
   const paginated = filtered.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
 
   // Reset page when search changes
-  useEffect(() => { setPage(1); }, [search]);
+  useEffect(() => { setPage(1); }, [search, roleFilter]);
 
   const isGestor = currentUser?.role === "Gestor";
 
@@ -273,14 +275,27 @@ const GerenciarUsuarios = () => {
           )}
         </div>
 
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome ou email..."
-            className="pl-10"
-          />
+        <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome ou email..."
+              className="pl-10"
+            />
+          </div>
+          <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as AppRole | "all")}>
+            <SelectTrigger className="w-full sm:w-44">
+              <SelectValue placeholder="Filtrar função" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as funções</SelectItem>
+              <SelectItem value="gestor">Gestor</SelectItem>
+              <SelectItem value="assessor">Assessor</SelectItem>
+              <SelectItem value="coordenador">Coordenador</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="glass-card rounded-xl overflow-hidden">
