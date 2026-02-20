@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Users,
   ClipboardList,
@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
+  Loader2,
 } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import AppLayout from "@/components/AppLayout";
@@ -19,60 +20,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 const formatDate = (date: Date): string => {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = date.getFullYear();
-
   return `${day}/${month}/${year}`;
 };
 
 const today = new Date();
 const todayFormatted = formatDate(today);
-
-const demandaData = [
-  { mes: "Set", total: 42 },
-  { mes: "Out", total: 58 },
-  { mes: "Nov", total: 35 },
-  { mes: "Dez", total: 67 },
-  { mes: "Jan", total: 73 },
-  { mes: "Fev", total: 51 },
-];
-
-const statusData = [
-  { name: "Concluídas", value: 124, color: "hsl(142, 70%, 40%)" },
-  { name: "Em andamento", value: 45, color: "hsl(205, 70%, 45%)" },
-  { name: "Pendentes", value: 18, color: "hsl(38, 92%, 50%)" },
-  { name: "Atrasadas", value: 7, color: "hsl(0, 72%, 51%)" },
-];
-
-const recentDemandas = [
-  { id: 1, titulo: "Pavimentação Rua das Flores - Zona Norte", status: "andamento", prioridade: "alta", responsavel: "João Silva", data: "19/02/2026" },
-  { id: 2, titulo: "Reunião com Sec. de Saúde sobre UBS", status: "pendente", prioridade: "urgente", responsavel: "Maria Santos", data: "18/02/2026" },
-  { id: 3, titulo: "Ofício para SEDUC - Reforma Escola", status: "concluida", prioridade: "media", responsavel: "Carlos Lima", data: "17/02/2026" },
-  { id: 4, titulo: "Articulação Emenda Parlamentar - Segurança", status: "andamento", prioridade: "alta", responsavel: "Ana Costa", data: "16/02/2026" },
-  { id: 5, titulo: "Visita Comunidade Ribeirinha", status: "pendente", prioridade: "media", responsavel: "Pedro Souza", data: "15/02/2026" },
-];
-
-const proximosEventos = [
-  { id: 1, titulo: "Sessão Plenária - Projeto de Lei 234/2026", data: "21/02", hora: "09:00", tipo: "plenario" },
-  { id: 2, titulo: "Reunião Comissão de Segurança Pública", data: "21/02", hora: "14:00", tipo: "comissao" },
-  { id: 3, titulo: "Audiência Pública - Mobilidade Inclusiva", data: "22/02", hora: "10:00", tipo: "audiencia" },
-  { id: 4, titulo: "Visita Institucional - Batalhão PM", data: "23/02", hora: "08:30", tipo: "visita" },
-];
-
-const statusStyles: Record<string, string> = {
-  concluida: "bg-success/10 text-success",
-  andamento: "bg-info/10 text-info",
-  pendente: "bg-warning/10 text-warning",
-  atrasada: "bg-destructive/10 text-destructive",
-};
-
-const prioridadeStyles: Record<string, string> = {
-  urgente: "bg-destructive/10 text-destructive",
-  alta: "bg-warning/10 text-warning",
-  media: "bg-info/10 text-info",
-  baixa: "bg-muted text-muted-foreground",
-};
 
 const container = {
   hidden: {},
@@ -81,6 +36,13 @@ const container = {
 const item = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0 },
+};
+
+const chartTooltipStyle = {
+  backgroundColor: "hsl(var(--card))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: "8px",
+  fontSize: "12px",
 };
 
 interface CoordProgress {
@@ -92,38 +54,141 @@ interface CoordProgress {
   percent: number;
 }
 
+interface TarefaRow {
+  id: string;
+  titulo: string;
+  status: boolean;
+  responsavel: string | null;
+  canal: string | null;
+  data_inicio: string | null;
+  data_fim: string | null;
+  created_at: string;
+  secao_id: string;
+}
+
+interface SecaoRow {
+  id: string;
+  coordenacao_id: string;
+  titulo: string;
+}
+
+interface CoordRow {
+  id: string;
+  slug: string;
+  nome: string;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [coordProgress, setCoordProgress] = useState<CoordProgress[]>([]);
+  const [tarefas, setTarefas] = useState<TarefaRow[]>([]);
+  const [secoes, setSecoes] = useState<SecaoRow[]>([]);
+  const [coords, setCoords] = useState<CoordRow[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   useEffect(() => {
-    const fetchProgress = async () => {
-      const { data: coords } = await supabase.from("coordenacoes").select("id, slug, nome");
-      if (!coords) return;
+    const fetchAll = async () => {
+      const [coordsRes, secoesRes, tarefasRes, profilesRes] = await Promise.all([
+        supabase.from("coordenacoes").select("id, slug, nome"),
+        supabase.from("secoes").select("id, coordenacao_id, titulo"),
+        supabase.from("tarefas").select("id, titulo, status, responsavel, canal, data_inicio, data_fim, created_at, secao_id"),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+      ]);
 
-      const { data: tarefas } = await supabase.from("tarefas").select("secao_id, status");
-      const { data: secoes } = await supabase.from("secoes").select("id, coordenacao_id");
+      const coordsData = coordsRes.data || [];
+      const secoesData = secoesRes.data || [];
+      const tarefasData = tarefasRes.data || [];
 
-      if (!tarefas || !secoes) return;
+      setCoords(coordsData);
+      setSecoes(secoesData);
+      setTarefas(tarefasData);
+      setTotalUsers(profilesRes.count || 0);
 
+      // Coord progress
       const secaoToCoord: Record<string, string> = {};
-      secoes.forEach((s) => { secaoToCoord[s.id] = s.coordenacao_id; });
+      secoesData.forEach((s) => { secaoToCoord[s.id] = s.coordenacao_id; });
 
-      const progress = coords.map((c) => {
-        const coordTarefas = tarefas.filter((t) => secaoToCoord[t.secao_id] === c.id);
+      const progress = coordsData.map((c) => {
+        const coordTarefas = tarefasData.filter((t) => secaoToCoord[t.secao_id] === c.id);
         const total = coordTarefas.length;
         const done = coordTarefas.filter((t) => t.status).length;
-        return { slug: c.slug, nome: c.nome, total, done, pending: total - done, percent: total > 0 ? Math.round((done / total) * 100) : 0 };
+        return {
+          slug: c.slug, nome: c.nome, total, done,
+          pending: total - done,
+          percent: total > 0 ? Math.round((done / total) * 100) : 0,
+        };
       });
 
       setCoordProgress(progress);
+      setLoading(false);
     };
-    fetchProgress();
+    fetchAll();
   }, []);
 
-  const totalTarefas = coordProgress.reduce((a, c) => a + c.total, 0);
-  const totalDone = coordProgress.reduce((a, c) => a + c.done, 0);
+  // Derived stats
+  const totalTarefas = tarefas.length;
+  const totalDone = tarefas.filter((t) => t.status).length;
+  const totalPending = totalTarefas - totalDone;
   const totalPercent = totalTarefas > 0 ? Math.round((totalDone / totalTarefas) * 100) : 0;
+
+  // Overdue: data_fim < today and not done
+  const todayStr = today.toISOString().split("T")[0];
+  const overdue = tarefas.filter((t) => !t.status && t.data_fim && t.data_fim < todayStr);
+
+  // Tasks with upcoming deadlines (this week)
+  const nextWeek = new Date(today);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  const nextWeekStr = nextWeek.toISOString().split("T")[0];
+  const upcoming = tarefas.filter((t) => !t.status && t.data_fim && t.data_fim >= todayStr && t.data_fim <= nextWeekStr);
+
+  // Status pie data
+  const statusData = useMemo(() => [
+    { name: "Concluídas", value: totalDone, color: "hsl(142, 70%, 40%)" },
+    { name: "Pendentes", value: totalPending - overdue.length, color: "hsl(205, 70%, 45%)" },
+    { name: "Atrasadas", value: overdue.length, color: "hsl(0, 72%, 51%)" },
+  ], [totalDone, totalPending, overdue.length]);
+
+  // Tasks per coordination for bar chart
+  const coordBarData = useMemo(() => {
+    const secaoToCoord: Record<string, string> = {};
+    secoes.forEach((s) => { secaoToCoord[s.id] = s.coordenacao_id; });
+
+    return coords.map((c) => {
+      const ct = tarefas.filter((t) => secaoToCoord[t.secao_id] === c.id);
+      return {
+        nome: c.nome.replace("Coordenação ", "").substring(0, 15),
+        total: ct.length,
+        concluidas: ct.filter((t) => t.status).length,
+      };
+    }).filter((d) => d.total > 0);
+  }, [coords, secoes, tarefas]);
+
+  // Recent tasks (last 5)
+  const recentTarefas = useMemo(() => {
+    const secaoMap: Record<string, string> = {};
+    secoes.forEach((s) => { secaoMap[s.id] = s.coordenacao_id; });
+
+    const coordMap: Record<string, string> = {};
+    coords.forEach((c) => { coordMap[c.id] = c.nome; });
+
+    return [...tarefas]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5)
+      .map((t) => ({
+        ...t,
+        coordenacao: coordMap[secaoMap[t.secao_id]] || "—",
+        isOverdue: !t.status && !!t.data_fim && t.data_fim < todayStr,
+      }));
+  }, [tarefas, secoes, coords, todayStr]);
+
+  // Upcoming deadlines
+  const upcomingTarefas = useMemo(() => {
+    return [...tarefas]
+      .filter((t) => !t.status && t.data_fim && t.data_fim >= todayStr)
+      .sort((a, b) => (a.data_fim || "").localeCompare(b.data_fim || ""))
+      .slice(0, 4);
+  }, [tarefas, todayStr]);
 
   const coordColors = [
     "hsl(var(--primary))",
@@ -133,6 +198,16 @@ const Dashboard = () => {
     "hsl(205, 70%, 45%)",
     "hsl(280, 60%, 50%)",
   ];
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -147,28 +222,29 @@ const Dashboard = () => {
 
         {/* Stats */}
         <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Pessoas Cadastradas" value={1247} subtitle="32 novos esta semana" icon={<Users className="w-5 h-5 text-primary" />} trend={{ value: 12, positive: true }} href="/pessoas" />
-          <StatCard title="Demandas Ativas" value={63} subtitle="18 pendentes de resposta" icon={<ClipboardList className="w-5 h-5 text-secondary" />} trend={{ value: 8, positive: true }} href="/demandas" />
-          <StatCard title="Eventos do Mês" value={14} subtitle="3 esta semana" icon={<Calendar className="w-5 h-5 text-accent" />} href="/eventos" />
-          <StatCard title="Taxa de Resolução" value="87%" subtitle="124 de 142 resolvidas" icon={<TrendingUp className="w-5 h-5 text-success" />} trend={{ value: 5, positive: true }} href="/relatorios" />
+          <StatCard title="Total de Tarefas" value={totalTarefas} subtitle={`${coords.length} coordenações`} icon={<ClipboardList className="w-5 h-5 text-primary" />} href="/relatorio-coordenacao" />
+          <StatCard title="Concluídas" value={totalDone} subtitle={`${totalPercent}% do total`} icon={<CheckCircle2 className="w-5 h-5 text-success" />} href="/relatorio-coordenacao" />
+          <StatCard title="Atrasadas" value={overdue.length} subtitle={`${upcoming.length} vencem esta semana`} icon={<AlertTriangle className="w-5 h-5 text-destructive" />} href="/relatorio-coordenacao" />
+          <StatCard title="Usuários" value={totalUsers} subtitle="Cadastrados no sistema" icon={<Users className="w-5 h-5 text-secondary" />} href="/usuarios" />
         </motion.div>
 
         {/* Charts Row */}
         <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 glass-card rounded-xl p-5 cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/demandas")}>
-            <h3 className="text-sm font-semibold text-foreground mb-4 font-display">Demandas por Mês</h3>
+          <div className="lg:col-span-2 glass-card rounded-xl p-5 cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/relatorio-coordenacao")}>
+            <h3 className="text-sm font-semibold text-foreground mb-4 font-display">Tarefas por Coordenação</h3>
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={demandaData}>
+              <BarChart data={coordBarData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="mes" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
+                <XAxis dataKey="nome" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
-                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Tooltip contentStyle={chartTooltipStyle} />
+                <Bar dataKey="concluidas" stackId="a" fill="hsl(142, 70%, 40%)" name="Concluídas" />
+                <Bar dataKey="total" stackId="b" fill="hsl(var(--primary))" name="Total" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="glass-card rounded-xl p-5 cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/relatorios")}>
-            <h3 className="text-sm font-semibold text-foreground mb-4 font-display">Status das Demandas</h3>
+          <div className="glass-card rounded-xl p-5 cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/relatorio-coordenacao")}>
+            <h3 className="text-sm font-semibold text-foreground mb-4 font-display">Status das Tarefas</h3>
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
@@ -193,59 +269,74 @@ const Dashboard = () => {
 
         {/* Tables Row */}
         <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 glass-card rounded-xl cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/demandas")}>
+          <div className="lg:col-span-2 glass-card rounded-xl">
             <div className="flex items-center justify-between p-5 pb-3">
-              <h3 className="text-sm font-semibold text-foreground font-display">Demandas Recentes</h3>
-              <span className="text-xs text-primary font-medium flex items-center gap-1 hover:underline">Ver todas <ArrowRight className="w-3 h-3" /></span>
+              <h3 className="text-sm font-semibold text-foreground font-display">Tarefas Recentes</h3>
+              <span className="text-xs text-primary font-medium flex items-center gap-1 cursor-pointer hover:underline" onClick={() => navigate("/relatorio-coordenacao")}>Ver todas <ArrowRight className="w-3 h-3" /></span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-t border-border">
-                    <th className="text-left py-2.5 px-5 text-muted-foreground font-medium">Demanda</th>
+                    <th className="text-left py-2.5 px-5 text-muted-foreground font-medium">Tarefa</th>
                     <th className="text-left py-2.5 px-5 text-muted-foreground font-medium">Status</th>
-                    <th className="text-left py-2.5 px-5 text-muted-foreground font-medium">Prioridade</th>
+                    <th className="text-left py-2.5 px-5 text-muted-foreground font-medium">Coordenação</th>
                     <th className="text-left py-2.5 px-5 text-muted-foreground font-medium">Responsável</th>
-                    <th className="text-left py-2.5 px-5 text-muted-foreground font-medium">Data</th>
+                    <th className="text-left py-2.5 px-5 text-muted-foreground font-medium">Prazo</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentDemandas.map((d) => (
-                    <tr key={d.id} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-5 font-medium text-foreground max-w-[250px] truncate">{d.titulo}</td>
+                  {recentTarefas.map((t) => (
+                    <tr key={t.id} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-5 font-medium text-foreground max-w-[250px] truncate">{t.titulo}</td>
                       <td className="py-3 px-5">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${statusStyles[d.status]}`}>
-                          {d.status === "concluida" ? "Concluída" : d.status === "andamento" ? "Em andamento" : "Pendente"}
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                          t.status ? "bg-success/10 text-success" : t.isOverdue ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"
+                        }`}>
+                          {t.status ? "Concluída" : t.isOverdue ? "Atrasada" : "Pendente"}
                         </span>
                       </td>
-                      <td className="py-3 px-5">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${prioridadeStyles[d.prioridade]}`}>{d.prioridade}</span>
-                      </td>
-                      <td className="py-3 px-5 text-muted-foreground">{d.responsavel}</td>
-                      <td className="py-3 px-5 text-muted-foreground">{d.data}</td>
+                      <td className="py-3 px-5 text-muted-foreground max-w-[150px] truncate">{t.coordenacao}</td>
+                      <td className="py-3 px-5 text-muted-foreground">{t.responsavel || "—"}</td>
+                      <td className="py-3 px-5 text-muted-foreground">{t.data_fim || "—"}</td>
                     </tr>
                   ))}
+                  {recentTarefas.length === 0 && (
+                    <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">Nenhuma tarefa cadastrada</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
-          <div className="glass-card rounded-xl p-5 cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/eventos")}>
+          <div className="glass-card rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-foreground font-display">Próximos Eventos</h3>
+              <h3 className="text-sm font-semibold text-foreground font-display">Próximos Prazos</h3>
             </div>
             <div className="space-y-3">
-              {proximosEventos.map((ev) => (
-                <div key={ev.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <div className="text-center shrink-0">
-                    <p className="text-lg font-bold font-display text-primary leading-none">{ev.data.split("/")[0]}</p>
-                    <p className="text-[10px] text-muted-foreground">/{ev.data.split("/")[1]}</p>
+              {upcomingTarefas.map((t) => {
+                const date = t.data_fim ? new Date(t.data_fim + "T00:00:00") : null;
+                return (
+                  <div key={t.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                    <div className="text-center shrink-0">
+                      {date && (
+                        <>
+                          <p className="text-lg font-bold font-display text-primary leading-none">{String(date.getDate()).padStart(2, "0")}</p>
+                          <p className="text-[10px] text-muted-foreground">/{String(date.getMonth() + 1).padStart(2, "0")}</p>
+                        </>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-foreground leading-snug truncate">{t.titulo}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {t.responsavel || "Sem responsável"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground leading-snug truncate">{ev.titulo}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5"><Clock className="w-3 h-3 inline mr-1" />{ev.hora}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
+              {upcomingTarefas.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">Nenhum prazo próximo</p>
+              )}
             </div>
           </div>
         </motion.div>
@@ -267,7 +358,7 @@ const Dashboard = () => {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {coordProgress.map((coord, i) => (
-              <button key={coord.slug} onClick={() => navigate(`/coordenacao/${coord.slug}`)} className="text-left p-4 rounded-lg bg-muted/30 hover:bg-muted/60 transition-colors border border-border/30">
+              <button key={coord.slug} onClick={() => navigate(`/coordenacao/${coord.slug}`)} className="text-left p-4 rounded-lg bg-muted/30 hover:bg-muted/60 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 border border-border/30 cursor-pointer">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-foreground truncate pr-2">{coord.nome.replace("Coordenação ", "")}</span>
                   <span className="text-xs font-bold font-display" style={{ color: coordColors[i % coordColors.length] }}>{coord.percent}%</span>
@@ -285,10 +376,10 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { icon: ClipboardList, label: "Nova Demanda", color: "bg-primary/10 text-primary", path: "/demandas" },
-            { icon: Users, label: "Cadastrar Pessoa", color: "bg-secondary/10 text-secondary", path: "/pessoas" },
-            { icon: Calendar, label: "Agendar Evento", color: "bg-accent/10 text-accent-foreground", path: "/eventos" },
-            { icon: AlertTriangle, label: "Demandas Urgentes", color: "bg-destructive/10 text-destructive", path: "/demandas" },
+            { icon: BarChart3, label: "Rel. Coordenação", color: "bg-primary/10 text-primary", path: "/relatorio-coordenacao" },
+            { icon: Users, label: "Usuários", color: "bg-secondary/10 text-secondary", path: "/usuarios" },
+            { icon: ClipboardList, label: "Relatórios", color: "bg-accent/10 text-accent-foreground", path: "/relatorios" },
+            { icon: AlertTriangle, label: `${overdue.length} Atrasadas`, color: "bg-destructive/10 text-destructive", path: "/relatorio-coordenacao" },
           ].map((action) => (
             <button key={action.label} onClick={() => navigate(action.path)} className="glass-card rounded-xl p-4 flex flex-col items-center gap-2 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer">
               <div className={`w-10 h-10 rounded-lg ${action.color} flex items-center justify-center`}>
