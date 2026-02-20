@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, UserPlus, Shield, Trash2 } from "lucide-react";
+import { Search, UserPlus, Shield, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -237,11 +237,21 @@ const GerenciarUsuarios = () => {
     }
   };
 
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
+
   const filtered = users.filter(
     (u) =>
       u.nome.toLowerCase().includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
+
+  // Reset page when search changes
+  useEffect(() => { setPage(1); }, [search]);
 
   const isGestor = currentUser?.role === "Gestor";
 
@@ -299,7 +309,7 @@ const GerenciarUsuarios = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((u) => (
+                paginated.map((u) => (
                   <TableRow key={u.user_id}>
                     <TableCell className="font-medium">{u.nome}</TableCell>
                     <TableCell className="text-muted-foreground">{u.email}</TableCell>
@@ -345,6 +355,25 @@ const GerenciarUsuarios = () => {
             </TableBody>
           </Table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Mostrando {(safeCurrentPage - 1) * PAGE_SIZE + 1}–{Math.min(safeCurrentPage * PAGE_SIZE, filtered.length)} de {filtered.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" disabled={safeCurrentPage <= 1} onClick={() => setPage((p) => p - 1)}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {safeCurrentPage} / {totalPages}
+              </span>
+              <Button size="sm" variant="outline" disabled={safeCurrentPage >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </motion.div>
 
       {/* Edit dialog */}
