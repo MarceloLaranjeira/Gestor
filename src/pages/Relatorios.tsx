@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  BarChart3, Download, Loader2, Users, ClipboardList, CalendarDays, TrendingUp,
+  BarChart3, Download, Loader2, Users, ClipboardList, CalendarDays, TrendingUp, Bot,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import {
@@ -83,6 +84,7 @@ const StatCard = ({ icon: Icon, label, value, sub }: { icon: any; label: string;
 
 // ── Main ───────────────────────────────────────────────────────────────────────
 const Relatorios = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [demandas, setDemandas] = useState<Demanda[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -147,6 +149,50 @@ const Relatorios = () => {
     }).length;
     return { mes, abertas, concluidas };
   });
+
+  // ── Analisar com IA ──────────────────────────────────────────────────────────
+  const analisarComIA = () => {
+    const pendentes = demandas.filter(d => d.status === "pendente").length;
+    const concluidas = demandas.filter(d => d.status === "concluida").length;
+    const atrasadas = demandas.filter(d => d.status === "atrasada").length;
+    const andamento = demandas.filter(d => d.status === "andamento").length;
+    const taxaConclusao = demandas.length ? Math.round((concluidas / demandas.length) * 100) : 0;
+
+    const catLines = demandasPorCategoria.map(c => `  - ${c.categoria}: ${c.total}`).join("\n") || "  Sem dados";
+    const tipoLines = pessoasPorTipo.map(p => `  - ${p.tipo}: ${p.total}`).join("\n") || "  Sem dados";
+
+    const prompt = `Analise os dados do relatório do mandato do Deputado Comandante Dan e forneça insights estratégicos detalhados:
+
+## 📋 DEMANDAS (Total: ${demandas.length})
+- Pendentes: ${pendentes}
+- Em andamento: ${andamento}
+- Concluídas: ${concluidas} (taxa de conclusão: ${taxaConclusao}%)
+- Atrasadas: ${atrasadas}
+
+### Por Categoria:
+${catLines}
+
+## 📅 EVENTOS
+- Total cadastrado: ${eventos.length}
+
+## 👥 PESSOAS NA BASE
+- Total: ${pessoas.length}
+
+### Por Tipo:
+${tipoLines}
+
+---
+
+Com base nesses dados reais do mandato, por favor forneça:
+
+1. **Diagnóstico Geral** — pontos críticos e situação atual
+2. **Alertas Prioritários** — o que precisa de atenção imediata
+3. **Insights Estratégicos** — oportunidades e padrões identificados
+4. **Plano de Ação** — 5 ações concretas e priorizadas para o Deputado Comandante Dan nas próximas semanas
+5. **Previsão** — tendências e projeções baseadas nos dados`;
+
+    navigate("/agente-ia", { state: { prompt } });
+  };
 
   // ── PDF Export ───────────────────────────────────────────────────────────────
   const exportPDF = () => {
@@ -290,10 +336,16 @@ const Relatorios = () => {
             <h1 className="text-2xl font-bold font-display text-foreground">Relatórios</h1>
             <p className="text-sm text-muted-foreground">Análises e métricas reais do gabinete</p>
           </div>
-          <Button onClick={exportPDF} disabled={exporting} variant="outline" className="gap-2">
-            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            Exportar PDF
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={analisarComIA} className="gradient-primary text-primary-foreground border-0 gap-2">
+              <Bot className="w-4 h-4" />
+              Analisar com IA
+            </Button>
+            <Button onClick={exportPDF} disabled={exporting} variant="outline" className="gap-2">
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              Exportar PDF
+            </Button>
+          </div>
         </div>
 
         {/* KPI Cards */}
