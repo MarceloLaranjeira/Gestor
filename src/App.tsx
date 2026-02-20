@@ -14,6 +14,7 @@ import Movimentos from "./pages/Movimentos";
 import Relatorios from "./pages/Relatorios";
 import Configuracoes from "./pages/Configuracoes";
 import GerenciarUsuarios from "./pages/GerenciarUsuarios";
+import RelatorioCoordenacao from "./pages/RelatorioCoordenacao";
 import CoordenacaoPage from "./pages/CoordenacaoPage";
 import NotFound from "./pages/NotFound";
 
@@ -44,6 +45,7 @@ const AppRoutes = () => (
     <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
     <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
     <Route path="/usuarios" element={<ProtectedRoute><GerenciarUsuarios /></ProtectedRoute>} />
+    <Route path="/relatorio-coordenacao" element={<ProtectedRoute><RelatorioCoordenacao /></ProtectedRoute>} />
     <Route path="/coordenacao/:id" element={<ProtectedRoute><CoordenacaoPage /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
