@@ -171,4 +171,37 @@ export const coordenacoesIniciais: Coordenacao[] = [
       },
     ],
   },
+  {
+    id: "plenaria",
+    nome: "Coordenação de Plenária",
+    descricao: "Assessoria no acompanhamento da tramitação de proposituras, elaboração de projetos de lei, requerimentos, ofícios e documentos legislativos",
+    secoes: [
+      {
+        titulo: "APROVAÇÃO DE PROJETOS DE LEI",
+        tarefas: [
+          { id: 1, titulo: "Aprovação de PLs/PRLs em Ordem do Dia — Meta Fev/26", motivo: "Meta mensal: 2 aprovações", responsavel: "Coord. Plenária", canal: "SAPL", dataInicio: "2026-02-01", dataFim: "2026-02-28", status: false },
+        ],
+      },
+      {
+        titulo: "REQUERIMENTOS LEGISLATIVOS",
+        tarefas: [
+          { id: 1, titulo: "Produção de Requerimentos — Meta Fev/26 (16 reservas SE)", motivo: "SE, ExpSC, MA, MP, MR, CT, AP", responsavel: "Coord. Plenária", canal: "SAPL", dataInicio: "2026-02-01", dataFim: "2026-02-28", status: false },
+        ],
+      },
+      {
+        titulo: "PAUTAS DE SESSÕES ORDINÁRIAS",
+        tarefas: [
+          { id: 1, titulo: "Elaboração de Pautas Sugestivas Pequeno/Grande Expediente — Fev/26", motivo: "Conforme calendário plenário ALEAM", responsavel: "Coord. Plenária", canal: "SAPL", dataInicio: "2026-02-01", dataFim: "2026-02-28", status: false },
+        ],
+      },
+      {
+        titulo: "LEIS PUBLICADAS EM DIÁRIO OFICIAL",
+        tarefas: [
+          { id: 1, titulo: "Lei 8.020 — Sanções violação liberdade religiosa", motivo: "Alteração Lei 6.820/2024", responsavel: "Coord. Plenária", canal: "SAPL", dataInicio: "2026-01-05", dataFim: "2026-01-05", status: true },
+          { id: 2, titulo: "Lei 8.051 — Combate roubo/furto cabos e fios metálicos", motivo: "Alteração Lei 6.653/2023", responsavel: "Coord. Plenária", canal: "SAPL", dataInicio: "2026-01-06", dataFim: "2026-01-06", status: true },
+          { id: 3, titulo: "Lei 8.078 — Legislação TEA consolidada", motivo: "Alteração Lei 6.458/2023", responsavel: "Coord. Plenária", canal: "SAPL", dataInicio: "2026-01-07", dataFim: "2026-01-07", status: true },
+        ],
+      },
+    ],
+  },
 ];
