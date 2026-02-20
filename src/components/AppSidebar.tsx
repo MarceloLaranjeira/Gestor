@@ -44,6 +44,9 @@ const bottomItems = [
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
+export const SIDEBAR_WIDTH = 250;
+export const SIDEBAR_COLLAPSED_WIDTH = 68;
+
 const AppSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [coordOpen, setCoordOpen] = useState(true);
@@ -54,19 +57,20 @@ const AppSidebar = () => {
 
   const renderLink = (item: { icon: any; label: string; path: string }, small = false) => {
     const isActive = location.pathname === item.path;
+    const Icon = item.icon;
     return (
       <Link
         key={item.path}
         to={item.path}
         className={cn(
-          "flex items-center gap-3 rounded-lg text-sm transition-all duration-200",
+          "flex items-center gap-3 rounded-lg text-sm transition-all duration-200 cursor-pointer",
           small ? "px-3 py-2 pl-10" : "px-3 py-2.5",
           isActive
             ? "bg-sidebar-accent text-sidebar-primary font-semibold"
             : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
         )}
       >
-        <item.icon className={cn("shrink-0", small ? "w-4 h-4" : "w-5 h-5")} />
+        <Icon className={cn("shrink-0", small ? "w-4 h-4" : "w-5 h-5")} />
         {!collapsed && <span className="truncate text-xs">{item.label}</span>}
       </Link>
     );
@@ -74,14 +78,12 @@ const AppSidebar = () => {
 
   return (
     <aside
-      className={cn(
-        "fixed left-0 top-0 z-40 h-screen flex flex-col transition-all duration-300 gradient-primary",
-        collapsed ? "w-[68px]" : "w-[250px]"
-      )}
+      style={{ width: collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
+      className="fixed left-0 top-0 z-40 h-screen flex flex-col transition-all duration-300 gradient-primary"
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border">
-        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-sidebar-primary">
+        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-sidebar-primary shrink-0">
           <Shield className="w-5 h-5 text-sidebar-primary-foreground" />
         </div>
         {!collapsed && (
@@ -103,9 +105,12 @@ const AppSidebar = () => {
         {/* Coordenações expandable */}
         <div>
           <button
-            onClick={() => setCoordOpen(!coordOpen)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCoordOpen(!coordOpen);
+            }}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 w-full",
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 w-full cursor-pointer",
               isCoordActive
                 ? "bg-sidebar-accent text-sidebar-primary font-semibold"
                 : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
@@ -114,7 +119,7 @@ const AppSidebar = () => {
             <ClipboardList className="w-5 h-5 shrink-0" />
             {!collapsed && (
               <>
-                <span className="truncate flex-1 text-left">Coordenações</span>
+                <span className="truncate flex-1 text-left text-xs">Coordenações</span>
                 <ChevronDown className={cn("w-4 h-4 transition-transform", coordOpen && "rotate-180")} />
               </>
             )}
@@ -139,8 +144,11 @@ const AppSidebar = () => {
           </div>
         )}
         <button
-          onClick={() => logout()}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            logout();
+          }}
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0" />
           {!collapsed && <span>Sair</span>}
@@ -149,8 +157,11 @@ const AppSidebar = () => {
 
       {/* Collapse toggle */}
       <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-card border border-border flex items-center justify-center shadow-sm hover:bg-muted transition-colors"
+        onClick={(e) => {
+          e.stopPropagation();
+          setCollapsed(!collapsed);
+        }}
+        className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-card border border-border flex items-center justify-center shadow-sm hover:bg-muted transition-colors z-50 cursor-pointer"
       >
         {collapsed ? (
           <ChevronRight className="w-3.5 h-3.5 text-foreground" />

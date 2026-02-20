@@ -1,12 +1,15 @@
-import { ReactNode } from "react";
-import AppSidebar from "./AppSidebar";
+import { ReactNode, useState, createContext, useContext } from "react";
+import AppSidebar, { SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from "./AppSidebar";
 import AppHeader from "./AppHeader";
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
   return (
     <div className="min-h-screen bg-background">
       <AppSidebar />
-      <div className="ml-[250px] transition-all duration-300">
+      <div
+        className="transition-all duration-300"
+        style={{ marginLeft: SIDEBAR_WIDTH }}
+      >
         <AppHeader />
         <main className="p-6">{children}</main>
       </div>
