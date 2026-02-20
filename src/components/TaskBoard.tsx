@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Plus, Edit2, Trash2, Check, Phone, MessageSquare } from "lucide-react";
+import { Plus, Edit2, Trash2, Check, Phone, MessageSquare, Filter, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +44,31 @@ const TaskBoard = ({ secoes, onUpdate, coordenacao }: TaskBoardProps) => {
   const [newTask, setNewTask] = useState<{ secaoIdx: number; tarefa: Omit<Tarefa, "id"> } | null>(null);
   const [newSecaoName, setNewSecaoName] = useState("");
   const [showNewSecao, setShowNewSecao] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<"all" | "done" | "pending">("all");
+  const [filterResponsavel, setFilterResponsavel] = useState<string>("all");
+
+  // Extract unique responsáveis
+  const responsaveis = useMemo(() => {
+    const set = new Set<string>();
+    secoes.forEach(s => s.tarefas.forEach(t => { if (t.responsavel) set.add(t.responsavel); }));
+    return Array.from(set).sort();
+  }, [secoes]);
+
+  // Filtered sections
+  const filteredSecoes = useMemo(() => {
+    return secoes.map(s => ({
+      ...s,
+      tarefas: s.tarefas.filter(t => {
+        if (filterStatus === "done" && !t.status) return false;
+        if (filterStatus === "pending" && t.status) return false;
+        if (filterResponsavel !== "all" && t.responsavel !== filterResponsavel) return false;
+        return true;
+      }),
+    }));
+  }, [secoes, filterStatus, filterResponsavel]);
+
+  const hasFilters = filterStatus !== "all" || filterResponsavel !== "all";
+  const clearFilters = () => { setFilterStatus("all"); setFilterResponsavel("all"); };
 
   const addSecao = () => {
     if (!newSecaoName.trim()) return;
@@ -113,8 +138,39 @@ const TaskBoard = ({ secoes, onUpdate, coordenacao }: TaskBoardProps) => {
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+        <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
+          <SelectTrigger className="h-8 w-[140px] text-xs">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="done">Concluídas</SelectItem>
+            <SelectItem value="pending">Pendentes</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterResponsavel} onValueChange={setFilterResponsavel}>
+          <SelectTrigger className="h-8 w-[160px] text-xs">
+            <SelectValue placeholder="Responsável" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos responsáveis</SelectItem>
+            {responsaveis.map(r => (
+              <SelectItem key={r} value={r}>{r}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {hasFilters && (
+          <button onClick={clearFilters} className="h-8 px-2.5 rounded-md text-xs text-muted-foreground hover:bg-muted flex items-center gap-1 transition-colors">
+            <X className="w-3 h-3" /> Limpar
+          </button>
+        )}
+      </div>
+
       {/* Sections */}
-      {secoes.map((secao, secaoIdx) => (
+      {filteredSecoes.map((secao, secaoIdx) => (
         <motion.div key={(secao as any).dbId || secao.titulo + secaoIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b border-border/50">
             <h3 className="text-sm font-bold font-display text-foreground">{secao.titulo}</h3>
