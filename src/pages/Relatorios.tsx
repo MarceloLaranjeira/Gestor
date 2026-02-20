@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3, Download, Loader2, Users, ClipboardList, CalendarDays,
-  TrendingUp, Bot, TrendingDown, AlertTriangle, CheckCircle2, Clock,
-  Award, Target, Zap, Activity,
+  TrendingUp, Bot, TrendingDown, AlertTriangle, CheckCircle2,
+  Award, Target, Zap, Activity, Settings2, Save, RotateCcw,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import {
@@ -94,12 +94,25 @@ const ProgressBar = ({ label, value, max, color = "hsl(var(--primary))" }: { lab
   );
 };
 
+// ── Default Goals ──────────────────────────────────────────────────────────────
+const DEFAULT_METAS = {
+  taxaConclusaoDemandas: 80,
+  taxaConclusaoTarefas: 75,
+  taxaAtraso: 10,
+  urgentesAbertas: 0,
+  scoreGeral: 70,
+  totalPessoas: 100,
+  totalEventos: 20,
+};
+type MetaKey = keyof typeof DEFAULT_METAS;
+
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 const TABS = [
   { id: "visao", label: "Visão Geral" },
   { id: "desempenho", label: "Desempenho" },
   { id: "equipe", label: "Equipe" },
   { id: "financeiro", label: "Financeiro" },
+  { id: "metas", label: "🎯 Metas" },
 ];
 
 // ── Main ───────────────────────────────────────────────────────────────────────
@@ -115,6 +128,14 @@ const Relatorios = () => {
   const [secoes, setSecoes] = useState<Secao[]>([]);
   const [coordenacoes, setCoordenacoes] = useState<Coordenacao[]>([]);
   const [exporting, setExporting] = useState(false);
+  const [metas, setMetas] = useState<typeof DEFAULT_METAS>(() => {
+    try {
+      const saved = localStorage.getItem("relatorio-metas");
+      return saved ? { ...DEFAULT_METAS, ...JSON.parse(saved) } : DEFAULT_METAS;
+    } catch { return DEFAULT_METAS; }
+  });
+  const [metasEdit, setMetasEdit] = useState<typeof DEFAULT_METAS>(metas);
+  const [metasSaved, setMetasSaved] = useState(false);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -221,6 +242,19 @@ const Relatorios = () => {
   const despesasPorCategoria = Object.entries(groupBy(financeiros.filter(f => f.tipo === "despesa" && f.categoria), f => f.categoria))
     .map(([cat, items]) => ({ categoria: cat, total: items.reduce((s, f) => s + Number(f.valor), 0) }))
     .sort((a, b) => b.total - a.total);
+
+  // ── Metas handlers ────────────────────────────────────────────────────────
+  const saveMetas = () => {
+    setMetas(metasEdit);
+    localStorage.setItem("relatorio-metas", JSON.stringify(metasEdit));
+    setMetasSaved(true);
+    setTimeout(() => setMetasSaved(false), 2000);
+  };
+  const resetMetas = () => {
+    setMetasEdit(DEFAULT_METAS);
+    setMetas(DEFAULT_METAS);
+    localStorage.removeItem("relatorio-metas");
+  };
 
   // ── Analisar com IA ────────────────────────────────────────────────────────
   const analisarComIA = () => {
@@ -660,6 +694,249 @@ Forneça: 1) Score de desempenho geral (0-100) com justificativa, 2) Principais 
             )}
           </motion.div>
         )}
+        {/* ── TAB: METAS ───────────────────────────────────────────────────── */}
+        {tab === "metas" && (
+          <motion.div key="metas" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+            {/* Header config */}
+            <div className="glass-card rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Settings2 className="w-4 h-4 text-primary" />
+                  <h3 className="text-sm font-semibold text-foreground font-display">Configurar Metas de Desempenho</h3>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={resetMetas}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-border hover:bg-muted/50"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Restaurar padrões
+                  </button>
+                  <button
+                    onClick={saveMetas}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium ${
+                      metasSaved
+                        ? "bg-success/20 text-success border border-success/30"
+                        : "gradient-primary text-primary-foreground border-0"
+                    }`}
+                  >
+                    <Save className="w-3 h-3" />
+                    {metasSaved ? "Salvo!" : "Salvar Metas"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Meta inputs grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {([
+                  { key: "taxaConclusaoDemandas" as MetaKey, label: "Conclusão de Demandas", unit: "%", max: 100, min: 0, desc: "Meta mínima de demandas concluídas" },
+                  { key: "taxaConclusaoTarefas" as MetaKey, label: "Conclusão de Tarefas", unit: "%", max: 100, min: 0, desc: "Meta mínima de tarefas concluídas" },
+                  { key: "taxaAtraso" as MetaKey, label: "Taxa de Atraso Máxima", unit: "%", max: 100, min: 0, desc: "Limite aceitável de demandas atrasadas" },
+                  { key: "urgentesAbertas" as MetaKey, label: "Urgentes em Aberto", unit: "", max: 999, min: 0, desc: "Máximo de demandas urgentes pendentes" },
+                  { key: "scoreGeral" as MetaKey, label: "Score de Desempenho", unit: "pts", max: 100, min: 0, desc: "Score mínimo aceitável (0-100)" },
+                  { key: "totalPessoas" as MetaKey, label: "Meta de Pessoas", unit: "", max: 9999, min: 0, desc: "Quantidade meta de pessoas cadastradas" },
+                  { key: "totalEventos" as MetaKey, label: "Meta de Eventos", unit: "", max: 9999, min: 0, desc: "Quantidade meta de eventos no ano" },
+                ] as const).map(({ key, label, unit, max, min, desc }) => (
+                  <div key={key} className="space-y-2 p-4 rounded-lg bg-muted/30 border border-border/50">
+                    <label className="text-xs font-semibold text-foreground">{label}</label>
+                    <p className="text-[10px] text-muted-foreground">{desc}</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={min}
+                        max={max}
+                        value={metasEdit[key]}
+                        onChange={e => setMetasEdit(prev => ({ ...prev, [key]: Number(e.target.value) }))}
+                        className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      />
+                      {unit && <span className="text-xs text-muted-foreground shrink-0 font-medium">{unit}</span>}
+                    </div>
+                    {/* Mini range */}
+                    {max <= 100 && (
+                      <input
+                        type="range"
+                        min={min}
+                        max={max}
+                        value={metasEdit[key]}
+                        onChange={e => setMetasEdit(prev => ({ ...prev, [key]: Number(e.target.value) }))}
+                        className="w-full h-1.5 accent-[hsl(var(--primary))] cursor-pointer"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Progress vs Metas */}
+            <div className="glass-card rounded-xl p-5">
+              <h3 className="text-sm font-semibold text-foreground mb-5 font-display flex items-center gap-2">
+                <Target className="w-4 h-4 text-primary" /> Progresso Atual vs. Metas
+              </h3>
+              <div className="space-y-5">
+                {([
+                  {
+                    label: "Conclusão de Demandas",
+                    atual: taxaConclusaoDemandas,
+                    meta: metas.taxaConclusaoDemandas,
+                    unit: "%",
+                    higherIsBetter: true,
+                    sub: `${demandas.filter(d => d.status === "concluida").length} de ${demandas.length} demandas`,
+                  },
+                  {
+                    label: "Conclusão de Tarefas",
+                    atual: taxaConclusaoTarefas,
+                    meta: metas.taxaConclusaoTarefas,
+                    unit: "%",
+                    higherIsBetter: true,
+                    sub: `${tarefasConcluidas} de ${totalTarefas} tarefas`,
+                  },
+                  {
+                    label: "Taxa de Atraso",
+                    atual: taxaAtrasadas,
+                    meta: metas.taxaAtraso,
+                    unit: "%",
+                    higherIsBetter: false,
+                    sub: `${demandas.filter(d => d.status === "atrasada").length} demandas atrasadas`,
+                  },
+                  {
+                    label: "Urgentes em Aberto",
+                    atual: urgentesAbertas,
+                    meta: metas.urgentesAbertas,
+                    unit: "",
+                    higherIsBetter: false,
+                    sub: "demandas urgentes não concluídas",
+                  },
+                  {
+                    label: "Score Geral",
+                    atual: scoreGeral,
+                    meta: metas.scoreGeral,
+                    unit: "pts",
+                    higherIsBetter: true,
+                    sub: "score composto de desempenho",
+                  },
+                  {
+                    label: "Total de Pessoas",
+                    atual: pessoas.length,
+                    meta: metas.totalPessoas,
+                    unit: "",
+                    higherIsBetter: true,
+                    sub: "pessoas cadastradas no sistema",
+                  },
+                  {
+                    label: "Total de Eventos",
+                    atual: eventos.length,
+                    meta: metas.totalEventos,
+                    unit: "",
+                    higherIsBetter: true,
+                    sub: "eventos registrados",
+                  },
+                ]).map(({ label, atual, meta, unit, higherIsBetter, sub }) => {
+                  const atingiu = higherIsBetter ? atual >= meta : atual <= meta;
+                  const barMax = higherIsBetter
+                    ? Math.max(meta, atual, 1)
+                    : Math.max(meta, atual, 1);
+                  const atualPct = Math.min(100, Math.round((atual / barMax) * 100));
+                  const metaPct = Math.min(100, Math.round((meta / barMax) * 100));
+                  const barColor = atingiu
+                    ? "hsl(var(--success))"
+                    : higherIsBetter
+                      ? atual >= meta * 0.7 ? "hsl(var(--warning))" : "hsl(var(--destructive))"
+                      : atual <= meta * 1.5 ? "hsl(var(--warning))" : "hsl(var(--destructive))";
+
+                  return (
+                    <div key={label} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{label}</p>
+                          <p className="text-[10px] text-muted-foreground">{sub}</p>
+                        </div>
+                        <div className="flex items-center gap-3 text-right">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Atual</p>
+                            <p className={`text-base font-bold font-display ${atingiu ? "text-success" : "text-destructive"}`}>
+                              {atual}{unit}
+                            </p>
+                          </div>
+                          <div className="w-px h-8 bg-border" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Meta</p>
+                            <p className="text-base font-bold font-display text-primary">{meta}{unit}</p>
+                          </div>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${atingiu ? "bg-success/15" : "bg-destructive/15"}`}>
+                            {atingiu
+                              ? <CheckCircle2 className="w-4 h-4 text-success" />
+                              : <AlertTriangle className="w-4 h-4 text-destructive" />
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Progress bar with goal marker */}
+                      <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${atualPct}%`, backgroundColor: barColor }}
+                        />
+                        {/* Meta marker line */}
+                        <div
+                          className="absolute top-0 bottom-0 w-0.5 bg-primary/70 z-10"
+                          style={{ left: `${metaPct}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>0{unit}</span>
+                        <span className="text-primary font-medium">Meta: {meta}{unit}</span>
+                        <span>{barMax}{unit}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Summary chips */}
+            <div className="grid grid-cols-2 gap-3">
+              {(() => {
+                const checks = [
+                  taxaConclusaoDemandas >= metas.taxaConclusaoDemandas,
+                  taxaConclusaoTarefas >= metas.taxaConclusaoTarefas,
+                  taxaAtrasadas <= metas.taxaAtraso,
+                  urgentesAbertas <= metas.urgentesAbertas,
+                  scoreGeral >= metas.scoreGeral,
+                  pessoas.length >= metas.totalPessoas,
+                  eventos.length >= metas.totalEventos,
+                ];
+                const atingidas = checks.filter(Boolean).length;
+                const total = checks.length;
+                const pctMetas = Math.round((atingidas / total) * 100);
+                return (
+                  <>
+                    <div className={`glass-card rounded-xl p-4 flex items-center gap-3 ${pctMetas >= 70 ? "border-success/30" : "border-destructive/30"}`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold font-display shrink-0 ${pctMetas >= 70 ? "bg-success/15 text-success" : pctMetas >= 40 ? "bg-warning/15 text-warning" : "bg-destructive/15 text-destructive"}`}>
+                        {atingidas}/{total}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Metas atingidas</p>
+                        <p className="text-xs text-muted-foreground">{pctMetas}% das metas alcançadas</p>
+                      </div>
+                    </div>
+                    <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${pctMetas >= 70 ? "bg-success/15" : "bg-warning/15"}`}>
+                        <Target className={`w-5 h-5 ${pctMetas >= 70 ? "text-success" : "text-warning"}`} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">
+                          {pctMetas >= 80 ? "🏆 Excelente!" : pctMetas >= 60 ? "👍 Bom progresso" : pctMetas >= 40 ? "⚠️ Atenção necessária" : "🔴 Metas críticas"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{total - atingidas} meta(s) ainda não atingida(s)</p>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </motion.div>
+        )}
+
       </motion.div>
     </AppLayout>
   );
