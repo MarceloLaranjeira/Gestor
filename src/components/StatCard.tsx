@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface StatCardProps {
@@ -8,11 +9,24 @@ interface StatCardProps {
   icon: ReactNode;
   trend?: { value: number; positive: boolean };
   className?: string;
+  href?: string;
 }
 
-const StatCard = ({ title, value, subtitle, icon, trend, className }: StatCardProps) => {
+const StatCard = ({ title, value, subtitle, icon, trend, className, href }: StatCardProps) => {
+  const navigate = useNavigate();
+
   return (
-    <div className={cn("glass-card rounded-xl p-5 animate-fade-in", className)}>
+    <div
+      role={href ? "button" : undefined}
+      tabIndex={href ? 0 : undefined}
+      onClick={() => href && navigate(href)}
+      onKeyDown={(e) => e.key === "Enter" && href && navigate(href)}
+      className={cn(
+        "glass-card rounded-xl p-5 animate-fade-in transition-all duration-200",
+        href && "cursor-pointer hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
+        className
+      )}
+    >
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
