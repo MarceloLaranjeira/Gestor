@@ -16,7 +16,7 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const { messages } = await req.json();
+    const { messages, model } = await req.json();
 
     // Fetch real system data to give the agent full context
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -121,6 +121,9 @@ Cidades atendidas: ${[...new Set(pessoas.map(p => p.cidade).filter(Boolean))].jo
 - Identifique padrões, tendências e pontos de atenção nos dados
 - Data de hoje: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`;
 
+    // Default model if not provided
+    const selectedModel = model || "google/gemini-2.5-flash";
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -128,7 +131,7 @@ Cidades atendidas: ${[...new Set(pessoas.map(p => p.cidade).filter(Boolean))].jo
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: selectedModel,
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
