@@ -20,6 +20,7 @@ import {
   Database,
   Building2,
   UsersRound,
+  Bot,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ const coordenacaoItems = [
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: Bot, label: "Assessor IA", path: "/agente-ia" },
   { icon: Users, label: "Pessoas", path: "/pessoas" },
   { icon: ClipboardList, label: "Demandas", path: "/demandas" },
   { icon: Calendar, label: "Eventos", path: "/eventos" },
