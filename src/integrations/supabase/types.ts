@@ -41,6 +41,135 @@ export type Database = {
         }
         Relationships: []
       }
+      demandas: {
+        Row: {
+          categoria: string
+          created_at: string
+          data_prazo: string | null
+          descricao: string
+          id: string
+          prioridade: string
+          responsavel: string
+          solicitante: string
+          status: string
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          data_prazo?: string | null
+          descricao?: string
+          id?: string
+          prioridade?: string
+          responsavel?: string
+          solicitante?: string
+          status?: string
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data_prazo?: string | null
+          descricao?: string
+          id?: string
+          prioridade?: string
+          responsavel?: string
+          solicitante?: string
+          status?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      eventos: {
+        Row: {
+          created_at: string
+          data: string
+          descricao: string
+          hora: string
+          id: string
+          local: string
+          participantes: number
+          tipo: string
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          descricao?: string
+          hora?: string
+          id?: string
+          local?: string
+          participantes?: number
+          tipo?: string
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          descricao?: string
+          hora?: string
+          id?: string
+          local?: string
+          participantes?: number
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pessoas: {
+        Row: {
+          bairro: string
+          cidade: string
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          tags: string[]
+          telefone: string
+          tipo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bairro?: string
+          cidade?: string
+          created_at?: string
+          email?: string
+          id?: string
+          nome: string
+          tags?: string[]
+          telefone?: string
+          tipo?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bairro?: string
+          cidade?: string
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          tags?: string[]
+          telefone?: string
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
