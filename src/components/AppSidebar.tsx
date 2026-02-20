@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useSidebarState } from "./AppLayout";
 import {
   LayoutDashboard,
   Users,
@@ -48,7 +49,7 @@ export const SIDEBAR_WIDTH = 250;
 export const SIDEBAR_COLLAPSED_WIDTH = 68;
 
 const AppSidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const { collapsed, setCollapsed } = useSidebarState();
   const [coordOpen, setCoordOpen] = useState(true);
   const location = useLocation();
   const { user, logout } = useAuth();
