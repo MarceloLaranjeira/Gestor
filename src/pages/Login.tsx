@@ -1,35 +1,40 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Shield, LogIn, Eye, EyeOff } from "lucide-react";
+import { Shield, LogIn, Eye, EyeOff, UserPlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [nome, setNome] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [isSignup, setIsSignup] = useState(false);
+  const { login, signup } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Simulate delay
-    await new Promise((r) => setTimeout(r, 800));
-    
-    const success = login(email, password);
-    if (success) {
-      navigate("/");
+
+    if (isSignup) {
+      const result = await signup(email, password, nome);
+      if (result.success) {
+        toast({ title: "Conta criada!", description: "Você já está logado no sistema." });
+        navigate("/");
+      } else {
+        toast({ title: "Erro ao criar conta", description: result.error, variant: "destructive" });
+      }
     } else {
-      toast({
-        title: "Erro de autenticação",
-        description: "Email ou senha inválidos. Tente novamente.",
-        variant: "destructive",
-      });
+      const result = await login(email, password);
+      if (result.success) {
+        navigate("/");
+      } else {
+        toast({ title: "Erro de autenticação", description: result.error || "Email ou senha inválidos.", variant: "destructive" });
+      }
     }
     setLoading(false);
   };
@@ -43,20 +48,12 @@ const Login = () => {
           <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-secondary blur-[120px]" />
         </div>
         <div className="relative z-10 text-center px-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="w-20 h-20 mx-auto mb-8 rounded-2xl bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center">
               <Shield className="w-10 h-10 text-sidebar-primary" />
             </div>
-            <h1 className="text-4xl font-bold font-display text-primary-foreground mb-4">
-              Gabinete Digital
-            </h1>
-            <p className="text-lg text-primary-foreground/70 mb-2">
-              Dep. Estadual Comandante Dan
-            </p>
+            <h1 className="text-4xl font-bold font-display text-primary-foreground mb-4">Gabinete Digital</h1>
+            <p className="text-lg text-primary-foreground/70 mb-2">Dep. Estadual Comandante Dan</p>
             <p className="text-sm text-primary-foreground/50 max-w-md">
               Sistema integrado de gestão parlamentar — pessoas, demandas, eventos e inteligência institucional.
             </p>
@@ -66,12 +63,7 @@ const Login = () => {
 
       {/* Right Panel */}
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="w-full max-w-sm"
-        >
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-sm">
           <div className="lg:hidden flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <Shield className="w-5 h-5 text-primary-foreground" />
@@ -82,10 +74,27 @@ const Login = () => {
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold font-display text-foreground mb-1">Bem-vindo</h2>
-          <p className="text-sm text-muted-foreground mb-8">Entre com suas credenciais para acessar o sistema.</p>
+          <h2 className="text-2xl font-bold font-display text-foreground mb-1">
+            {isSignup ? "Criar Conta" : "Bem-vindo"}
+          </h2>
+          <p className="text-sm text-muted-foreground mb-8">
+            {isSignup ? "Preencha os dados para criar sua conta." : "Entre com suas credenciais para acessar o sistema."}
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {isSignup && (
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">Nome completo</label>
+                <input
+                  type="text"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  placeholder="Seu nome"
+                  required
+                  className="w-full h-11 px-4 text-sm rounded-lg bg-muted/50 border border-border outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground placeholder:text-muted-foreground/50 transition-all"
+                />
+              </div>
+            )}
             <div>
               <label className="text-xs font-medium text-foreground mb-1.5 block">Email</label>
               <input
@@ -106,13 +115,10 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  minLength={6}
                   className="w-full h-11 px-4 pr-10 text-sm rounded-lg bg-muted/50 border border-border outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground placeholder:text-muted-foreground/50 transition-all"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
@@ -125,22 +131,20 @@ const Login = () => {
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : isSignup ? (
+                <><UserPlus className="w-4 h-4" /> Criar Conta</>
               ) : (
-                <>
-                  <LogIn className="w-4 h-4" />
-                  Entrar
-                </>
+                <><LogIn className="w-4 h-4" /> Entrar</>
               )}
             </button>
           </form>
 
-          <div className="mt-8 p-4 rounded-lg bg-muted/50 border border-border">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Credenciais de teste:</p>
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <p><span className="font-medium text-foreground">admin@gabinete.com</span> / admin123</p>
-              <p><span className="font-medium text-foreground">assessor@gabinete.com</span> / assessor123</p>
-            </div>
-          </div>
+          <button
+            onClick={() => setIsSignup(!isSignup)}
+            className="w-full mt-4 text-xs text-center text-muted-foreground hover:text-primary transition-colors"
+          >
+            {isSignup ? "Já tem conta? Faça login" : "Não tem conta? Cadastre-se"}
+          </button>
         </motion.div>
       </div>
     </div>

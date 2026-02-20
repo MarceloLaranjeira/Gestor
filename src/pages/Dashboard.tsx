@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Users,
   ClipboardList,
@@ -14,9 +14,20 @@ import {
 import StatCard from "@/components/StatCard";
 import AppLayout from "@/components/AppLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { coordenacoesIniciais } from "@/data/coordenacoes";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+
+const formatDate = (date: Date): string => {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+};
+
+const today = new Date();
+const todayFormatted = formatDate(today);
 
 const demandaData = [
   { mes: "Set", total: 42 },
@@ -72,24 +83,42 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
+interface CoordProgress {
+  slug: string;
+  nome: string;
+  total: number;
+  done: number;
+  pending: number;
+  percent: number;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [coordProgress, setCoordProgress] = useState<CoordProgress[]>([]);
 
-  const coordProgress = useMemo(() => {
-    return coordenacoesIniciais.map((coord) => {
-      const saved = localStorage.getItem(`coordenacao_${coord.id}`);
-      const secoes = saved ? JSON.parse(saved) : coord.secoes;
-      let total = 0;
-      let done = 0;
-      secoes.forEach((s: any) => {
-        s.tarefas.forEach((t: any) => {
-          total++;
-          if (t.status) done++;
-        });
+  useEffect(() => {
+    const fetchProgress = async () => {
+      const { data: coords } = await supabase.from("coordenacoes").select("id, slug, nome");
+      if (!coords) return;
+
+      const { data: tarefas } = await supabase.from("tarefas").select("secao_id, status");
+      const { data: secoes } = await supabase.from("secoes").select("id, coordenacao_id");
+
+      if (!tarefas || !secoes) return;
+
+      const secaoToCoord: Record<string, string> = {};
+      secoes.forEach((s) => { secaoToCoord[s.id] = s.coordenacao_id; });
+
+      const progress = coords.map((c) => {
+        const coordTarefas = tarefas.filter((t) => secaoToCoord[t.secao_id] === c.id);
+        const total = coordTarefas.length;
+        const done = coordTarefas.filter((t) => t.status).length;
+        return { slug: c.slug, nome: c.nome, total, done, pending: total - done, percent: total > 0 ? Math.round((done / total) * 100) : 0 };
       });
-      const percent = total > 0 ? Math.round((done / total) * 100) : 0;
-      return { id: coord.id, nome: coord.nome, total, done, pending: total - done, percent };
-    });
+
+      setCoordProgress(progress);
+    };
+    fetchProgress();
   }, []);
 
   const totalTarefas = coordProgress.reduce((a, c) => a + c.total, 0);
@@ -112,39 +141,16 @@ const Dashboard = () => {
         <motion.div variants={item} className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold font-display text-foreground">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Visão geral do gabinete — 20 de Fevereiro, 2026</p>
+            <p className="text-sm text-muted-foreground">Visão geral do gabinete — {todayFormatted}</p>
           </div>
         </motion.div>
 
         {/* Stats */}
         <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Pessoas Cadastradas"
-            value={1247}
-            subtitle="32 novos esta semana"
-            icon={<Users className="w-5 h-5 text-primary" />}
-            trend={{ value: 12, positive: true }}
-          />
-          <StatCard
-            title="Demandas Ativas"
-            value={63}
-            subtitle="18 pendentes de resposta"
-            icon={<ClipboardList className="w-5 h-5 text-secondary" />}
-            trend={{ value: 8, positive: true }}
-          />
-          <StatCard
-            title="Eventos do Mês"
-            value={14}
-            subtitle="3 esta semana"
-            icon={<Calendar className="w-5 h-5 text-accent" />}
-          />
-          <StatCard
-            title="Taxa de Resolução"
-            value="87%"
-            subtitle="124 de 142 resolvidas"
-            icon={<TrendingUp className="w-5 h-5 text-success" />}
-            trend={{ value: 5, positive: true }}
-          />
+          <StatCard title="Pessoas Cadastradas" value={1247} subtitle="32 novos esta semana" icon={<Users className="w-5 h-5 text-primary" />} trend={{ value: 12, positive: true }} />
+          <StatCard title="Demandas Ativas" value={63} subtitle="18 pendentes de resposta" icon={<ClipboardList className="w-5 h-5 text-secondary" />} trend={{ value: 8, positive: true }} />
+          <StatCard title="Eventos do Mês" value={14} subtitle="3 esta semana" icon={<Calendar className="w-5 h-5 text-accent" />} />
+          <StatCard title="Taxa de Resolução" value="87%" subtitle="124 de 142 resolvidas" icon={<TrendingUp className="w-5 h-5 text-success" />} trend={{ value: 5, positive: true }} />
         </motion.div>
 
         {/* Charts Row */}
@@ -156,14 +162,7 @@ const Dashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="mes" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
-                />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
                 <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -173,9 +172,7 @@ const Dashboard = () => {
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                  {statusData.map((entry, index) => (
-                    <Cell key={index} fill={entry.color} />
-                  ))}
+                  {statusData.map((entry, index) => (<Cell key={index} fill={entry.color} />))}
                 </Pie>
                 <Tooltip />
               </PieChart>
@@ -196,13 +193,10 @@ const Dashboard = () => {
 
         {/* Tables Row */}
         <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Recent Demandas */}
           <div className="lg:col-span-2 glass-card rounded-xl">
             <div className="flex items-center justify-between p-5 pb-3">
               <h3 className="text-sm font-semibold text-foreground font-display">Demandas Recentes</h3>
-              <button className="text-xs text-primary font-medium flex items-center gap-1 hover:underline">
-                Ver todas <ArrowRight className="w-3 h-3" />
-              </button>
+              <button className="text-xs text-primary font-medium flex items-center gap-1 hover:underline">Ver todas <ArrowRight className="w-3 h-3" /></button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
@@ -225,9 +219,7 @@ const Dashboard = () => {
                         </span>
                       </td>
                       <td className="py-3 px-5">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${prioridadeStyles[d.prioridade]}`}>
-                          {d.prioridade}
-                        </span>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${prioridadeStyles[d.prioridade]}`}>{d.prioridade}</span>
                       </td>
                       <td className="py-3 px-5 text-muted-foreground">{d.responsavel}</td>
                       <td className="py-3 px-5 text-muted-foreground">{d.data}</td>
@@ -237,8 +229,6 @@ const Dashboard = () => {
               </table>
             </div>
           </div>
-
-          {/* Events */}
           <div className="glass-card rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-foreground font-display">Próximos Eventos</h3>
@@ -252,10 +242,7 @@ const Dashboard = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-foreground leading-snug truncate">{ev.titulo}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      <Clock className="w-3 h-3 inline mr-1" />
-                      {ev.hora}
-                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5"><Clock className="w-3 h-3 inline mr-1" />{ev.hora}</p>
                   </div>
                 </div>
               ))}
@@ -280,25 +267,15 @@ const Dashboard = () => {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {coordProgress.map((coord, i) => (
-              <button
-                key={coord.id}
-                onClick={() => navigate(`/coordenacao/${coord.id}`)}
-                className="text-left p-4 rounded-lg bg-muted/30 hover:bg-muted/60 transition-colors border border-border/30"
-              >
+              <button key={coord.slug} onClick={() => navigate(`/coordenacao/${coord.slug}`)} className="text-left p-4 rounded-lg bg-muted/30 hover:bg-muted/60 transition-colors border border-border/30">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-foreground truncate pr-2">{coord.nome.replace("Coordenação ", "")}</span>
-                  <span className="text-xs font-bold font-display" style={{ color: coordColors[i % coordColors.length] }}>
-                    {coord.percent}%
-                  </span>
+                  <span className="text-xs font-bold font-display" style={{ color: coordColors[i % coordColors.length] }}>{coord.percent}%</span>
                 </div>
                 <Progress value={coord.percent} className="h-1.5 mb-2" />
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-success" /> {coord.done} concluídas
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-warning" /> {coord.pending} pendentes
-                  </span>
+                  <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-success" /> {coord.done} concluídas</span>
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-warning" /> {coord.pending} pendentes</span>
                 </div>
               </button>
             ))}
@@ -313,10 +290,7 @@ const Dashboard = () => {
             { icon: Calendar, label: "Agendar Evento", color: "bg-accent/10 text-accent-foreground" },
             { icon: AlertTriangle, label: "Demandas Urgentes", color: "bg-destructive/10 text-destructive" },
           ].map((action) => (
-            <button
-              key={action.label}
-              className="glass-card rounded-xl p-4 flex flex-col items-center gap-2 hover:shadow-md transition-shadow"
-            >
+            <button key={action.label} className="glass-card rounded-xl p-4 flex flex-col items-center gap-2 hover:shadow-md transition-shadow">
               <div className={`w-10 h-10 rounded-lg ${action.color} flex items-center justify-center`}>
                 <action.icon className="w-5 h-5" />
               </div>
