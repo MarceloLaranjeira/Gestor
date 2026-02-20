@@ -17,6 +17,7 @@ import GerenciarUsuarios from "./pages/GerenciarUsuarios";
 import RelatorioCoordenacao from "./pages/RelatorioCoordenacao";
 import CoordenacaoPage from "./pages/CoordenacaoPage";
 import AgenteIA from "./pages/AgenteIA";
+import Financas from "./pages/Financas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const AppRoutes = () => (
     <Route path="/usuarios" element={<ProtectedRoute><GerenciarUsuarios /></ProtectedRoute>} />
     <Route path="/relatorio-coordenacao" element={<ProtectedRoute><RelatorioCoordenacao /></ProtectedRoute>} />
     <Route path="/coordenacao/:id" element={<ProtectedRoute><CoordenacaoPage /></ProtectedRoute>} />
+    <Route path="/financas" element={<ProtectedRoute><Financas /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

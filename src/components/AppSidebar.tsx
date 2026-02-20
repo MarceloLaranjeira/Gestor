@@ -21,6 +21,7 @@ import {
   Building2,
   UsersRound,
   Bot,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ const navItems = [
   { icon: Users, label: "Pessoas", path: "/pessoas" },
   { icon: ClipboardList, label: "Demandas", path: "/demandas" },
   { icon: Calendar, label: "Eventos", path: "/eventos" },
+  { icon: Wallet, label: "Financeiro", path: "/financas" },
   { icon: MessageSquare, label: "Movimentos", path: "/movimentos" },
 ];
 
