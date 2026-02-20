@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit2, Trash2, Check, X, Clock, CheckCircle2, AlertTriangle, Phone, MessageSquare } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { motion } from "framer-motion";
+import { Plus, Edit2, Trash2, Check, Phone, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface Tarefa {
-  id: number;
+  id: number | string;
   titulo: string;
   motivo: string;
   responsavel: string;
@@ -19,6 +18,7 @@ export interface Tarefa {
 }
 
 export interface SecaoTarefas {
+  dbId?: string;
   titulo: string;
   tarefas: Tarefa[];
 }
@@ -58,32 +58,37 @@ const TaskBoard = ({ secoes, onUpdate, coordenacao }: TaskBoardProps) => {
 
   const addTask = (secaoIdx: number) => {
     if (!newTask || !newTask.tarefa.titulo.trim()) return;
-    const updated = [...secoes];
-    const maxId = updated[secaoIdx].tarefas.reduce((max, t) => Math.max(max, t.id), 0);
-    updated[secaoIdx].tarefas.push({ ...newTask.tarefa, id: maxId + 1 });
+    const updated = secoes.map((s, i) => {
+      if (i !== secaoIdx) return s;
+      return { ...s, tarefas: [...s.tarefas, { ...newTask.tarefa, id: Date.now() }] };
+    });
     onUpdate(updated);
     setNewTask(null);
   };
 
   const updateTask = () => {
     if (!editingTask) return;
-    const updated = [...secoes];
-    const tIdx = updated[editingTask.secaoIdx].tarefas.findIndex(t => t.id === editingTask.tarefa.id);
-    if (tIdx >= 0) updated[editingTask.secaoIdx].tarefas[tIdx] = editingTask.tarefa;
+    const updated = secoes.map((s, i) => {
+      if (i !== editingTask.secaoIdx) return s;
+      return { ...s, tarefas: s.tarefas.map(t => t.id === editingTask.tarefa.id ? editingTask.tarefa : t) };
+    });
     onUpdate(updated);
     setEditingTask(null);
   };
 
-  const removeTask = (secaoIdx: number, taskId: number) => {
-    const updated = [...secoes];
-    updated[secaoIdx].tarefas = updated[secaoIdx].tarefas.filter(t => t.id !== taskId);
+  const removeTask = (secaoIdx: number, taskId: number | string) => {
+    const updated = secoes.map((s, i) => {
+      if (i !== secaoIdx) return s;
+      return { ...s, tarefas: s.tarefas.filter(t => t.id !== taskId) };
+    });
     onUpdate(updated);
   };
 
-  const toggleStatus = (secaoIdx: number, taskId: number) => {
-    const updated = [...secoes];
-    const t = updated[secaoIdx].tarefas.find(t => t.id === taskId);
-    if (t) t.status = !t.status;
+  const toggleStatus = (secaoIdx: number, taskId: number | string) => {
+    const updated = secoes.map((s, i) => {
+      if (i !== secaoIdx) return s;
+      return { ...s, tarefas: s.tarefas.map(t => t.id === taskId ? { ...t, status: !t.status } : t) };
+    });
     onUpdate(updated);
   };
 
@@ -110,15 +115,12 @@ const TaskBoard = ({ secoes, onUpdate, coordenacao }: TaskBoardProps) => {
 
       {/* Sections */}
       {secoes.map((secao, secaoIdx) => (
-        <motion.div key={secao.titulo + secaoIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl overflow-hidden">
+        <motion.div key={(secao as any).dbId || secao.titulo + secaoIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b border-border/50">
             <h3 className="text-sm font-bold font-display text-foreground">{secao.titulo}</h3>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-muted-foreground">{secao.tarefas.filter(t => t.status).length}/{secao.tarefas.length}</span>
-              <button
-                onClick={() => setNewTask({ secaoIdx, tarefa: { ...emptyTarefa } })}
-                className="h-7 px-2.5 rounded-md bg-primary/10 text-primary text-xs font-medium flex items-center gap-1 hover:bg-primary/20 transition-colors"
-              >
+              <button onClick={() => setNewTask({ secaoIdx, tarefa: { ...emptyTarefa } })} className="h-7 px-2.5 rounded-md bg-primary/10 text-primary text-xs font-medium flex items-center gap-1 hover:bg-primary/20 transition-colors">
                 <Plus className="w-3 h-3" /> Tarefa
               </button>
               <button onClick={() => removeSecao(secaoIdx)} className="h-7 w-7 rounded-md text-destructive/60 hover:bg-destructive/10 flex items-center justify-center transition-colors">
@@ -145,16 +147,10 @@ const TaskBoard = ({ secoes, onUpdate, coordenacao }: TaskBoardProps) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => setEditingTask({ secaoIdx, tarefa: { ...tarefa } })}
-                    className="h-7 w-7 rounded-md text-muted-foreground hover:bg-muted flex items-center justify-center transition-colors"
-                  >
+                  <button onClick={() => setEditingTask({ secaoIdx, tarefa: { ...tarefa } })} className="h-7 w-7 rounded-md text-muted-foreground hover:bg-muted flex items-center justify-center transition-colors">
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    onClick={() => removeTask(secaoIdx, tarefa.id)}
-                    className="h-7 w-7 rounded-md text-destructive/60 hover:bg-destructive/10 flex items-center justify-center transition-colors"
-                  >
+                  <button onClick={() => removeTask(secaoIdx, tarefa.id)} className="h-7 w-7 rounded-md text-destructive/60 hover:bg-destructive/10 flex items-center justify-center transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -204,7 +200,7 @@ const TaskBoard = ({ secoes, onUpdate, coordenacao }: TaskBoardProps) => {
 };
 
 interface TaskFormProps {
-  tarefa: Omit<Tarefa, "id"> & { id?: number };
+  tarefa: Omit<Tarefa, "id"> & { id?: number | string };
   onChange: (t: any) => void;
   onSubmit: () => void;
   onCancel: () => void;

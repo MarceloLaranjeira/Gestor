@@ -1,10 +1,21 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
+
+interface UserProfile {
+  name: string;
+  role: string;
+  email: string;
+  user_id: string;
+}
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: { name: string; role: string; email: string } | null;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
+  user: UserProfile | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (email: string, password: string, nome: string, role?: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -15,36 +26,83 @@ export const useAuth = () => {
   return ctx;
 };
 
-const MOCK_USERS = [
-  { email: "admin@gabinete.com", password: "admin123", name: "Administrador", role: "Gestor" },
-  { email: "assessor@gabinete.com", password: "assessor123", name: "Assessor Parlamentar", role: "Assessor" },
-  { email: "coord@gabinete.com", password: "coord123", name: "Coordenador", role: "Coordenador" },
-];
+async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("nome, email, user_id")
+    .eq("user_id", userId)
+    .single();
+
+  const { data: roles } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId);
+
+  if (!profile) return null;
+
+  const role = roles?.[0]?.role || "assessor";
+  const roleLabel = role === "gestor" ? "Gestor" : role === "assessor" ? "Assessor" : "Coordenador";
+
+  return {
+    name: profile.nome,
+    email: profile.email,
+    role: roleLabel,
+    user_id: profile.user_id,
+  };
+}
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<AuthContextType["user"]>(() => {
-    const saved = localStorage.getItem("gabinete_user");
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (email: string, password: string) => {
-    const found = MOCK_USERS.find((u) => u.email === email && u.password === password);
-    if (found) {
-      const userData = { name: found.name, role: found.role, email: found.email };
-      setUser(userData);
-      localStorage.setItem("gabinete_user", JSON.stringify(userData));
-      return true;
-    }
-    return false;
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id);
+        setUser(profile);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id);
+        setUser(profile);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   };
 
-  const logout = () => {
+  const signup = async (email: string, password: string, nome: string, role = "assessor") => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { nome, role },
+        emailRedirectTo: window.location.origin,
+      },
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem("gabinete_user");
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!user, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!user, user, loading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
