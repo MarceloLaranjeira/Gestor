@@ -279,6 +279,7 @@ const GerenciarUsuarios = () => {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Cargo</TableHead>
                 <TableHead>Função</TableHead>
                 <TableHead>Coordenações</TableHead>
                 {isGestor && <TableHead className="w-24">Ações</TableHead>}
@@ -287,13 +288,13 @@ const GerenciarUsuarios = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     Nenhum usuário encontrado
                   </TableCell>
                 </TableRow>
@@ -302,6 +303,7 @@ const GerenciarUsuarios = () => {
                   <TableRow key={u.user_id}>
                     <TableCell className="font-medium">{u.nome}</TableCell>
                     <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                    <TableCell className="text-muted-foreground">{u.cargo || "—"}</TableCell>
                     <TableCell>
                       <Badge variant={u.role === "gestor" ? "default" : "secondary"}>
                         {roleLabels[u.role]}
