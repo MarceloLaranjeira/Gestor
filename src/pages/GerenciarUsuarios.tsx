@@ -58,6 +58,8 @@ const GerenciarUsuarios = () => {
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [editRole, setEditRole] = useState<AppRole>("assessor");
   const [editCoords, setEditCoords] = useState<string[]>([]);
+  const [editNome, setEditNome] = useState("");
+  const [editCargo, setEditCargo] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Create state
@@ -113,12 +115,29 @@ const GerenciarUsuarios = () => {
     setEditUser(u);
     setEditRole(u.role);
     setEditCoords([...u.coordenacao_ids]);
+    setEditNome(u.nome);
+    setEditCargo(u.cargo || "");
   };
 
   const handleSave = async () => {
     if (!editUser) return;
+    if (!editNome.trim()) {
+      toast({ title: "O nome não pode estar vazio", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
+      // Update nome/cargo in profiles
+      const profileUpdates: { nome?: string; cargo?: string } = {};
+      if (editNome.trim() !== editUser.nome) profileUpdates.nome = editNome.trim();
+      if (editCargo.trim() !== (editUser.cargo || "")) profileUpdates.cargo = editCargo.trim();
+      if (Object.keys(profileUpdates).length > 0) {
+        await supabase
+          .from("profiles")
+          .update(profileUpdates)
+          .eq("user_id", editUser.user_id);
+      }
+
       if (editRole !== editUser.role) {
         await supabase
           .from("user_roles")
@@ -334,10 +353,15 @@ const GerenciarUsuarios = () => {
           </DialogHeader>
           {editUser && (
             <div className="space-y-4 py-2">
-              <div>
-                <p className="text-sm font-medium text-foreground">{editUser.nome}</p>
-                <p className="text-xs text-muted-foreground">{editUser.email}</p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Nome</label>
+                <Input value={editNome} onChange={(e) => setEditNome(e.target.value)} placeholder="Nome completo" />
               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Cargo</label>
+                <Input value={editCargo} onChange={(e) => setEditCargo(e.target.value)} placeholder="Cargo (opcional)" />
+              </div>
+              <p className="text-xs text-muted-foreground">{editUser.email}</p>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Função</label>
                 <Select value={editRole} onValueChange={(v) => setEditRole(v as AppRole)}>
