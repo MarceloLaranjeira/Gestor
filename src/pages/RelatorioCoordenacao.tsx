@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FileText, CheckCircle2, Clock, ListTodo, Loader2 } from "lucide-react";
+import { FileText, CheckCircle2, Clock, ListTodo, Loader2, Download } from "lucide-react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -169,6 +171,63 @@ const RelatorioCoordenacao = () => {
     { name: "Pendentes", value: totalTarefas - totalConcluidas },
   ];
 
+  const handleExportPDF = () => {
+    if (!selectedCoordNome) return;
+
+    const doc = new jsPDF();
+    const now = new Date().toLocaleDateString("pt-BR");
+
+    // Title
+    doc.setFontSize(18);
+    doc.text(`Relatório — ${selectedCoordNome}`, 14, 20);
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Gerado em ${now}`, 14, 28);
+
+    // Summary
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text("Resumo Geral", 14, 40);
+    doc.setFontSize(10);
+    doc.text(`Total de tarefas: ${totalTarefas}`, 14, 48);
+    doc.text(`Concluídas: ${totalConcluidas}`, 14, 54);
+    doc.text(`Pendentes: ${totalTarefas - totalConcluidas}`, 14, 60);
+    doc.text(`Progresso: ${percentualGeral}%`, 14, 66);
+
+    // Section table
+    doc.setFontSize(12);
+    doc.text("Detalhamento por Seção", 14, 80);
+
+    autoTable(doc, {
+      startY: 85,
+      head: [["Seção", "Total", "Concluídas", "Pendentes", "Progresso"]],
+      body: secaoStats.map((s) => [
+        s.titulo,
+        s.total.toString(),
+        s.concluidas.toString(),
+        s.pendentes.toString(),
+        `${s.percentual}%`,
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [34, 84, 61] },
+    });
+
+    // Responsavel table
+    const finalY = (doc as any).lastAutoTable?.finalY || 150;
+    doc.setFontSize(12);
+    doc.text("Tarefas por Responsável", 14, finalY + 12);
+
+    autoTable(doc, {
+      startY: finalY + 17,
+      head: [["Responsável", "Tarefas"]],
+      body: responsavelStats.map((r) => [r.nome, r.total.toString()]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [34, 84, 61] },
+    });
+
+    doc.save(`relatorio-${selectedCoordNome.toLowerCase().replace(/\s+/g, "-")}.pdf`);
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -187,16 +246,27 @@ const RelatorioCoordenacao = () => {
             <h1 className="text-2xl font-bold font-display text-foreground">Relatório por Coordenação</h1>
             <p className="text-sm text-muted-foreground">Selecione uma coordenação para visualizar o relatório</p>
           </div>
-          <Select value={selectedCoord} onValueChange={setSelectedCoord}>
-            <SelectTrigger className="w-full sm:w-72">
-              <SelectValue placeholder="Selecionar coordenação" />
-            </SelectTrigger>
-            <SelectContent>
-              {coordenacoes.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            <Select value={selectedCoord} onValueChange={setSelectedCoord}>
+              <SelectTrigger className="w-full sm:w-72">
+                <SelectValue placeholder="Selecionar coordenação" />
+              </SelectTrigger>
+              <SelectContent>
+                {coordenacoes.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedCoord && !loadingReport && totalTarefas > 0 && (
+              <button
+                onClick={handleExportPDF}
+                className="h-9 px-4 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:bg-muted flex items-center gap-2 transition-colors shrink-0"
+              >
+                <Download className="w-4 h-4" />
+                PDF
+              </button>
+            )}
+          </div>
         </div>
 
         {!selectedCoord && (
