@@ -16,6 +16,7 @@ import Configuracoes from "./pages/Configuracoes";
 import GerenciarUsuarios from "./pages/GerenciarUsuarios";
 import RelatorioCoordenacao from "./pages/RelatorioCoordenacao";
 import CoordenacaoPage from "./pages/CoordenacaoPage";
+import AgenteIA from "./pages/AgenteIA";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const AppRoutes = () => (
   <Routes>
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+    <Route path="/agente-ia" element={<ProtectedRoute><AgenteIA /></ProtectedRoute>} />
     <Route path="/pessoas" element={<ProtectedRoute><Pessoas /></ProtectedRoute>} />
     <Route path="/demandas" element={<ProtectedRoute><Demandas /></ProtectedRoute>} />
     <Route path="/eventos" element={<ProtectedRoute><Eventos /></ProtectedRoute>} />
