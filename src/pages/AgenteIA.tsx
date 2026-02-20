@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, Bot, User, Sparkles, FileText, BarChart3, Lightbulb, ChevronDown, Trash2 } from "lucide-react";
+import { Send, Loader2, Bot, User, Sparkles, FileText, BarChart3, Lightbulb, Trash2 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -76,15 +77,27 @@ async function streamChat(
 
 const AgenteIA = () => {
   const { toast } = useToast();
+  const location = useLocation();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasAutoSent = useRef(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Auto-send prompt from navigation state (e.g. "Analisar com IA" from Demandas)
+  useEffect(() => {
+    const statePrompt = (location.state as { prompt?: string } | null)?.prompt;
+    if (statePrompt && !hasAutoSent.current) {
+      hasAutoSent.current = true;
+      send(statePrompt);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const send = async (text: string) => {
     if (!text.trim() || isLoading) return;

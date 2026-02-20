@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Search, Clock, CheckCircle2, AlertTriangle, ChevronRight, Edit2, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Clock, CheckCircle2, AlertTriangle, ChevronRight, Edit2, Trash2, Loader2, Bot } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,6 +57,7 @@ const emptyForm = (): Omit<Demanda, "id" | "user_id" | "created_at"> => ({
 const Demandas = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [demandas, setDemandas] = useState<Demanda[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -137,6 +139,22 @@ const Demandas = () => {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handleAnalisarIA = (d: Demanda) => {
+    const prompt = `Analise detalhadamente a seguinte demanda do gabinete do Deputado Comandante Dan e forneça insights, sugestões de encaminhamento e próximos passos estratégicos:
+
+**Título:** ${d.titulo}
+**Status:** ${statusConfig[d.status].label}
+**Prioridade:** ${d.prioridade}
+**Categoria:** ${d.categoria || "Não informada"}
+**Responsável:** ${d.responsavel || "Não definido"}
+**Solicitante:** ${d.solicitante || "Não informado"}
+**Prazo:** ${d.data_prazo ? new Date(d.data_prazo + "T00:00:00").toLocaleDateString("pt-BR") : "Não definido"}
+**Descrição:** ${d.descricao || "Sem descrição"}
+
+Por favor, forneça: 1) Análise da situação atual, 2) Riscos e oportunidades, 3) Sugestões de encaminhamento, 4) Próximos passos concretos.`;
+    navigate("/agente-ia", { state: { prompt } });
   };
 
   const filtered = demandas.filter((d) => {
@@ -238,6 +256,13 @@ const Demandas = () => {
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleAnalisarIA(demanda)}
+                          title="Analisar com IA"
+                          className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Bot className="w-3.5 h-3.5" />
+                        </button>
                         <button onClick={() => openEdit(demanda)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -294,6 +319,10 @@ const Demandas = () => {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDetailTarget(null)}>Fechar</Button>
+              <Button variant="outline" onClick={() => handleAnalisarIA(detailTarget)} className="gap-2">
+                <Bot className="w-4 h-4" />
+                Analisar com IA
+              </Button>
               <Button onClick={() => openEdit(detailTarget)}>Editar</Button>
             </DialogFooter>
           </DialogContent>
