@@ -1,0 +1,277 @@
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Settings, X, Bot, Volume2, VolumeX, MessageSquare, Mic, Loader2, Play, Square } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+export type ResponseMode = "text" | "voice" | "both";
+
+export interface AgentSettings {
+  model: string;
+  responseMode: ResponseMode;
+  voiceId: string;
+  voiceName: string;
+  stability: number;
+  speed: number;
+}
+
+export const DEFAULT_SETTINGS: AgentSettings = {
+  model: "google/gemini-2.5-flash",
+  responseMode: "both",
+  voiceId: "nPczCjzI2devNBz1zQrb",
+  voiceName: "Brian",
+  stability: 0.5,
+  speed: 1.0,
+};
+
+const MODELS = [
+  { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash (Rápido)", provider: "Google" },
+  { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro (Avançado)", provider: "Google" },
+  { value: "google/gemini-3-flash-preview", label: "Gemini 3 Flash Preview", provider: "Google" },
+  { value: "google/gemini-3-pro-preview", label: "Gemini 3 Pro Preview", provider: "Google" },
+  { value: "openai/gpt-5-mini", label: "GPT-5 Mini (Equilibrado)", provider: "OpenAI" },
+  { value: "openai/gpt-5", label: "GPT-5 (Premium)", provider: "OpenAI" },
+  { value: "openai/gpt-5-nano", label: "GPT-5 Nano (Econômico)", provider: "OpenAI" },
+];
+
+const RESPONSE_MODES = [
+  { value: "both" as ResponseMode, label: "Texto + Voz", icon: MessageSquare },
+  { value: "text" as ResponseMode, label: "Somente Texto", icon: MessageSquare },
+  { value: "voice" as ResponseMode, label: "Somente Voz", icon: Volume2 },
+];
+
+interface ElevenLabsVoice {
+  voice_id: string;
+  name: string;
+  category: string;
+  preview_url?: string;
+}
+
+interface AgentSettingsPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
+  settings: AgentSettings;
+  onChange: (s: AgentSettings) => void;
+}
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: AgentSettingsPanelProps) => {
+  const [voices, setVoices] = useState<ElevenLabsVoice[]>([]);
+  const [loadingVoices, setLoadingVoices] = useState(false);
+  const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
+  const [previewAudio, setPreviewAudio] = useState<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (isOpen && voices.length === 0) fetchVoices();
+  }, [isOpen]);
+
+  const fetchVoices = async () => {
+    setLoadingVoices(true);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/elevenlabs-voices`, {
+        headers: {
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (data.voices) setVoices(data.voices);
+    } catch (e) {
+      console.error("Error fetching voices:", e);
+    } finally {
+      setLoadingVoices(false);
+    }
+  };
+
+  const previewVoice = async (voice: ElevenLabsVoice) => {
+    if (previewAudio) {
+      previewAudio.pause();
+      previewAudio.src = "";
+    }
+    if (previewingVoice === voice.voice_id) {
+      setPreviewingVoice(null);
+      return;
+    }
+    if (voice.preview_url) {
+      setPreviewingVoice(voice.voice_id);
+      const audio = new Audio(voice.preview_url);
+      setPreviewAudio(audio);
+      audio.play();
+      audio.onended = () => setPreviewingVoice(null);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 z-40"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, x: 320 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 320 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed right-0 top-0 h-full w-96 bg-background border-l border-border z-50 flex flex-col shadow-2xl"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
+              <div className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary" />
+                <h2 className="font-bold font-display text-foreground">Configurações do Agente</h2>
+              </div>
+              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {/* Model Selection */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-primary" />
+                  <Label className="text-sm font-semibold text-foreground">Modelo de IA</Label>
+                </div>
+                <Select value={settings.model} onValueChange={(v) => onChange({ ...settings, model: v })}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Google</div>
+                    {MODELS.filter(m => m.provider === "Google").map(m => (
+                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                    ))}
+                    <div className="px-2 py-1 text-xs font-semibold text-muted-foreground mt-1">OpenAI</div>
+                    {MODELS.filter(m => m.provider === "OpenAI").map(m => (
+                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Response Mode */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-foreground">Modo de Resposta</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {RESPONSE_MODES.map((mode) => {
+                    const Icon = mode.icon;
+                    return (
+                      <button
+                        key={mode.value}
+                        onClick={() => onChange({ ...settings, responseMode: mode.value })}
+                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-medium transition-all ${
+                          settings.responseMode === mode.value
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-muted/40 text-muted-foreground hover:border-primary/50"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {mode.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Voice Settings */}
+              {settings.responseMode !== "text" && (
+                <>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Volume2 className="w-4 h-4 text-primary" />
+                      <Label className="text-sm font-semibold text-foreground">Voz do Agente</Label>
+                      {loadingVoices && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+                    </div>
+
+                    {voices.length > 0 ? (
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                        {voices.map((v) => (
+                          <div
+                            key={v.voice_id}
+                            onClick={() => onChange({ ...settings, voiceId: v.voice_id, voiceName: v.name })}
+                            className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
+                              settings.voiceId === v.voice_id
+                                ? "border-primary bg-primary/10"
+                                : "border-border hover:border-primary/50 hover:bg-muted/40"
+                            }`}
+                          >
+                            <div>
+                              <p className={`text-xs font-medium ${settings.voiceId === v.voice_id ? "text-primary" : "text-foreground"}`}>
+                                {v.name}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground capitalize">{v.category || "premade"}</p>
+                            </div>
+                            {v.preview_url && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); previewVoice(v); }}
+                                className="p-1.5 rounded-md hover:bg-primary/20 transition-colors"
+                              >
+                                {previewingVoice === v.voice_id
+                                  ? <Square className="w-3 h-3 text-primary" />
+                                  : <Play className="w-3 h-3 text-muted-foreground" />
+                                }
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : !loadingVoices ? (
+                      <p className="text-xs text-muted-foreground">Nenhuma voz carregada</p>
+                    ) : null}
+                  </div>
+
+                  {/* Stability */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-foreground">
+                      Estabilidade da Voz: <span className="text-primary">{Math.round(settings.stability * 100)}%</span>
+                    </Label>
+                    <Slider
+                      min={0} max={1} step={0.05}
+                      value={[settings.stability]}
+                      onValueChange={([v]) => onChange({ ...settings, stability: v })}
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>Mais expressivo</span>
+                      <span>Mais consistente</span>
+                    </div>
+                  </div>
+
+                  {/* Speed */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-foreground">
+                      Velocidade: <span className="text-primary">{settings.speed.toFixed(1)}x</span>
+                    </Label>
+                    <Slider
+                      min={0.7} max={1.2} step={0.05}
+                      value={[settings.speed]}
+                      onValueChange={([v]) => onChange({ ...settings, speed: v })}
+                    />
+                    <div className="flex justify-between text-[10px] text-muted-foreground">
+                      <span>Mais lento</span>
+                      <span>Mais rápido</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-border shrink-0">
+              <Button onClick={onClose} className="w-full gradient-primary text-primary-foreground border-0">
+                Salvar Configurações
+              </Button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
