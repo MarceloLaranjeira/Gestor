@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useMemo } from "react";
 import {
   Users,
   ClipboardList,
@@ -8,10 +9,14 @@ import {
   Clock,
   AlertTriangle,
   ArrowRight,
+  BarChart3,
 } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import AppLayout from "@/components/AppLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { coordenacoesIniciais } from "@/data/coordenacoes";
+import { Progress } from "@/components/ui/progress";
+import { useNavigate } from "react-router-dom";
 
 const demandaData = [
   { mes: "Set", total: 42 },
@@ -68,6 +73,38 @@ const item = {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const coordProgress = useMemo(() => {
+    return coordenacoesIniciais.map((coord) => {
+      const saved = localStorage.getItem(`coordenacao_${coord.id}`);
+      const secoes = saved ? JSON.parse(saved) : coord.secoes;
+      let total = 0;
+      let done = 0;
+      secoes.forEach((s: any) => {
+        s.tarefas.forEach((t: any) => {
+          total++;
+          if (t.status) done++;
+        });
+      });
+      const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+      return { id: coord.id, nome: coord.nome, total, done, pending: total - done, percent };
+    });
+  }, []);
+
+  const totalTarefas = coordProgress.reduce((a, c) => a + c.total, 0);
+  const totalDone = coordProgress.reduce((a, c) => a + c.done, 0);
+  const totalPercent = totalTarefas > 0 ? Math.round((totalDone / totalTarefas) * 100) : 0;
+
+  const coordColors = [
+    "hsl(var(--primary))",
+    "hsl(var(--secondary))",
+    "hsl(142, 70%, 40%)",
+    "hsl(38, 92%, 50%)",
+    "hsl(205, 70%, 45%)",
+    "hsl(280, 60%, 50%)",
+  ];
+
   return (
     <AppLayout>
       <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
@@ -223,6 +260,48 @@ const Dashboard = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </motion.div>
+
+        {/* Resumo Executivo das Coordenações */}
+        <motion.div variants={item} className="glass-card rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground font-display">Resumo Executivo — Coordenações</h3>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold font-display text-foreground">{totalPercent}%</p>
+              <p className="text-[10px] text-muted-foreground">{totalDone}/{totalTarefas} tarefas concluídas</p>
+            </div>
+          </div>
+          <div className="mb-5">
+            <Progress value={totalPercent} className="h-2.5" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {coordProgress.map((coord, i) => (
+              <button
+                key={coord.id}
+                onClick={() => navigate(`/coordenacao/${coord.id}`)}
+                className="text-left p-4 rounded-lg bg-muted/30 hover:bg-muted/60 transition-colors border border-border/30"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-foreground truncate pr-2">{coord.nome.replace("Coordenação ", "")}</span>
+                  <span className="text-xs font-bold font-display" style={{ color: coordColors[i % coordColors.length] }}>
+                    {coord.percent}%
+                  </span>
+                </div>
+                <Progress value={coord.percent} className="h-1.5 mb-2" />
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-success" /> {coord.done} concluídas
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-warning" /> {coord.pending} pendentes
+                  </span>
+                </div>
+              </button>
+            ))}
           </div>
         </motion.div>
 
