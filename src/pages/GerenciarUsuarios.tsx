@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, UserPlus, Shield, X, Check, ChevronDown } from "lucide-react";
+import { Search, UserPlus, Shield } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,10 +49,21 @@ const GerenciarUsuarios = () => {
   const [coordenacoes, setCoordenacoes] = useState<Coordenacao[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // Edit state
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [editRole, setEditRole] = useState<AppRole>("assessor");
   const [editCoords, setEditCoords] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  // Create state
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState<AppRole>("assessor");
+  const [newCoords, setNewCoords] = useState<string[]>([]);
+  const [creating, setCreating] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -100,21 +111,16 @@ const GerenciarUsuarios = () => {
   const handleSave = async () => {
     if (!editUser) return;
     setSaving(true);
-
     try {
-      // Update role
       if (editRole !== editUser.role) {
         await supabase
           .from("user_roles")
           .update({ role: editRole })
           .eq("user_id", editUser.user_id);
       }
-
-      // Sync coordenacoes: delete removed, insert added
       const oldCoords = editUser.coordenacao_ids;
       const toRemove = oldCoords.filter((id) => !editCoords.includes(id));
       const toAdd = editCoords.filter((id) => !oldCoords.includes(id));
-
       if (toRemove.length > 0) {
         await supabase
           .from("user_coordenacoes")
@@ -122,7 +128,6 @@ const GerenciarUsuarios = () => {
           .eq("user_id", editUser.user_id)
           .in("coordenacao_id", toRemove);
       }
-
       if (toAdd.length > 0) {
         await supabase.from("user_coordenacoes").insert(
           toAdd.map((coordId) => ({
@@ -131,7 +136,6 @@ const GerenciarUsuarios = () => {
           }))
         );
       }
-
       toast({ title: "Usuário atualizado com sucesso" });
       setEditUser(null);
       fetchData();
@@ -140,6 +144,50 @@ const GerenciarUsuarios = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCreate = async () => {
+    if (!newName.trim() || !newEmail.trim() || !newPassword.trim()) {
+      toast({ title: "Preencha nome, email e senha", variant: "destructive" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ title: "A senha deve ter no mínimo 6 caracteres", variant: "destructive" });
+      return;
+    }
+    setCreating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("create-user", {
+        body: {
+          email: newEmail.trim(),
+          password: newPassword,
+          nome: newName.trim(),
+          role: newRole,
+          coordenacao_ids: newCoords,
+        },
+      });
+      if (res.error || res.data?.error) {
+        toast({ title: res.data?.error || "Erro ao criar usuário", variant: "destructive" });
+      } else {
+        toast({ title: "Usuário criado com sucesso" });
+        setShowCreate(false);
+        resetCreateForm();
+        fetchData();
+      }
+    } catch {
+      toast({ title: "Erro ao criar usuário", variant: "destructive" });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const resetCreateForm = () => {
+    setNewName("");
+    setNewEmail("");
+    setNewPassword("");
+    setNewRole("assessor");
+    setNewCoords([]);
   };
 
   const filtered = users.filter(
@@ -160,6 +208,12 @@ const GerenciarUsuarios = () => {
               {users.length} usuário{users.length !== 1 ? "s" : ""} cadastrado{users.length !== 1 ? "s" : ""}
             </p>
           </div>
+          {isGestor && (
+            <Button onClick={() => setShowCreate(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Novo Usuário
+            </Button>
+          )}
         </div>
 
         <div className="relative max-w-md">
@@ -249,13 +303,10 @@ const GerenciarUsuarios = () => {
                 <p className="text-sm font-medium text-foreground">{editUser.nome}</p>
                 <p className="text-xs text-muted-foreground">{editUser.email}</p>
               </div>
-
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Função</label>
                 <Select value={editRole} onValueChange={(v) => setEditRole(v as AppRole)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="gestor">Gestor</SelectItem>
                     <SelectItem value="assessor">Assessor</SelectItem>
@@ -263,7 +314,6 @@ const GerenciarUsuarios = () => {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Coordenações</label>
                 <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-3">
@@ -285,11 +335,67 @@ const GerenciarUsuarios = () => {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditUser(null)}>
-              Cancelar
-            </Button>
+            <Button variant="outline" onClick={() => setEditUser(null)}>Cancelar</Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create dialog */}
+      <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetCreateForm(); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Novo Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Nome</label>
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome completo" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Email</label>
+              <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="email@exemplo.com" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Senha</label>
+              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Função</label>
+              <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gestor">Gestor</SelectItem>
+                  <SelectItem value="assessor">Assessor</SelectItem>
+                  <SelectItem value="coordenador">Coordenador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Coordenações</label>
+              <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-3">
+                {coordenacoes.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={newCoords.includes(c.id)}
+                      onCheckedChange={(checked) => {
+                        setNewCoords((prev) =>
+                          checked ? [...prev, c.id] : prev.filter((id) => id !== c.id)
+                        );
+                      }}
+                    />
+                    <span className="text-sm">{c.nome}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowCreate(false); resetCreateForm(); }}>Cancelar</Button>
+            <Button onClick={handleCreate} disabled={creating}>
+              {creating ? "Criando..." : "Criar Usuário"}
             </Button>
           </DialogFooter>
         </DialogContent>
