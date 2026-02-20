@@ -324,25 +324,47 @@ const AgenteIA = () => {
       return;
     }
     if (isListening && recognitionRef.current) {
+      // Stop listening — recognition.onend will handle sending
       recognitionRef.current.stop();
-      setIsListening(false);
       return;
     }
     const recognition = new SpeechRecognition();
     recognition.lang = "pt-BR";
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    let finalTranscript = "";
+
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      send(transcript);
+      let interim = "";
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscript += result[0].transcript + " ";
+        } else {
+          interim += result[0].transcript;
+        }
+      }
+      // Show interim text in input field for feedback
+      setInput(finalTranscript + interim);
     };
-    recognition.onend = () => setIsListening(false);
+
+    recognition.onend = () => {
+      setIsListening(false);
+      const text = finalTranscript.trim();
+      if (text) {
+        send(text);
+        setInput("");
+      }
+    };
+
     recognition.onerror = (e: any) => {
       setIsListening(false);
-      if (e.error !== "no-speech") {
+      if (e.error !== "no-speech" && e.error !== "aborted") {
         toast({ title: "Erro no microfone", description: "Não foi possível capturar áudio.", variant: "destructive" });
       }
     };
+
     recognitionRef.current = recognition;
     recognition.start();
     setIsListening(true);
