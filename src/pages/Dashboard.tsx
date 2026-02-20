@@ -3,14 +3,15 @@ import { useState, useEffect, useMemo } from "react";
 import {
   Users,
   ClipboardList,
-  Calendar,
-  TrendingUp,
   CheckCircle2,
   Clock,
   AlertTriangle,
   ArrowRight,
   BarChart3,
   Loader2,
+  MessageSquare,
+  Calendar,
+  MapPin,
 } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import AppLayout from "@/components/AppLayout";
@@ -78,6 +79,32 @@ interface CoordRow {
   nome: string;
 }
 
+interface DemandaStats {
+  pendente: number;
+  andamento: number;
+  concluida: number;
+  atrasada: number;
+  total: number;
+}
+
+interface ProximoEvento {
+  id: string;
+  titulo: string;
+  data: string;
+  hora: string;
+  local: string;
+  tipo: string;
+}
+
+const tipoColors: Record<string, string> = {
+  "Plenário": "bg-primary/10 text-primary",
+  "Comissão": "bg-secondary/10 text-secondary",
+  "Audiência": "bg-info/10 text-info",
+  "Visita": "bg-success/10 text-success",
+  "Interno": "bg-muted text-muted-foreground",
+  "Cultural": "bg-warning/10 text-warning",
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -86,14 +113,22 @@ const Dashboard = () => {
   const [secoes, setSecoes] = useState<SecaoRow[]>([]);
   const [coords, setCoords] = useState<CoordRow[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [totalPessoas, setTotalPessoas] = useState(0);
+  const [demandaStats, setDemandaStats] = useState<DemandaStats>({ pendente: 0, andamento: 0, concluida: 0, atrasada: 0, total: 0 });
+  const [proximosEventos, setProximosEventos] = useState<ProximoEvento[]>([]);
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [coordsRes, secoesRes, tarefasRes, profilesRes] = await Promise.all([
+      const todayStr = new Date().toISOString().split("T")[0];
+
+      const [coordsRes, secoesRes, tarefasRes, profilesRes, pessoasRes, demandasRes, eventosRes] = await Promise.all([
         supabase.from("coordenacoes").select("id, slug, nome"),
         supabase.from("secoes").select("id, coordenacao_id, titulo"),
         supabase.from("tarefas").select("id, titulo, status, responsavel, canal, data_inicio, data_fim, created_at, secao_id"),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("pessoas").select("id", { count: "exact", head: true }),
+        supabase.from("demandas").select("status"),
+        supabase.from("eventos").select("id, titulo, data, hora, local, tipo").gte("data", todayStr).order("data").order("hora").limit(4),
       ]);
 
       const coordsData = coordsRes.data || [];
@@ -104,6 +139,20 @@ const Dashboard = () => {
       setSecoes(secoesData);
       setTarefas(tarefasData);
       setTotalUsers(profilesRes.count || 0);
+      setTotalPessoas(pessoasRes.count || 0);
+
+      // Demandas stats
+      const demandas = demandasRes.data || [];
+      setDemandaStats({
+        total: demandas.length,
+        pendente: demandas.filter((d) => d.status === "pendente").length,
+        andamento: demandas.filter((d) => d.status === "andamento").length,
+        concluida: demandas.filter((d) => d.status === "concluida").length,
+        atrasada: demandas.filter((d) => d.status === "atrasada").length,
+      });
+
+      // Próximos eventos
+      setProximosEventos((eventosRes.data as ProximoEvento[]) || []);
 
       // Coord progress
       const secaoToCoord: Record<string, string> = {};
@@ -220,12 +269,20 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Stats */}
+        {/* Stats Row 1 — Tarefas + Usuários + Pessoas */}
         <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title="Total de Tarefas" value={totalTarefas} subtitle={`${coords.length} coordenações`} icon={<ClipboardList className="w-5 h-5 text-primary" />} href="/relatorio-coordenacao" />
           <StatCard title="Concluídas" value={totalDone} subtitle={`${totalPercent}% do total`} icon={<CheckCircle2 className="w-5 h-5 text-success" />} href="/relatorio-coordenacao" />
           <StatCard title="Atrasadas" value={overdue.length} subtitle={`${upcoming.length} vencem esta semana`} icon={<AlertTriangle className="w-5 h-5 text-destructive" />} href="/relatorio-coordenacao" />
           <StatCard title="Usuários" value={totalUsers} subtitle="Cadastrados no sistema" icon={<Users className="w-5 h-5 text-secondary" />} href="/usuarios" />
+        </motion.div>
+
+        {/* Stats Row 2 — Pessoas + Demandas */}
+        <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard title="Pessoas" value={totalPessoas} subtitle="Contatos cadastrados" icon={<Users className="w-5 h-5 text-primary" />} href="/pessoas" />
+          <StatCard title="Demandas" value={demandaStats.total} subtitle={`${demandaStats.pendente} pendentes`} icon={<MessageSquare className="w-5 h-5 text-warning" />} href="/demandas" />
+          <StatCard title="Em Andamento" value={demandaStats.andamento} subtitle={`${demandaStats.concluida} concluídas`} icon={<Clock className="w-5 h-5 text-info" />} href="/demandas" />
+          <StatCard title="Próximos Eventos" value={proximosEventos.length} subtitle="Agendados a partir de hoje" icon={<Calendar className="w-5 h-5 text-secondary" />} href="/eventos" />
         </motion.div>
 
         {/* Charts Row */}
@@ -263,6 +320,82 @@ const Dashboard = () => {
                   <span className="font-semibold text-foreground">{s.value}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Demandas + Eventos Row */}
+        <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Demandas por Status */}
+          <div className="glass-card rounded-xl p-5 cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/demandas")}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-foreground font-display">Demandas por Status</h3>
+              <span className="text-xs text-primary font-medium flex items-center gap-1 hover:underline">Ver todas <ArrowRight className="w-3 h-3" /></span>
+            </div>
+            <div className="space-y-3">
+              {[
+                { label: "Pendentes", value: demandaStats.pendente, color: "hsl(38, 92%, 50%)", bg: "bg-warning/10" },
+                { label: "Em Andamento", value: demandaStats.andamento, color: "hsl(205, 70%, 45%)", bg: "bg-info/10" },
+                { label: "Concluídas", value: demandaStats.concluida, color: "hsl(142, 70%, 40%)", bg: "bg-success/10" },
+                { label: "Atrasadas", value: demandaStats.atrasada, color: "hsl(0, 72%, 51%)", bg: "bg-destructive/10" },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center gap-3">
+                  <div className="w-24 shrink-0">
+                    <span className="text-xs text-muted-foreground">{s.label}</span>
+                  </div>
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: demandaStats.total > 0 ? `${Math.round((s.value / demandaStats.total) * 100)}%` : "0%",
+                        backgroundColor: s.color,
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-foreground w-6 text-right">{s.value}</span>
+                </div>
+              ))}
+              {demandaStats.total === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">Nenhuma demanda cadastrada</p>
+              )}
+            </div>
+          </div>
+
+          {/* Próximos Eventos */}
+          <div className="glass-card rounded-xl p-5 cursor-pointer hover:shadow-lg transition-all duration-200" onClick={() => navigate("/eventos")}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-foreground font-display">Próximos Eventos</h3>
+              <span className="text-xs text-primary font-medium flex items-center gap-1 hover:underline">Ver agenda <ArrowRight className="w-3 h-3" /></span>
+            </div>
+            <div className="space-y-3">
+              {proximosEventos.map((evento) => {
+                const date = new Date(evento.data + "T00:00:00");
+                return (
+                  <div key={evento.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                    <div className="text-center shrink-0 px-2 py-1.5 rounded-md bg-primary/10">
+                      <p className="text-lg font-bold font-display text-primary leading-none">{String(date.getDate()).padStart(2, "0")}</p>
+                      <p className="text-[10px] text-muted-foreground">/{String(date.getMonth() + 1).padStart(2, "0")}</p>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-foreground leading-snug truncate">{evento.titulo}</p>
+                      <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+                        <span>{evento.hora}</span>
+                        {evento.local && (
+                          <span className="flex items-center gap-0.5 truncate">
+                            <MapPin className="w-2.5 h-2.5 shrink-0" /> {evento.local}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${tipoColors[evento.tipo] || "bg-muted text-muted-foreground"}`}>
+                      {evento.tipo}
+                    </span>
+                  </div>
+                );
+              })}
+              {proximosEventos.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">Nenhum evento próximo agendado</p>
+              )}
             </div>
           </div>
         </motion.div>
@@ -377,9 +510,9 @@ const Dashboard = () => {
         <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { icon: BarChart3, label: "Rel. Coordenação", color: "bg-primary/10 text-primary", path: "/relatorio-coordenacao" },
-            { icon: Users, label: "Usuários", color: "bg-secondary/10 text-secondary", path: "/usuarios" },
-            { icon: ClipboardList, label: "Relatórios", color: "bg-accent/10 text-accent-foreground", path: "/relatorios" },
-            { icon: AlertTriangle, label: `${overdue.length} Atrasadas`, color: "bg-destructive/10 text-destructive", path: "/relatorio-coordenacao" },
+            { icon: MessageSquare, label: "Demandas", color: "bg-warning/10 text-warning", path: "/demandas" },
+            { icon: Calendar, label: "Eventos", color: "bg-secondary/10 text-secondary", path: "/eventos" },
+            { icon: Users, label: "Pessoas", color: "bg-success/10 text-success", path: "/pessoas" },
           ].map((action) => (
             <button key={action.label} onClick={() => navigate(action.path)} className="glass-card rounded-xl p-4 flex flex-col items-center gap-2 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 cursor-pointer">
               <div className={`w-10 h-10 rounded-lg ${action.color} flex items-center justify-center`}>
