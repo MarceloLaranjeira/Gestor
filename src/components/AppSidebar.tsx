@@ -42,6 +42,7 @@ const navItems = [
 
 const bottomItems = [
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
+  { icon: Users, label: "Usuários", path: "/usuarios" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
