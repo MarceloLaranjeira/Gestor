@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Calendar,
   BarChart3,
+  FileText,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -42,6 +43,7 @@ const navItems = [
 
 const bottomItems = [
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
+  { icon: FileText, label: "Rel. Coordenação", path: "/relatorio-coordenacao" },
   { icon: Users, label: "Usuários", path: "/usuarios" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
