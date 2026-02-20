@@ -6,6 +6,43 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Convert file from storage to base64
+async function getFileAsBase64(
+  supabase: any,
+  storagePath: string,
+): Promise<{ data: string; mimeType: string }> {
+  const { data: fileData, error } = await supabase.storage
+    .from("agent-uploads")
+    .download(storagePath);
+
+  if (error || !fileData) {
+    throw new Error(`Failed to download file: ${error?.message}`);
+  }
+
+  const arrayBuffer = await fileData.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64 = btoa(binary);
+
+  const ext = storagePath.split(".").pop()?.toLowerCase();
+  const mimeTypes: Record<string, string> = {
+    pdf: "application/pdf",
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    webp: "image/webp",
+    gif: "image/gif",
+    bmp: "image/bmp",
+    tiff: "image/tiff",
+  };
+  const mimeType = mimeTypes[ext || ""] || "application/octet-stream";
+
+  return { data: base64, mimeType };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -16,11 +53,11 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const { messages, model } = await req.json();
+    const { messages, model, attachments } = await req.json();
 
-    // Fetch real system data to give the agent full context
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Fetch system data
     const [coordsRes, secoesRes, tarefasRes, demandasRes, eventosRes, pessoasRes] = await Promise.all([
       supabase.from("coordenacoes").select("nome, descricao, slug"),
       supabase.from("secoes").select("titulo, coordenacao_id"),
@@ -37,7 +74,6 @@ serve(async (req) => {
     const eventos = eventosRes.data || [];
     const pessoas = pessoasRes.data || [];
 
-    // Build contextual summaries
     const totalTarefas = tarefas.length;
     const tarefasConcluidas = tarefas.filter(t => t.status).length;
     const tarefasPendentes = totalTarefas - tarefasConcluidas;
@@ -57,15 +93,6 @@ serve(async (req) => {
       if (d.categoria) acc[d.categoria] = (acc[d.categoria] || 0) + 1;
       return acc;
     }, {});
-
-    // Coord progress
-    const secaoToCoord: Record<string, string> = {};
-    secoes.forEach(s => { secaoToCoord[s.titulo] = s.coordenacao_id; });
-
-    const coordProgress = coords.map(c => {
-      const coordSecoes = secoes.filter(s => s.coordenacao_id === (coords.find(cc => cc.slug === c.slug) as any)?.id);
-      return `${c.nome}: ${c.descricao || "sem descrição"}`;
-    });
 
     const systemPrompt = `Você é o Assessor de Inteligência Digital do Deputado Estadual Comandante Dan, especializado em gestão parlamentar, análise política e governança pública no Amazonas.
 
@@ -112,6 +139,7 @@ Cidades atendidas: ${[...new Set(pessoas.map(p => p.cidade).filter(Boolean))].jo
 4. **Gestão de demandas**: Ajude a priorizar, categorizar e resolver demandas
 5. **Planejamento**: Sugira pautas, ações legislativas e iniciativas para o mandato
 6. **Análise de riscos**: Identifique gargalos, atrasos e áreas críticas
+7. **Análise de documentos**: Analise PDFs, imagens e documentos enviados pelo usuário
 
 ## DIRETRIZES
 - Sempre baseie suas respostas nos dados reais fornecidos acima
@@ -119,10 +147,66 @@ Cidades atendidas: ${[...new Set(pessoas.map(p => p.cidade).filter(Boolean))].jo
 - Use formatação markdown com títulos, listas e tabelas quando relevante
 - Quando sugerir ações, seja específico e prático
 - Identifique padrões, tendências e pontos de atenção nos dados
+- Quando receber documentos ou imagens, analise seu conteúdo em detalhes
 - Data de hoje: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`;
 
-    // Default model if not provided
+    // Process attachments: download files from storage and convert to base64
+    const processedAttachments: Array<{ data: string; mimeType: string; fileName: string }> = [];
+    
+    if (attachments && Array.isArray(attachments)) {
+      for (const att of attachments) {
+        try {
+          const result = await getFileAsBase64(supabase, att.storagePath);
+          processedAttachments.push({ ...result, fileName: att.fileName || att.storagePath });
+        } catch (e) {
+          console.error("Error processing attachment:", att.storagePath, e);
+        }
+      }
+    }
+
+    // Build messages for the AI, converting last user message to multimodal if attachments exist
+    const aiMessages: any[] = [{ role: "system", content: systemPrompt }];
+
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      
+      // If this is the last user message and we have attachments, make it multimodal
+      if (i === messages.length - 1 && msg.role === "user" && processedAttachments.length > 0) {
+        const contentParts: any[] = [
+          { type: "text", text: msg.content || "Analise este(s) documento(s) em detalhes." },
+        ];
+
+        for (const att of processedAttachments) {
+          if (att.mimeType === "application/pdf") {
+            // For PDFs, send as image_url with data URI (Gemini handles PDFs this way through OpenAI-compatible API)
+            contentParts.push({
+              type: "image_url",
+              image_url: {
+                url: `data:${att.mimeType};base64,${att.data}`,
+              },
+            });
+          } else {
+            // For images
+            contentParts.push({
+              type: "image_url",
+              image_url: {
+                url: `data:${att.mimeType};base64,${att.data}`,
+              },
+            });
+          }
+        }
+
+        aiMessages.push({ role: "user", content: contentParts });
+      } else {
+        aiMessages.push(msg);
+      }
+    }
+
     const selectedModel = model || "google/gemini-2.5-flash";
+    // Use vision-capable model for attachments
+    const effectiveModel = processedAttachments.length > 0 && selectedModel === "google/gemini-2.5-flash"
+      ? "google/gemini-2.5-flash"
+      : selectedModel;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -131,11 +215,8 @@ Cidades atendidas: ${[...new Set(pessoas.map(p => p.cidade).filter(Boolean))].jo
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: selectedModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
+        model: effectiveModel,
+        messages: aiMessages,
         stream: true,
       }),
     });

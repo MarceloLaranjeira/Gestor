@@ -3,15 +3,28 @@ import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Loader2, Bot, User, Sparkles, FileText, BarChart3,
-  Lightbulb, Trash2, Settings, Mic, MicOff, Volume2, VolumeX,
+  Lightbulb, Trash2, Settings, Mic, MicOff, Volume2,
+  Paperclip, X, Image as ImageIcon, File,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import { AgentSettingsPanel, DEFAULT_SETTINGS, type AgentSettings, type ResponseMode } from "@/components/AgentSettingsPanel";
+import { supabase } from "@/integrations/supabase/client";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Attachment = {
+  file: File;
+  preview?: string;
+  storagePath?: string;
+  uploading?: boolean;
+};
+
+type Msg = {
+  role: "user" | "assistant";
+  content: string;
+  attachments?: Array<{ fileName: string; type: string; preview?: string }>;
+};
 
 const AGENT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agente-ia`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
@@ -24,18 +37,29 @@ const QUICK_PROMPTS = [
   { icon: Sparkles, label: "Pauta da Semana", prompt: "Com base nos eventos próximos, demandas urgentes e tarefas atrasadas, sugira uma pauta de trabalho priorizada para esta semana. Organize por urgência e impacto." },
 ];
 
+const ACCEPTED_TYPES = [
+  "application/pdf",
+  "image/png", "image/jpeg", "image/webp", "image/gif", "image/bmp",
+];
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 // --- Streaming chat ---
 async function streamChat(
   messages: Msg[],
   model: string,
+  attachments: Array<{ storagePath: string; fileName: string }>,
   onDelta: (text: string) => void,
   onDone: () => void,
   onError: (msg: string) => void
 ) {
+  // Send only role+content for AI messages
+  const cleanMessages = messages.map(m => ({ role: m.role, content: m.content }));
+
   const resp = await fetch(AGENT_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
-    body: JSON.stringify({ messages, model }),
+    body: JSON.stringify({ messages: cleanMessages, model, attachments }),
   });
 
   if (!resp.ok) {
@@ -82,7 +106,6 @@ async function streamChat(
 
 // --- TTS ---
 async function speakText(text: string, settings: AgentSettings): Promise<void> {
-  // Strip markdown for TTS
   const clean = text
     .replace(/#{1,6}\s/g, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
@@ -116,7 +139,6 @@ async function speakText(text: string, settings: AgentSettings): Promise<void> {
   });
 }
 
-// --- Speech recognition ---
 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
 const AgenteIA = () => {
@@ -128,6 +150,7 @@ const AgenteIA = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<Attachment[]>([]);
   const [settings, setSettings] = useState<AgentSettings>(() => {
     try {
       const saved = localStorage.getItem("agent-settings");
@@ -136,6 +159,7 @@ const AgenteIA = () => {
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const hasAutoSent = useRef(false);
   const recognitionRef = useRef<any>(null);
 
@@ -143,12 +167,10 @@ const AgenteIA = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Save settings to localStorage
   useEffect(() => {
     localStorage.setItem("agent-settings", JSON.stringify(settings));
   }, [settings]);
 
-  // Auto-send prompt from navigation state
   useEffect(() => {
     const statePrompt = (location.state as { prompt?: string } | null)?.prompt;
     if (statePrompt && !hasAutoSent.current) {
@@ -158,16 +180,82 @@ const AgenteIA = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const modeIcon = (mode: ResponseMode) => {
-    if (mode === "voice") return Volume2;
-    if (mode === "text") return null;
-    return Volume2;
+  // Upload file to storage
+  const uploadFile = async (file: File): Promise<string> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Usuário não autenticado");
+
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from("agent-uploads")
+      .upload(path, file, { contentType: file.type });
+
+    if (error) throw error;
+    return path;
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newAttachments: Attachment[] = [];
+    for (const file of Array.from(files)) {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        toast({ title: "Formato não suportado", description: `${file.name}: Use PDF, PNG, JPG ou WebP.`, variant: "destructive" });
+        continue;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        toast({ title: "Arquivo muito grande", description: `${file.name}: máximo 10MB.`, variant: "destructive" });
+        continue;
+      }
+      const preview = file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined;
+      newAttachments.push({ file, preview });
+    }
+
+    setPendingFiles(prev => [...prev, ...newAttachments]);
+    e.target.value = "";
+  };
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles(prev => {
+      const removed = prev[index];
+      if (removed.preview) URL.revokeObjectURL(removed.preview);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const send = useCallback(async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if ((!text.trim() && pendingFiles.length === 0) || isLoading) return;
 
-    const userMsg: Msg = { role: "user", content: text.trim() };
+    // Upload pending files first
+    const uploadedAttachments: Array<{ storagePath: string; fileName: string }> = [];
+    const msgAttachments: Array<{ fileName: string; type: string; preview?: string }> = [];
+
+    if (pendingFiles.length > 0) {
+      for (const att of pendingFiles) {
+        try {
+          const storagePath = await uploadFile(att.file);
+          uploadedAttachments.push({ storagePath, fileName: att.file.name });
+          msgAttachments.push({
+            fileName: att.file.name,
+            type: att.file.type,
+            preview: att.preview,
+          });
+        } catch (e) {
+          toast({ title: "Erro no upload", description: `Falha ao enviar ${att.file.name}`, variant: "destructive" });
+        }
+      }
+      setPendingFiles([]);
+    }
+
+    const displayText = text.trim() || `📎 ${msgAttachments.map(a => a.fileName).join(", ")}`;
+    const userMsg: Msg = {
+      role: "user",
+      content: displayText,
+      attachments: msgAttachments.length > 0 ? msgAttachments : undefined,
+    };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput("");
@@ -194,19 +282,18 @@ const AgenteIA = () => {
       await streamChat(
         newMessages,
         settings.model,
+        uploadedAttachments,
         upsertAssistant,
         async () => {
           setIsLoading(false);
-          // If voice-only mode, add the message now
           if (settings.responseMode === "voice") {
             setMessages((prev) => [...prev, { role: "assistant", content: fullResponse }]);
           }
-          // Speak if voice enabled
           if (settings.responseMode !== "text" && fullResponse) {
             setIsSpeaking(true);
             try {
               await speakText(fullResponse, settings);
-            } catch (e) {
+            } catch {
               toast({ title: "Erro de voz", description: "Não foi possível reproduzir o áudio.", variant: "destructive" });
             } finally {
               setIsSpeaking(false);
@@ -222,7 +309,7 @@ const AgenteIA = () => {
       setIsLoading(false);
       toast({ title: "Erro de conexão", description: "Não foi possível conectar ao agente.", variant: "destructive" });
     }
-  }, [messages, isLoading, settings, toast]);
+  }, [messages, isLoading, settings, toast, pendingFiles]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -236,23 +323,19 @@ const AgenteIA = () => {
       toast({ title: "Não suportado", description: "Reconhecimento de voz não suportado neste navegador.", variant: "destructive" });
       return;
     }
-
     if (isListening && recognitionRef.current) {
       recognitionRef.current.stop();
       setIsListening(false);
       return;
     }
-
     const recognition = new SpeechRecognition();
     recognition.lang = "pt-BR";
     recognition.continuous = false;
     recognition.interimResults = false;
-
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       send(transcript);
     };
-
     recognition.onend = () => setIsListening(false);
     recognition.onerror = (e: any) => {
       setIsListening(false);
@@ -260,7 +343,6 @@ const AgenteIA = () => {
         toast({ title: "Erro no microfone", description: "Não foi possível capturar áudio.", variant: "destructive" });
       }
     };
-
     recognitionRef.current = recognition;
     recognition.start();
     setIsListening(true);
@@ -336,7 +418,7 @@ const AgenteIA = () => {
                 <h2 className="text-lg font-bold font-display text-foreground mb-1">Assessor de Inteligência Digital</h2>
                 <p className="text-sm text-muted-foreground max-w-md">
                   Especialista em gestão parlamentar com acesso em tempo real aos dados do mandato.
-                  Gere relatórios, analise demandas e obtenha insights estratégicos — por texto ou voz.
+                  Gere relatórios, analise demandas e envie documentos para análise — por texto ou voz.
                 </p>
               </div>
 
@@ -381,6 +463,25 @@ const AgenteIA = () => {
                     ? "gradient-primary text-primary-foreground rounded-tr-sm"
                     : "glass-card rounded-tl-sm"
                 }`}>
+                  {/* Show attachments */}
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {msg.attachments.map((att, ai) => (
+                        <div key={ai} className="flex items-center gap-1.5 bg-white/20 rounded-lg px-2 py-1">
+                          {att.type.startsWith("image/") ? (
+                            att.preview ? (
+                              <img src={att.preview} alt={att.fileName} className="w-12 h-12 rounded object-cover" />
+                            ) : (
+                              <ImageIcon className="w-4 h-4" />
+                            )
+                          ) : (
+                            <File className="w-4 h-4" />
+                          )}
+                          <span className="text-[10px] max-w-[100px] truncate">{att.fileName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {msg.role === "assistant" ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none text-foreground prose-headings:font-display prose-headings:text-foreground prose-p:text-foreground/90 prose-li:text-foreground/90 prose-strong:text-foreground prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1 prose-code:rounded">
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -400,13 +501,46 @@ const AgenteIA = () => {
               </div>
               <div className="glass-card rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                <span className="text-xs text-muted-foreground">Analisando dados do mandato...</span>
+                <span className="text-xs text-muted-foreground">
+                  {pendingFiles.length > 0 ? "Analisando documentos..." : "Analisando dados do mandato..."}
+                </span>
               </div>
             </motion.div>
           )}
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Pending files preview */}
+        {pendingFiles.length > 0 && (
+          <div className="shrink-0 px-1 pt-2">
+            <div className="flex flex-wrap gap-2">
+              {pendingFiles.map((att, i) => (
+                <div key={i} className="relative group glass-card rounded-lg p-2 flex items-center gap-2">
+                  {att.preview ? (
+                    <img src={att.preview} alt={att.file.name} className="w-10 h-10 rounded object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center">
+                      <File className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
+                  <div className="max-w-[120px]">
+                    <p className="text-xs text-foreground truncate">{att.file.name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {(att.file.size / 1024 / 1024).toFixed(1)} MB
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => removePendingFile(i)}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Input */}
         <div className="shrink-0 pt-3 border-t border-border">
@@ -425,6 +559,24 @@ const AgenteIA = () => {
               {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
 
+            {/* File upload button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="shrink-0 h-9 w-9 rounded-lg flex items-center justify-center hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all"
+              title="Enviar PDF ou imagem"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
             <textarea
               ref={textareaRef}
               value={input}
@@ -433,7 +585,9 @@ const AgenteIA = () => {
               placeholder={
                 isListening
                   ? "Ouvindo... fale sua pergunta"
-                  : "Peça um relatório, análise ou insight... (Enter para enviar)"
+                  : pendingFiles.length > 0
+                    ? "Descreva o que analisar no documento... (Enter para enviar)"
+                    : "Peça um relatório, análise ou insight... (Enter para enviar)"
               }
               rows={1}
               style={{ resize: "none", maxHeight: "120px", overflowY: "auto" }}
@@ -447,7 +601,7 @@ const AgenteIA = () => {
 
             <Button
               onClick={() => send(input)}
-              disabled={!input.trim() || isLoading}
+              disabled={(!input.trim() && pendingFiles.length === 0) || isLoading}
               size="sm"
               className="gradient-primary text-primary-foreground border-0 shrink-0 h-9 w-9 p-0"
             >
@@ -455,7 +609,7 @@ const AgenteIA = () => {
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground text-center mt-1.5">
-            🎤 Microfone · Shift+Enter para nova linha · Dados em tempo real ·{" "}
+            🎤 Microfone · 📎 PDF/Imagem · Shift+Enter para nova linha ·{" "}
             <span className="capitalize">{settings.voiceName || "Brian"}</span>
           </p>
         </div>
