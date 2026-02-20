@@ -226,6 +226,26 @@ const RelatorioCoordenacao = () => {
       headStyles: { fillColor: [34, 84, 61] },
     });
 
+    // Tarefas table
+    const finalY2 = (doc as any).lastAutoTable?.finalY || 200;
+    doc.setFontSize(12);
+    doc.text("Lista Completa de Tarefas", 14, finalY2 + 12);
+
+    autoTable(doc, {
+      startY: finalY2 + 17,
+      head: [["Título", "Status", "Responsável", "Canal", "Início", "Fim"]],
+      body: tarefas.map((t) => [
+        t.titulo,
+        t.status ? "Concluída" : "Pendente",
+        t.responsavel || "—",
+        t.canal || "—",
+        t.data_inicio || "—",
+        t.data_fim || "—",
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [34, 84, 61] },
+    });
+
     doc.save(`relatorio-${selectedCoordNome.toLowerCase().replace(/\s+/g, "-")}.pdf`);
   };
 
