@@ -128,6 +128,45 @@ export type Database = {
         }
         Relationships: []
       }
+      movimentos_financeiros: {
+        Row: {
+          categoria: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          observacao: string
+          tipo: string
+          updated_at: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao: string
+          id?: string
+          observacao?: string
+          tipo?: string
+          updated_at?: string
+          user_id: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          observacao?: string
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       pessoas: {
         Row: {
           bairro: string
