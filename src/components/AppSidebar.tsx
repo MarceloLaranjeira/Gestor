@@ -1,30 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import logoDan from "@/assets/logo-dan.png";
 import { useSidebarState } from "./AppLayout";
 import {
-  LayoutDashboard,
-  Users,
-  ClipboardList,
-  Calendar,
-  BarChart3,
-  FileText,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  LogOut,
-  Shield,
-  MessageSquare,
-  Church,
-  Megaphone,
-  Database,
-  Building2,
-  UsersRound,
-  Bot,
-  Wallet,
+  LayoutDashboard, Users, ClipboardList, Calendar, BarChart3, FileText, Settings,
+  ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare, Church,
+  Megaphone, Database, Building2, UsersRound, Bot, Wallet, KeyRound,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions, getModuleForRoute } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
 
 const coordenacaoItems = [
@@ -36,21 +20,24 @@ const coordenacaoItems = [
   { icon: UsersRound, label: "Equipe CMT Dan", path: "/coordenacao/equipe" },
 ];
 
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Bot, label: "Assessor IA", path: "/agente-ia" },
-  { icon: Users, label: "Pessoas", path: "/pessoas" },
-  { icon: ClipboardList, label: "Demandas", path: "/demandas" },
-  { icon: Calendar, label: "Eventos", path: "/eventos" },
-  { icon: Wallet, label: "Financeiro", path: "/financas" },
-  { icon: MessageSquare, label: "Movimentos", path: "/movimentos" },
+interface NavItem { icon: any; label: string; path: string; module?: string }
+
+const navItems: NavItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/", module: "dashboard" },
+  { icon: Bot, label: "Assessor IA", path: "/agente-ia", module: "agente-ia" },
+  { icon: Users, label: "Pessoas", path: "/pessoas", module: "pessoas" },
+  { icon: ClipboardList, label: "Demandas", path: "/demandas", module: "demandas" },
+  { icon: Calendar, label: "Eventos", path: "/eventos", module: "eventos" },
+  { icon: Wallet, label: "Financeiro", path: "/financas", module: "financas" },
+  { icon: MessageSquare, label: "Movimentos", path: "/movimentos", module: "movimentos" },
 ];
 
-const bottomItems = [
-  { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
-  { icon: FileText, label: "Rel. Coordenação", path: "/relatorio-coordenacao" },
-  { icon: Users, label: "Usuários", path: "/usuarios" },
-  { icon: Settings, label: "Configurações", path: "/configuracoes" },
+const bottomItems: NavItem[] = [
+  { icon: BarChart3, label: "Relatórios", path: "/relatorios", module: "relatorios" },
+  { icon: FileText, label: "Rel. Coordenação", path: "/relatorio-coordenacao", module: "relatorio-coordenacao" },
+  { icon: Users, label: "Usuários", path: "/usuarios", module: "usuarios" },
+  { icon: KeyRound, label: "Permissões", path: "/permissoes", module: "usuarios" },
+  { icon: Settings, label: "Configurações", path: "/configuracoes", module: "configuracoes" },
 ];
 
 export const SIDEBAR_WIDTH = 250;
@@ -61,10 +48,20 @@ const AppSidebar = () => {
   const [coordOpen, setCoordOpen] = useState(true);
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { hasAccess, loading: permLoading } = usePermissions();
 
   const isCoordActive = location.pathname.startsWith("/coordenacao");
+  const isGestor = user?.role === "Gestor";
 
-  const renderLink = (item: { icon: any; label: string; path: string }, small = false) => {
+  const canSee = (item: NavItem) => {
+    if (!item.module) return true;
+    return hasAccess(item.module);
+  };
+
+  const renderLink = (item: NavItem, small = false) => {
+    if (!canSee(item)) return null;
+    // Permissões page only for gestor
+    if (item.path === "/permissoes" && !isGestor) return null;
     const isActive = location.pathname === item.path;
     const Icon = item.icon;
     return (
@@ -84,6 +81,8 @@ const AppSidebar = () => {
       </Link>
     );
   };
+
+  const showCoord = hasAccess("coordenacoes");
 
   return (
     <aside
@@ -111,33 +110,32 @@ const AppSidebar = () => {
         {navItems.map((item) => renderLink(item))}
 
         {/* Coordenações expandable */}
-        <div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setCoordOpen(!coordOpen);
-            }}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 w-full cursor-pointer",
-              isCoordActive
-                ? "bg-sidebar-accent text-sidebar-primary font-semibold"
-                : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+        {showCoord && (
+          <div>
+            <button
+              onClick={(e) => { e.stopPropagation(); setCoordOpen(!coordOpen); }}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 w-full cursor-pointer",
+                isCoordActive
+                  ? "bg-sidebar-accent text-sidebar-primary font-semibold"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              )}
+            >
+              <ClipboardList className="w-5 h-5 shrink-0" />
+              {!collapsed && (
+                <>
+                  <span className="truncate flex-1 text-left text-xs">Coordenações</span>
+                  <ChevronDown className={cn("w-4 h-4 transition-transform", coordOpen && "rotate-180")} />
+                </>
+              )}
+            </button>
+            {coordOpen && !collapsed && (
+              <div className="mt-1 space-y-0.5">
+                {coordenacaoItems.map((item) => renderLink(item as NavItem, true))}
+              </div>
             )}
-          >
-            <ClipboardList className="w-5 h-5 shrink-0" />
-            {!collapsed && (
-              <>
-                <span className="truncate flex-1 text-left text-xs">Coordenações</span>
-                <ChevronDown className={cn("w-4 h-4 transition-transform", coordOpen && "rotate-180")} />
-              </>
-            )}
-          </button>
-          {coordOpen && !collapsed && (
-            <div className="mt-1 space-y-0.5">
-              {coordenacaoItems.map((item) => renderLink(item, true))}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="my-2 border-t border-sidebar-border/50" />
         {bottomItems.map((item) => renderLink(item))}
@@ -152,10 +150,7 @@ const AppSidebar = () => {
           </div>
         )}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            logout();
-          }}
+          onClick={(e) => { e.stopPropagation(); logout(); }}
           className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0" />
@@ -165,17 +160,10 @@ const AppSidebar = () => {
 
       {/* Collapse toggle */}
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setCollapsed(!collapsed);
-        }}
+        onClick={(e) => { e.stopPropagation(); setCollapsed(!collapsed); }}
         className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-card border border-border flex items-center justify-center shadow-sm hover:bg-muted transition-colors z-50 cursor-pointer"
       >
-        {collapsed ? (
-          <ChevronRight className="w-3.5 h-3.5 text-foreground" />
-        ) : (
-          <ChevronLeft className="w-3.5 h-3.5 text-foreground" />
-        )}
+        {collapsed ? <ChevronRight className="w-3.5 h-3.5 text-foreground" /> : <ChevronLeft className="w-3.5 h-3.5 text-foreground" />}
       </button>
     </aside>
   );
