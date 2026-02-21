@@ -41,8 +41,7 @@ async function generateWithElevenLabs(text: string, voiceId: string, stability: 
   return response.arrayBuffer();
 }
 
-async function generateWithGoogle(text: string, apiKey: string, speed: number): Promise<ArrayBuffer> {
-  // Use Gemini 2.5 Flash Preview TTS via Google AI Studio API
+async function generateWithGoogle(text: string, apiKey: string, speed: number, voiceName = "Kore"): Promise<ArrayBuffer> {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
     {
@@ -54,9 +53,7 @@ async function generateWithGoogle(text: string, apiKey: string, speed: number): 
           responseModalities: ["AUDIO"],
           speechConfig: {
             voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: "Kore",
-              },
+              prebuiltVoiceConfig: { voiceName },
             },
           },
         },
@@ -164,7 +161,7 @@ serve(async (req) => {
       });
     }
 
-    const { text, provider, voiceId, stability, speed, googleApiKey, openaiApiKey } = await req.json();
+    const { text, provider, voiceId, stability, speed, googleApiKey, openaiApiKey, googleVoiceName } = await req.json();
 
     if (!text) {
       return new Response(JSON.stringify({ error: "text é obrigatório" }), {
@@ -178,7 +175,7 @@ serve(async (req) => {
     switch (provider) {
       case "google":
         if (!googleApiKey) throw new Error("Chave de API do Google não fornecida");
-        audioBuffer = await generateWithGoogle(text, googleApiKey, speed);
+        audioBuffer = await generateWithGoogle(text, googleApiKey, speed, googleVoiceName || "Kore");
         break;
       case "openai":
         if (!openaiApiKey) throw new Error("Chave de API da OpenAI não fornecida");

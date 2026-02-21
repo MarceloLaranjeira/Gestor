@@ -140,6 +140,7 @@ async function speakText(text: string, settings: AgentSettings): Promise<void> {
       speed: settings.speed,
       googleApiKey: settings.googleTtsApiKey || undefined,
       openaiApiKey: settings.openaiTtsApiKey || undefined,
+      googleVoiceName: settings.googleVoiceName || "Kore",
     }),
   });
 
