@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ChevronLeft, ChevronRight, Clock, MapPin, CheckCircle2, Grid3X3, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface Evento {
   id: string;
@@ -12,6 +13,7 @@ interface Evento {
   local: string;
   tipo: string;
   participantes: number;
+  google_synced?: boolean;
 }
 
 const tipoColors: Record<string, string> = {
@@ -38,6 +40,7 @@ interface Props {
 }
 
 export default function EventoCalendar({ eventos, onEventClick, onDayClick }: Props) {
+  const [viewMode, setViewMode] = useState<"grade" | "lista">("grade");
   const [current, setCurrent] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
@@ -77,6 +80,14 @@ export default function EventoCalendar({ eventos, onEventClick, onDayClick }: Pr
 
   const selectedEvents = selectedDate ? eventsByDate[selectedDate] || [] : [];
 
+  // Sorted dates for agenda view
+  const sortedDates = useMemo(() => {
+    const monthStr = `${current.year}-${String(current.month + 1).padStart(2, "0")}`;
+    return Object.keys(eventsByDate)
+      .filter(d => d.startsWith(monthStr))
+      .sort();
+  }, [eventsByDate, current.year, current.month]);
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -92,110 +103,197 @@ export default function EventoCalendar({ eventos, onEventClick, onDayClick }: Pr
             {MONTHS[current.month]} {current.year}
           </h2>
         </div>
-        <Button variant="ghost" size="sm" onClick={goToday} className="text-xs">
-          Hoje
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setViewMode("grade")}
+              className={cn(
+                "px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1",
+                viewMode === "grade" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              <Grid3X3 className="w-3.5 h-3.5" /> Grade
+            </button>
+            <button
+              onClick={() => setViewMode("lista")}
+              className={cn(
+                "px-2.5 py-1 text-xs font-medium transition-colors flex items-center gap-1",
+                viewMode === "lista" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              <List className="w-3.5 h-3.5" /> Agenda
+            </button>
+          </div>
+          <Button variant="ghost" size="sm" onClick={goToday} className="text-xs">
+            Hoje
+          </Button>
+        </div>
       </div>
 
-      {/* Grid */}
-      <div className="glass-card rounded-xl overflow-hidden">
-        {/* Weekday headers */}
-        <div className="grid grid-cols-7 border-b border-border">
-          {WEEKDAYS.map((d) => (
-            <div key={d} className="py-2 text-center text-xs font-medium text-muted-foreground">
-              {d}
+      {viewMode === "grade" ? (
+        <>
+          <div className="glass-card rounded-xl overflow-hidden">
+            <div className="grid grid-cols-7 border-b border-border">
+              {WEEKDAYS.map((d) => (
+                <div key={d} className="py-2 text-center text-xs font-medium text-muted-foreground">
+                  {d}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="grid grid-cols-7">
+              {cells.map((day, i) => {
+                if (day === null) {
+                  return <div key={`empty-${i}`} className="min-h-[80px] border-b border-r border-border/50 bg-muted/20" />;
+                }
+                const dateStr = `${current.year}-${String(current.month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                const dayEvents = eventsByDate[dateStr] || [];
+                const isToday = dateStr === todayStr;
+                const isSelected = dateStr === selectedDate;
 
-        {/* Day cells */}
-        <div className="grid grid-cols-7">
-          {cells.map((day, i) => {
-            if (day === null) {
-              return <div key={`empty-${i}`} className="min-h-[80px] border-b border-r border-border/50 bg-muted/20" />;
-            }
-            const dateStr = `${current.year}-${String(current.month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-            const dayEvents = eventsByDate[dateStr] || [];
-            const isToday = dateStr === todayStr;
-            const isSelected = dateStr === selectedDate;
-
-            return (
-              <div
-                key={dateStr}
-                onClick={() => {
-                  setSelectedDate(isSelected ? null : dateStr);
-                  if (dayEvents.length === 0) onDayClick?.(dateStr);
-                }}
-                className={cn(
-                  "min-h-[80px] border-b border-r border-border/50 p-1 cursor-pointer transition-colors hover:bg-accent/30",
-                  isSelected && "bg-accent/20 ring-1 ring-primary/30",
-                )}
-              >
-                <span
-                  className={cn(
-                    "inline-flex items-center justify-center w-6 h-6 text-xs rounded-full",
-                    isToday ? "bg-primary text-primary-foreground font-bold" : "text-foreground",
-                  )}
-                >
-                  {day}
-                </span>
-                <div className="space-y-0.5 mt-0.5">
-                  {dayEvents.slice(0, 3).map((ev) => (
-                    <div
-                      key={ev.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEventClick?.(ev);
-                      }}
-                      className={cn(
-                        "text-[10px] leading-tight px-1 py-0.5 rounded truncate border-l-2 cursor-pointer hover:opacity-80",
-                        tipoColors[ev.tipo] || "bg-muted text-muted-foreground border-border",
-                      )}
-                      title={`${ev.hora} - ${ev.titulo}`}
-                    >
-                      {ev.titulo}
-                    </div>
-                  ))}
-                  {dayEvents.length > 3 && (
-                    <span className="text-[10px] text-muted-foreground pl-1">+{dayEvents.length - 3}</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Selected day details */}
-      {selectedDate && (
-        <div className="glass-card rounded-xl p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">
-            {new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
-          </h3>
-          {selectedEvents.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhum evento neste dia.</p>
-          ) : (
-            selectedEvents.map((ev) => (
-              <div
-                key={ev.id}
-                onClick={() => onEventClick?.(ev)}
-                className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", tipoColors[ev.tipo] || "bg-muted text-muted-foreground")}>
-                      {ev.tipo}
+                return (
+                  <div
+                    key={dateStr}
+                    onClick={() => {
+                      setSelectedDate(isSelected ? null : dateStr);
+                      if (dayEvents.length === 0) onDayClick?.(dateStr);
+                    }}
+                    className={cn(
+                      "min-h-[80px] border-b border-r border-border/50 p-1 cursor-pointer transition-colors hover:bg-accent/30",
+                      isSelected && "bg-accent/20 ring-1 ring-primary/30",
+                    )}
+                  >
+                    <span className={cn(
+                      "inline-flex items-center justify-center w-6 h-6 text-xs rounded-full",
+                      isToday ? "bg-primary text-primary-foreground font-bold" : "text-foreground",
+                    )}>
+                      {day}
                     </span>
+                    <div className="space-y-0.5 mt-0.5">
+                      {dayEvents.slice(0, 3).map((ev) => (
+                        <div
+                          key={ev.id}
+                          onClick={(e) => { e.stopPropagation(); onEventClick?.(ev); }}
+                          className={cn(
+                            "text-[10px] leading-tight px-1 py-0.5 rounded truncate border-l-2 cursor-pointer hover:opacity-80",
+                            tipoColors[ev.tipo] || "bg-muted text-muted-foreground border-border",
+                          )}
+                          title={`${ev.hora} - ${ev.titulo}`}
+                        >
+                          {ev.google_synced && <CheckCircle2 className="w-2.5 h-2.5 inline mr-0.5 text-emerald-500" />}
+                          {ev.titulo}
+                        </div>
+                      ))}
+                      {dayEvents.length > 3 && (
+                        <span className="text-[10px] text-muted-foreground pl-1">+{dayEvents.length - 3}</span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm font-medium text-foreground">{ev.titulo}</p>
-                  {ev.descricao && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{ev.descricao}</p>}
-                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {ev.hora}</span>
-                    {ev.local && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {ev.local}</span>}
+                );
+              })}
+            </div>
+          </div>
+
+          {selectedDate && (
+            <div className="glass-card rounded-xl p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">
+                {new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+              </h3>
+              {selectedEvents.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhum evento neste dia.</p>
+              ) : (
+                selectedEvents.map((ev) => (
+                  <div
+                    key={ev.id}
+                    onClick={() => onEventClick?.(ev)}
+                    className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", tipoColors[ev.tipo] || "bg-muted text-muted-foreground")}>
+                          {ev.tipo}
+                        </span>
+                        {ev.google_synced && (
+                          <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-3 h-3" /> Google
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-foreground">{ev.titulo}</p>
+                      {ev.descricao && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{ev.descricao}</p>}
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {ev.hora}</span>
+                        {ev.local && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {ev.local}</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        /* Agenda / List View */
+        <div className="space-y-4">
+          {sortedDates.length === 0 ? (
+            <div className="glass-card rounded-xl p-12 text-center">
+              <p className="text-muted-foreground text-sm">Nenhum evento neste mês.</p>
+            </div>
+          ) : (
+            sortedDates.map((date) => {
+              const dt = new Date(date + "T12:00:00");
+              const isToday = date === todayStr;
+              const dayEvts = eventsByDate[date] || [];
+
+              return (
+                <div key={date}>
+                  <div className={cn("flex items-center gap-3 mb-2 px-1", isToday && "text-primary")}>
+                    <div className="text-center shrink-0 w-12">
+                      <p className={cn("text-2xl font-bold font-display leading-none", isToday ? "text-primary" : "text-foreground")}>
+                        {String(dt.getDate()).padStart(2, "0")}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase">
+                        {dt.toLocaleDateString("pt-BR", { weekday: "short" })}
+                      </p>
+                    </div>
+                    {isToday && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide bg-primary/10 text-primary px-2 py-0.5 rounded-full">Hoje</span>
+                    )}
+                  </div>
+                  <div className="space-y-2 ml-14">
+                    {dayEvts.map((ev) => (
+                      <motion.div
+                        key={ev.id}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        onClick={() => onEventClick?.(ev)}
+                        className="glass-card rounded-xl p-4 cursor-pointer hover:shadow-md transition-all group"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", tipoColors[ev.tipo] || "bg-muted text-muted-foreground")}>
+                                {ev.tipo}
+                              </span>
+                              {ev.google_synced && (
+                                <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                                  <CheckCircle2 className="w-3 h-3" /> Google
+                                </span>
+                              )}
+                            </div>
+                            <h3 className="text-sm font-semibold text-foreground">{ev.titulo}</h3>
+                            {ev.descricao && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{ev.descricao}</p>}
+                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {ev.hora}</span>
+                              {ev.local && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {ev.local}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}

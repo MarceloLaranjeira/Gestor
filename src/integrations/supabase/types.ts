@@ -138,6 +138,7 @@ export type Database = {
           created_at: string
           data: string
           descricao: string
+          google_synced: boolean
           hora: string
           id: string
           local: string
@@ -151,6 +152,7 @@ export type Database = {
           created_at?: string
           data: string
           descricao?: string
+          google_synced?: boolean
           hora?: string
           id?: string
           local?: string
@@ -164,6 +166,7 @@ export type Database = {
           created_at?: string
           data?: string
           descricao?: string
+          google_synced?: boolean
           hora?: string
           id?: string
           local?: string

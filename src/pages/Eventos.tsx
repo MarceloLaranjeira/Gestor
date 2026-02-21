@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Clock, MapPin, Users, Edit2, Trash2, Loader2, Calendar, Upload } from "lucide-react";
+import { Plus, Clock, MapPin, Users, Edit2, Trash2, Loader2, Calendar, Upload, CheckCircle2 } from "lucide-react";
 import EventoCalendar from "@/components/EventoCalendar";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,7 @@ interface Evento {
   tipo: string;
   participantes: number;
   created_at: string;
+  google_synced: boolean;
 }
 
 const TIPOS = ["Plenário", "Comissão", "Audiência", "Visita", "Religioso", "Interno", "Cultural", "Outro"];
@@ -44,7 +45,7 @@ const tipoColors: Record<string, string> = {
   "Outro": "bg-muted text-muted-foreground",
 };
 
-const emptyForm = (): Omit<Evento, "id" | "user_id" | "created_at"> => ({
+const emptyForm = (): Omit<Evento, "id" | "user_id" | "created_at" | "google_synced"> => ({
   titulo: "", descricao: "", data: new Date().toISOString().split("T")[0],
   hora: "08:00", local: "", tipo: "Interno", participantes: 0,
 });
@@ -84,7 +85,10 @@ const Eventos = () => {
         start: { dateTime: startDateTime, timeZone: "America/Manaus" },
         end: { dateTime: endDate.toISOString().split(".")[0], timeZone: "America/Manaus" },
       });
+      // Mark as synced in DB
+      await supabase.from("eventos").update({ google_synced: true }).eq("id", evento.id);
       toast({ title: "Evento sincronizado com Google Calendar!" });
+      fetchEventos();
     } catch {
       toast({ title: "Falha ao sincronizar com Google Calendar", variant: "destructive" });
     } finally {
@@ -139,14 +143,13 @@ const Eventos = () => {
         if (error) throw error;
         toast({ title: "Evento atualizado" });
       } else {
-        const { error } = await supabase.from("eventos").insert({ ...form, user_id: user!.user_id });
+        const { error, data: inserted } = await supabase.from("eventos").insert({ ...form, user_id: user!.user_id, google_synced: syncToGoogle && gcal.connected }).select("id").single();
         if (error) throw error;
 
         // Sync to Google Calendar if checkbox is checked
         if (syncToGoogle && gcal.connected) {
           try {
             const startDateTime = `${form.data}T${form.hora || "00:00"}:00`;
-            const [h, m] = (form.hora || "00:00").split(":").map(Number);
             const endDate = new Date(`${form.data}T${form.hora || "00:00"}:00`);
             endDate.setHours(endDate.getHours() + 1);
             const endDateTime = endDate.toISOString().replace("Z", "");
@@ -160,6 +163,8 @@ const Eventos = () => {
             });
             toast({ title: "Evento criado e sincronizado com Google Calendar" });
           } catch {
+            // Revert sync flag on failure
+            if (inserted?.id) await supabase.from("eventos").update({ google_synced: false }).eq("id", inserted.id);
             toast({ title: "Evento criado localmente, mas falha ao sincronizar com Google", variant: "destructive" });
           }
         } else {
@@ -263,6 +268,11 @@ const Eventos = () => {
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${tipoColors[evento.tipo] || "bg-muted text-muted-foreground"}`}>
                           {evento.tipo}
                         </span>
+                        {evento.google_synced && (
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="w-3 h-3" /> Google
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-sm font-semibold text-foreground">{evento.titulo}</h3>
                       {evento.descricao && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{evento.descricao}</p>}
@@ -273,14 +283,16 @@ const Eventos = () => {
                       </div>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      <button
-                        onClick={() => handleSyncToGoogle(evento)}
-                        disabled={syncingId === evento.id}
-                        className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-                        title="Sincronizar com Google Calendar"
-                      >
-                        {syncingId === evento.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                      </button>
+                      {!evento.google_synced && (
+                        <button
+                          onClick={() => handleSyncToGoogle(evento)}
+                          disabled={syncingId === evento.id}
+                          className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                          title="Sincronizar com Google Calendar"
+                        >
+                          {syncingId === evento.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                        </button>
+                      )}
                       <button onClick={() => openEdit(evento)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
