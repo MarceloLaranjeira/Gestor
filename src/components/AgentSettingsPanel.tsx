@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, X, Bot, Volume2, VolumeX, MessageSquare, Mic, Loader2, Play, Square } from "lucide-react";
+import { Settings, X, Bot, Volume2, VolumeX, MessageSquare, Mic, Loader2, Play, Square, Key, FileText, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 
 export type ResponseMode = "text" | "voice" | "both";
+export type TtsProvider = "elevenlabs" | "google" | "openai";
 
 export interface AgentSettings {
   model: string;
@@ -15,6 +18,10 @@ export interface AgentSettings {
   voiceName: string;
   stability: number;
   speed: number;
+  customInstructions: string;
+  ttsProvider: TtsProvider;
+  googleTtsApiKey: string;
+  openaiTtsApiKey: string;
 }
 
 export const DEFAULT_SETTINGS: AgentSettings = {
@@ -24,6 +31,10 @@ export const DEFAULT_SETTINGS: AgentSettings = {
   voiceName: "Brian",
   stability: 0.5,
   speed: 1.0,
+  customInstructions: "",
+  ttsProvider: "elevenlabs",
+  googleTtsApiKey: "",
+  openaiTtsApiKey: "",
 };
 
 const MODELS = [
@@ -64,6 +75,14 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
   const [loadingVoices, setLoadingVoices] = useState(false);
   const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
   const [previewAudio, setPreviewAudio] = useState<HTMLAudioElement | null>(null);
+  const [showGoogleKey, setShowGoogleKey] = useState(false);
+  const [showOpenaiKey, setShowOpenaiKey] = useState(false);
+
+  const TTS_PROVIDERS = [
+    { value: "elevenlabs" as TtsProvider, label: "ElevenLabs" },
+    { value: "google" as TtsProvider, label: "Google Cloud TTS" },
+    { value: "openai" as TtsProvider, label: "OpenAI TTS" },
+  ];
 
   useEffect(() => {
     if (isOpen && voices.length === 0) fetchVoices();
@@ -158,6 +177,22 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
                 </Select>
               </div>
 
+              {/* Custom Instructions */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary" />
+                  <Label className="text-sm font-semibold text-foreground">Instrução Adicional</Label>
+                </div>
+                <Textarea
+                  value={settings.customInstructions}
+                  onChange={(e) => onChange({ ...settings, customInstructions: e.target.value })}
+                  placeholder="Ex: Sempre responda de forma resumida e com bullet points..."
+                  className="min-h-[80px] text-xs resize-none"
+                  maxLength={2000}
+                />
+                <p className="text-[10px] text-muted-foreground">{settings.customInstructions.length}/2000 caracteres</p>
+              </div>
+
               {/* Response Mode */}
               <div className="space-y-3">
                 <Label className="text-sm font-semibold text-foreground">Modo de Resposta</Label>
@@ -182,8 +217,72 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
                 </div>
               </div>
 
-              {/* Voice Settings */}
+              {/* TTS Provider & API Keys */}
               {settings.responseMode !== "text" && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-primary" />
+                    <Label className="text-sm font-semibold text-foreground">Provedor de Voz (TTS)</Label>
+                  </div>
+                  <Select value={settings.ttsProvider} onValueChange={(v) => onChange({ ...settings, ttsProvider: v as TtsProvider })}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TTS_PROVIDERS.map(p => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {settings.ttsProvider === "google" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Chave de API do Google Cloud</Label>
+                      <div className="relative">
+                        <Input
+                          type={showGoogleKey ? "text" : "password"}
+                          value={settings.googleTtsApiKey}
+                          onChange={(e) => onChange({ ...settings, googleTtsApiKey: e.target.value })}
+                          placeholder="AIza..."
+                          className="text-xs pr-9"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowGoogleKey(!showGoogleKey)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                        >
+                          {showGoogleKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {settings.ttsProvider === "openai" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Chave de API da OpenAI</Label>
+                      <div className="relative">
+                        <Input
+                          type={showOpenaiKey ? "text" : "password"}
+                          value={settings.openaiTtsApiKey}
+                          onChange={(e) => onChange({ ...settings, openaiTtsApiKey: e.target.value })}
+                          placeholder="sk-..."
+                          className="text-xs pr-9"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowOpenaiKey(!showOpenaiKey)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                        >
+                          {showOpenaiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Voice Settings (ElevenLabs only) */}
+              {settings.responseMode !== "text" && settings.ttsProvider === "elevenlabs" && (
                 <>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
