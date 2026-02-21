@@ -51,6 +51,7 @@ const Login = () => {
         <div className="relative z-10 text-center px-12">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <img src={logoDan} alt="Gabinete CMD Dan" className="w-64 mx-auto mb-8 drop-shadow-lg" />
+            <h2 className="text-2xl font-bold text-accent mb-2 font-display">Gestão Inteligente</h2>
             <p className="text-sm text-primary-foreground/50 max-w-md">
               Sistema integrado de gestão parlamentar — pessoas, demandas, eventos e inteligência institucional.
             </p>
@@ -63,7 +64,8 @@ const Login = () => {
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-sm">
           {/* Logo centralizada acima do formulário */}
           <div className="flex flex-col items-center mb-8">
-            <img src={logoDan} alt="Gabinete CMD Dan" className="h-20 w-auto object-contain mb-4" />
+            <img src={logoDan} alt="Gabinete CMD Dan" className="h-20 w-auto object-contain mb-2" />
+            <span className="text-sm font-bold text-accent font-display">Gestão Inteligente</span>
           </div>
 
           <h2 className="text-2xl font-bold font-display text-foreground mb-1">

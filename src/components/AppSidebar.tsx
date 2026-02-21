@@ -99,8 +99,8 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
         />
         {showLabels && (
           <div className="overflow-hidden">
-            <p className="text-[10px] text-sidebar-foreground/60 truncate leading-tight">
-              Sistema de Gestão
+            <p className="text-xs font-bold text-accent truncate leading-tight">
+              Gestão Inteligente
             </p>
           </div>
         )}
