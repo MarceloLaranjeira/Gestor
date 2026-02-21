@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, Loader2, Bot, User, Sparkles, FileText, BarChart3,
   Lightbulb, Trash2, Settings, Mic, MicOff, Volume2,
-  Paperclip, X, Image as ImageIcon, File,
+  Paperclip, X, Image as ImageIcon, File, Square,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,8 @@ async function streamChat(
   extraSettings: { temperature: number; assertiveness: number; formality: string },
   onDelta: (text: string) => void,
   onDone: () => void,
-  onError: (msg: string) => void
+  onError: (msg: string) => void,
+  signal?: AbortSignal
 ) {
   // Send only role+content for AI messages
   const cleanMessages = messages.map(m => ({ role: m.role, content: m.content }));
@@ -70,6 +71,7 @@ async function streamChat(
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ messages: cleanMessages, model, attachments, customInstructions, ...extraSettings }),
+    signal,
   });
 
   if (!resp.ok) {
@@ -192,6 +194,7 @@ const AgenteIA = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasAutoSent = useRef(false);
   const recognitionRef = useRef<any>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -361,6 +364,9 @@ const AgenteIA = () => {
     };
 
     try {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       await streamChat(
         newMessages,
         settings.model,
@@ -369,6 +375,7 @@ const AgenteIA = () => {
         { temperature: settings.temperature, assertiveness: settings.assertiveness, formality: settings.formality },
         upsertAssistant,
         async () => {
+          abortControllerRef.current = null;
           setIsLoading(false);
           if (settings.responseMode === "voice") {
             setMessages((prev) => [...prev, { role: "assistant", content: fullResponse }]);
@@ -385,12 +392,16 @@ const AgenteIA = () => {
           }
         },
         (errMsg) => {
+          abortControllerRef.current = null;
           setIsLoading(false);
           toast({ title: "Erro no Agente IA", description: errMsg, variant: "destructive" });
-        }
+        },
+        controller.signal
       );
-    } catch {
+    } catch (e: any) {
+      abortControllerRef.current = null;
       setIsLoading(false);
+      if (e?.name === "AbortError") return; // user stopped
       toast({ title: "Erro de conexão", description: "Não foi possível conectar ao agente.", variant: "destructive" });
     }
   }, [messages, isLoading, settings, toast, pendingFiles]);
@@ -722,14 +733,30 @@ const AgenteIA = () => {
               }}
             />
 
-            <Button
-              onClick={() => send(input)}
-              disabled={(!input.trim() && pendingFiles.length === 0) || isLoading}
-              size="sm"
-              className="gradient-primary text-primary-foreground border-0 shrink-0 h-9 w-9 p-0"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </Button>
+            {isLoading ? (
+              <Button
+                onClick={() => {
+                  abortControllerRef.current?.abort();
+                  abortControllerRef.current = null;
+                  setIsLoading(false);
+                }}
+                size="sm"
+                variant="destructive"
+                className="shrink-0 h-9 w-9 p-0"
+                title="Parar resposta"
+              >
+                <Square className="w-3.5 h-3.5" />
+              </Button>
+            ) : (
+              <Button
+                onClick={() => send(input)}
+                disabled={!input.trim() && pendingFiles.length === 0}
+                size="sm"
+                className="gradient-primary text-primary-foreground border-0 shrink-0 h-9 w-9 p-0"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            )}
           </div>
           <p className="text-[10px] text-muted-foreground text-center mt-1.5">
             🎤 Microfone · 📎 PDF/Imagem · Shift+Enter para nova linha ·{" "}
