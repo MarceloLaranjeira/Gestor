@@ -117,7 +117,7 @@ async function streamChat(
 }
 
 // --- TTS ---
-async function speakText(text: string, settings: AgentSettings): Promise<void> {
+async function speakText(text: string, settings: AgentSettings): Promise<{ audio: HTMLAudioElement }> {
   const clean = text
     .replace(/#{1,6}\s/g, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
@@ -163,9 +163,10 @@ async function speakText(text: string, settings: AgentSettings): Promise<void> {
 
   return new Promise((resolve, reject) => {
     audio.src = url;
-    audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+    audio.onended = () => { URL.revokeObjectURL(url); resolve({ audio }); };
     audio.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Erro ao reproduzir áudio")); };
     audio.play().catch(reject);
+    resolve({ audio });
   });
 }
 
@@ -195,6 +196,7 @@ const AgenteIA = () => {
   const hasAutoSent = useRef(false);
   const recognitionRef = useRef<any>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -383,10 +385,16 @@ const AgenteIA = () => {
           if (settings.responseMode !== "text" && fullResponse) {
             setIsSpeaking(true);
             try {
-              await speakText(fullResponse, settings);
+              const { audio } = await speakText(fullResponse, settings);
+              audioRef.current = audio;
+              // Wait for audio to finish
+              await new Promise<void>((resolve) => {
+                audio.onended = () => { audioRef.current = null; resolve(); };
+              });
             } catch {
               toast({ title: "Erro de voz", description: "Não foi possível reproduzir o áudio.", variant: "destructive" });
             } finally {
+              audioRef.current = null;
               setIsSpeaking(false);
             }
           }
@@ -509,9 +517,20 @@ const AgenteIA = () => {
                   {settings.responseMode === "both" ? "Texto + Voz" : settings.responseMode === "voice" ? "Somente Voz" : "Somente Texto"}
                 </p>
                 {isSpeaking && (
-                  <span className="flex items-center gap-1 text-xs text-primary animate-pulse">
-                    <Volume2 className="w-3 h-3" /> falando...
-                  </span>
+                  <button
+                    onClick={() => {
+                      if (audioRef.current) {
+                        audioRef.current.pause();
+                        audioRef.current.currentTime = 0;
+                        audioRef.current = null;
+                      }
+                      setIsSpeaking(false);
+                    }}
+                    className="flex items-center gap-1 text-xs text-destructive hover:text-destructive/80 animate-pulse cursor-pointer"
+                    title="Parar áudio"
+                  >
+                    <Square className="w-3 h-3" /> falando... (clique para parar)
+                  </button>
                 )}
               </div>
             </div>
