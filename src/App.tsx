@@ -2,8 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { usePermissions, getModuleForRoute } from "@/hooks/usePermissions";
 import { Loader2 } from "lucide-react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -24,16 +25,36 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const LoadingScreen = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+  </div>
+);
+
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  if (loading) return <LoadingScreen />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+};
+
+const PermissionRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { hasAccess, loading: permLoading } = usePermissions();
+  const location = useLocation();
+
+  if (authLoading || permLoading) return <LoadingScreen />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  const module = getModuleForRoute(location.pathname);
+  if (module && !hasAccess(module)) return <Navigate to="/" replace />;
+
   return <>{children}</>;
 };
 
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  if (loading) return <LoadingScreen />;
   if (isAuthenticated) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
@@ -42,23 +63,22 @@ const AppRoutes = () => (
   <Routes>
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-    <Route path="/agente-ia" element={<ProtectedRoute><AgenteIA /></ProtectedRoute>} />
-    <Route path="/pessoas" element={<ProtectedRoute><Pessoas /></ProtectedRoute>} />
-    <Route path="/demandas" element={<ProtectedRoute><Demandas /></ProtectedRoute>} />
-    <Route path="/eventos" element={<ProtectedRoute><Eventos /></ProtectedRoute>} />
-    <Route path="/movimentos" element={<ProtectedRoute><Movimentos /></ProtectedRoute>} />
-    <Route path="/movimentos/:id" element={<ProtectedRoute><MovimentoDetalhes /></ProtectedRoute>} />
-    <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
+    <Route path="/agente-ia" element={<PermissionRoute><AgenteIA /></PermissionRoute>} />
+    <Route path="/pessoas" element={<PermissionRoute><Pessoas /></PermissionRoute>} />
+    <Route path="/demandas" element={<PermissionRoute><Demandas /></PermissionRoute>} />
+    <Route path="/eventos" element={<PermissionRoute><Eventos /></PermissionRoute>} />
+    <Route path="/movimentos" element={<PermissionRoute><Movimentos /></PermissionRoute>} />
+    <Route path="/movimentos/:id" element={<PermissionRoute><MovimentoDetalhes /></PermissionRoute>} />
+    <Route path="/relatorios" element={<PermissionRoute><Relatorios /></PermissionRoute>} />
     <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
-    <Route path="/usuarios" element={<ProtectedRoute><GerenciarUsuarios /></ProtectedRoute>} />
-    <Route path="/relatorio-coordenacao" element={<ProtectedRoute><RelatorioCoordenacao /></ProtectedRoute>} />
-    <Route path="/coordenacao/:id" element={<ProtectedRoute><CoordenacaoPage /></ProtectedRoute>} />
-    <Route path="/financas" element={<ProtectedRoute><Financas /></ProtectedRoute>} />
+    <Route path="/usuarios" element={<PermissionRoute><GerenciarUsuarios /></PermissionRoute>} />
+    <Route path="/relatorio-coordenacao" element={<PermissionRoute><RelatorioCoordenacao /></PermissionRoute>} />
+    <Route path="/coordenacao/:id" element={<PermissionRoute><CoordenacaoPage /></PermissionRoute>} />
+    <Route path="/financas" element={<PermissionRoute><Financas /></PermissionRoute>} />
     <Route path="/permissoes" element={<ProtectedRoute><Permissoes /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
