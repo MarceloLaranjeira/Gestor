@@ -22,6 +22,7 @@ export interface AgentSettings {
   ttsProvider: TtsProvider;
   googleTtsApiKey: string;
   openaiTtsApiKey: string;
+  googleVoiceName: string;
 }
 
 export const DEFAULT_SETTINGS: AgentSettings = {
@@ -35,6 +36,7 @@ export const DEFAULT_SETTINGS: AgentSettings = {
   ttsProvider: "elevenlabs",
   googleTtsApiKey: "",
   openaiTtsApiKey: "",
+  googleVoiceName: "Kore",
 };
 
 const MODELS = [
@@ -236,8 +238,22 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
                   </Select>
 
                   {settings.ttsProvider === "google" && (
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Chave de API do Google AI Studio</Label>
+                    <>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Voz do Google AI Studio</Label>
+                        <Select value={settings.googleVoiceName} onValueChange={(v) => onChange({ ...settings, googleVoiceName: v })}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["Kore", "Puck", "Charon", "Fenrir", "Aoede", "Leda", "Orus", "Zephyr"].map(v => (
+                              <SelectItem key={v} value={v}>{v}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">Chave de API do Google AI Studio</Label>
                       <div className="relative">
                         <Input
                           type={showGoogleKey ? "text" : "password"}
@@ -254,7 +270,8 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
                           {showGoogleKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                         </button>
                       </div>
-                    </div>
+                      </div>
+                    </>
                   )}
 
                   {settings.ttsProvider === "openai" && (
