@@ -208,12 +208,12 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
                 <div className="flex items-center gap-2">
                   <Thermometer className="w-4 h-4 text-primary" />
                   <Label className="text-sm font-semibold text-foreground">
-                    Temperatura: <span className="text-primary">{settings.temperature.toFixed(1)}</span>
+                    Temperatura: <span className="text-primary">{(settings.temperature ?? 0.7).toFixed(1)}</span>
                   </Label>
                 </div>
                 <Slider
                   min={0} max={1} step={0.1}
-                  value={[settings.temperature]}
+                  value={[settings.temperature ?? 0.7]}
                   onValueChange={([v]) => onChange({ ...settings, temperature: v })}
                 />
                 <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -227,12 +227,12 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-primary" />
                   <Label className="text-sm font-semibold text-foreground">
-                    Assertividade: <span className="text-primary">{Math.round(settings.assertiveness * 100)}%</span>
+                    Assertividade: <span className="text-primary">{Math.round((settings.assertiveness ?? 0.5) * 100)}%</span>
                   </Label>
                 </div>
                 <Slider
                   min={0} max={1} step={0.05}
-                  value={[settings.assertiveness]}
+                  value={[settings.assertiveness ?? 0.5]}
                   onValueChange={([v]) => onChange({ ...settings, assertiveness: v })}
                 />
                 <div className="flex justify-between text-[10px] text-muted-foreground">
