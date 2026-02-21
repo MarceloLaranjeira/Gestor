@@ -51,7 +51,7 @@ const Eventos = () => {
   const { toast } = useToast();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"lista" | "passados">("lista");
+  const [view, setView] = useState<"lista" | "passados" | "calendario">("lista");
 
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState<Evento | null>(null);
@@ -160,6 +160,12 @@ const Eventos = () => {
               >
                 Passados ({passados.length})
               </button>
+              <button
+                onClick={() => setView("calendario")}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${view === "calendario" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+              >
+                📅 Google Calendar
+              </button>
             </div>
             <Button onClick={openCreate} className="gradient-primary text-primary-foreground border-0">
               <Plus className="w-4 h-4 mr-2" />
@@ -168,7 +174,23 @@ const Eventos = () => {
           </div>
         </div>
 
-        {loading ? (
+        {view === "calendario" ? (
+          <div className="glass-card rounded-xl overflow-hidden" style={{ minHeight: "600px" }}>
+            <iframe
+              src="https://calendar.google.com/calendar/embed?showTitle=0&showPrint=0&showCalendars=0&showTz=0&mode=MONTH&wkst=1&bgcolor=%23ffffff"
+              style={{ border: 0, width: "100%", height: "600px" }}
+              frameBorder="0"
+              scrolling="no"
+              title="Google Calendar"
+            />
+            <div className="p-4 border-t border-border">
+              <p className="text-xs text-muted-foreground">
+                💡 Para exibir seu calendário específico, adicione o ID do calendário na URL acima. 
+                Acesse <strong>Google Calendar → Configurações → Integrar calendário</strong> e copie o <em>ID do calendário</em>.
+              </p>
+            </div>
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center h-48">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
