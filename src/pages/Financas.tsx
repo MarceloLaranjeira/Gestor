@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import FinancasAnalytics from "@/components/FinancasAnalytics";
+import FinancasAIButton from "@/components/FinancasAIButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -185,10 +186,13 @@ const Financas = () => {
             <h1 className="text-2xl font-bold font-display text-foreground">Financeiro</h1>
             <p className="text-sm text-muted-foreground">Controle de receitas e despesas do mandato</p>
           </div>
-          <Button onClick={openCreate} className="gradient-primary text-primary-foreground border-0">
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Lançamento
-          </Button>
+          <div className="flex items-center gap-2">
+            <FinancasAIButton />
+            <Button onClick={openCreate} className="gradient-primary text-primary-foreground border-0">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Lançamento
+            </Button>
+          </div>
         </div>
 
         {/* KPI Cards */}
