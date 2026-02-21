@@ -198,9 +198,9 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
                   onChange={(e) => onChange({ ...settings, customInstructions: e.target.value })}
                   placeholder="Ex: Sempre responda de forma resumida e com bullet points..."
                   className="min-h-[80px] text-xs resize-none"
-                  maxLength={5000}
+                  maxLength={10000}
                 />
-                <p className="text-[10px] text-muted-foreground">{settings.customInstructions.length}/5000 caracteres</p>
+                <p className="text-[10px] text-muted-foreground">{settings.customInstructions.length}/10.000 caracteres</p>
               </div>
 
               {/* Temperature */}
