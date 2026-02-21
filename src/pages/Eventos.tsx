@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Evento {
   id: string;
@@ -61,6 +62,7 @@ const Eventos = () => {
   const [editTarget, setEditTarget] = useState<Evento | null>(null);
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [syncToGoogle, setSyncToGoogle] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<Evento | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -94,6 +96,7 @@ const Eventos = () => {
     const f = emptyForm();
     if (dateStr) f.data = dateStr;
     setForm(f);
+    setSyncToGoogle(gcal.connected);
     setShowForm(true);
   };
 
@@ -103,6 +106,7 @@ const Eventos = () => {
       titulo: e.titulo, descricao: e.descricao, data: e.data,
       hora: e.hora, local: e.local, tipo: e.tipo, participantes: e.participantes,
     });
+    setSyncToGoogle(false);
     setShowForm(true);
   };
 
@@ -124,7 +128,30 @@ const Eventos = () => {
       } else {
         const { error } = await supabase.from("eventos").insert({ ...form, user_id: user!.user_id });
         if (error) throw error;
-        toast({ title: "Evento criado com sucesso" });
+
+        // Sync to Google Calendar if checkbox is checked
+        if (syncToGoogle && gcal.connected) {
+          try {
+            const startDateTime = `${form.data}T${form.hora || "00:00"}:00`;
+            const [h, m] = (form.hora || "00:00").split(":").map(Number);
+            const endDate = new Date(`${form.data}T${form.hora || "00:00"}:00`);
+            endDate.setHours(endDate.getHours() + 1);
+            const endDateTime = endDate.toISOString().replace("Z", "");
+
+            await gcal.createEvent({
+              summary: form.titulo,
+              description: form.descricao || undefined,
+              location: form.local || undefined,
+              start: { dateTime: startDateTime, timeZone: "America/Manaus" },
+              end: { dateTime: endDateTime.split(".")[0], timeZone: "America/Manaus" },
+            });
+            toast({ title: "Evento criado e sincronizado com Google Calendar" });
+          } catch {
+            toast({ title: "Evento criado localmente, mas falha ao sincronizar com Google", variant: "destructive" });
+          }
+        } else {
+          toast({ title: "Evento criado com sucesso" });
+        }
       }
       setShowForm(false);
       fetchEventos();
@@ -397,6 +424,20 @@ const Eventos = () => {
                 <Input value={form.local} onChange={(e) => setForm((f) => ({ ...f, local: e.target.value }))} placeholder="Local do evento" />
               </div>
             </div>
+
+            {/* Google Calendar sync checkbox */}
+            {!editTarget && gcal.connected && (
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox
+                  id="sync-google"
+                  checked={syncToGoogle}
+                  onCheckedChange={(checked) => setSyncToGoogle(checked === true)}
+                />
+                <label htmlFor="sync-google" className="text-xs text-muted-foreground cursor-pointer">
+                  Sincronizar com Google Calendar
+                </label>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
