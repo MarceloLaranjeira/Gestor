@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Clock, MapPin, Users, Edit2, Trash2, Loader2, Calendar } from "lucide-react";
+import { Plus, Clock, MapPin, Users, Edit2, Trash2, Loader2, Calendar, Upload } from "lucide-react";
 import EventoCalendar from "@/components/EventoCalendar";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +65,32 @@ const Eventos = () => {
 
   const [deleteTarget, setDeleteTarget] = useState<Evento | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+
+  const handleSyncToGoogle = async (evento: Evento) => {
+    if (!gcal.connected) {
+      toast({ title: "Conecte-se ao Google Calendar primeiro na página Calendário", variant: "destructive" });
+      return;
+    }
+    setSyncingId(evento.id);
+    try {
+      const startDateTime = `${evento.data}T${evento.hora || "00:00"}:00`;
+      const endDate = new Date(`${evento.data}T${evento.hora || "00:00"}:00`);
+      endDate.setHours(endDate.getHours() + 1);
+      await gcal.createEvent({
+        summary: evento.titulo,
+        description: evento.descricao || undefined,
+        location: evento.local || undefined,
+        start: { dateTime: startDateTime, timeZone: "America/Manaus" },
+        end: { dateTime: endDate.toISOString().split(".")[0], timeZone: "America/Manaus" },
+      });
+      toast({ title: "Evento sincronizado com Google Calendar!" });
+    } catch {
+      toast({ title: "Falha ao sincronizar com Google Calendar", variant: "destructive" });
+    } finally {
+      setSyncingId(null);
+    }
+  };
 
   const fetchEventos = async () => {
     const { data } = await supabase
@@ -247,6 +273,14 @@ const Eventos = () => {
                       </div>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <button
+                        onClick={() => handleSyncToGoogle(evento)}
+                        disabled={syncingId === evento.id}
+                        className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                        title="Sincronizar com Google Calendar"
+                      >
+                        {syncingId === evento.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                      </button>
                       <button onClick={() => openEdit(evento)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
