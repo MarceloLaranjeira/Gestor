@@ -5,6 +5,7 @@ import {
   Edit2, Trash2, ChevronRight,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
+import FinancasAnalytics from "@/components/FinancasAnalytics";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -238,6 +239,9 @@ const Financas = () => {
             </AreaChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Analytics & Predictive */}
+        <FinancasAnalytics movimentos={movimentos} />
 
         {/* Filters */}
         <div className="flex items-center gap-3">
