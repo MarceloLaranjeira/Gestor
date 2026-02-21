@@ -124,9 +124,13 @@ async function speakText(text: string, settings: AgentSettings): Promise<void> {
     .replace(/\n{2,}/g, ". ")
     .trim();
 
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error("Não autorizado");
+
   const resp = await fetch(TTS_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({
       text: clean.slice(0, 2500),
       voiceId: settings.voiceId,
