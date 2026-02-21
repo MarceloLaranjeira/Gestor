@@ -34,9 +34,10 @@ const MONTHS = [
 interface Props {
   eventos: Evento[];
   onEventClick?: (evento: Evento) => void;
+  onDayClick?: (dateStr: string) => void;
 }
 
-export default function EventoCalendar({ eventos, onEventClick }: Props) {
+export default function EventoCalendar({ eventos, onEventClick, onDayClick }: Props) {
   const [current, setCurrent] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
@@ -121,7 +122,10 @@ export default function EventoCalendar({ eventos, onEventClick }: Props) {
             return (
               <div
                 key={dateStr}
-                onClick={() => setSelectedDate(isSelected ? null : dateStr)}
+                onClick={() => {
+                  setSelectedDate(isSelected ? null : dateStr);
+                  if (dayEvents.length === 0) onDayClick?.(dateStr);
+                }}
                 className={cn(
                   "min-h-[80px] border-b border-r border-border/50 p-1 cursor-pointer transition-colors hover:bg-accent/30",
                   isSelected && "bg-accent/20 ring-1 ring-primary/30",

@@ -74,9 +74,11 @@ const Eventos = () => {
 
   useEffect(() => { fetchEventos(); }, []);
 
-  const openCreate = () => {
+  const openCreate = (dateStr?: string) => {
     setEditTarget(null);
-    setForm(emptyForm());
+    const f = emptyForm();
+    if (dateStr) f.data = dateStr;
+    setForm(f);
     setShowForm(true);
   };
 
@@ -168,7 +170,7 @@ const Eventos = () => {
                 📅 Google Calendar
               </button>
             </div>
-            <Button onClick={openCreate} className="gradient-primary text-primary-foreground border-0">
+            <Button onClick={() => openCreate()} className="gradient-primary text-primary-foreground border-0">
               <Plus className="w-4 h-4 mr-2" />
               Novo Evento
             </Button>
@@ -176,7 +178,7 @@ const Eventos = () => {
         </div>
 
         {view === "calendario" ? (
-          <EventoCalendar eventos={eventos} onEventClick={(ev) => openEdit(ev as any)} />
+          <EventoCalendar eventos={eventos} onEventClick={(ev) => openEdit(ev as any)} onDayClick={(d) => openCreate(d)} />
         ) : loading ? (
           <div className="flex items-center justify-center h-48">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
