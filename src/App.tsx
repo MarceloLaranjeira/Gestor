@@ -19,6 +19,7 @@ import RelatorioCoordenacao from "./pages/RelatorioCoordenacao";
 import CoordenacaoPage from "./pages/CoordenacaoPage";
 import AgenteIA from "./pages/AgenteIA";
 import Financas from "./pages/Financas";
+import Calendario from "./pages/Calendario";
 import MovimentoDetalhes from "./pages/MovimentoDetalhes";
 import Permissoes from "./pages/Permissoes";
 import AcessoNegado from "./pages/AcessoNegado";
@@ -71,6 +72,7 @@ const AppRoutes = () => (
     <Route path="/pessoas" element={<PermissionRoute><Pessoas /></PermissionRoute>} />
     <Route path="/demandas" element={<PermissionRoute><Demandas /></PermissionRoute>} />
     <Route path="/eventos" element={<PermissionRoute><Eventos /></PermissionRoute>} />
+    <Route path="/calendario" element={<PermissionRoute><Calendario /></PermissionRoute>} />
     <Route path="/movimentos" element={<PermissionRoute><Movimentos /></PermissionRoute>} />
     <Route path="/movimentos/:id" element={<PermissionRoute><MovimentoDetalhes /></PermissionRoute>} />
     <Route path="/relatorios" element={<PermissionRoute><Relatorios /></PermissionRoute>} />

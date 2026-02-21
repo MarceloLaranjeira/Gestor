@@ -30,6 +30,7 @@ const navItems: NavItem[] = [
   { icon: Users, label: "Pessoas", path: "/pessoas", module: "pessoas" },
   { icon: ClipboardList, label: "Demandas", path: "/demandas", module: "demandas" },
   { icon: Calendar, label: "Eventos", path: "/eventos", module: "eventos" },
+  { icon: Calendar, label: "Calendário", path: "/calendario", module: "calendario" },
   { icon: Wallet, label: "Financeiro", path: "/financas", module: "financas" },
   { icon: MessageSquare, label: "Movimentos", path: "/movimentos", module: "movimentos" },
 ];
