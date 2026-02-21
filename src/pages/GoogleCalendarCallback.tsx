@@ -28,7 +28,10 @@ const GoogleCalendarCallback = () => {
       }
 
       try {
-        const redirectUri = `${window.location.origin}/auth/google-calendar/callback`;
+        const origin = window.location.origin.includes('lovableproject.com')
+          ? window.location.origin.replace('lovableproject.com', 'lovable.app').replace(/^(https?:\/\/)/, '$1id-preview--')
+          : window.location.origin;
+        const redirectUri = `${origin}/auth/google-calendar/callback`;
         const { data: session } = await supabase.auth.getSession();
 
         const res = await fetch(

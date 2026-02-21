@@ -45,7 +45,11 @@ export function useGoogleCalendar() {
   }, [checkStatus]);
 
   const connect = async () => {
-    const redirectUri = `${window.location.origin}/auth/google-calendar/callback`;
+    // Use the public-facing URL, not the internal iframe origin
+    const origin = window.location.origin.includes('lovableproject.com')
+      ? window.location.origin.replace('lovableproject.com', 'lovable.app').replace(/^(https?:\/\/)/, '$1id-preview--')
+      : window.location.origin;
+    const redirectUri = `${origin}/auth/google-calendar/callback`;
     const headers = await getHeaders();
     const res = await fetch(`${FUNCTION_URL}?action=auth-url&redirect_uri=${encodeURIComponent(redirectUri)}`, { headers });
     const data = await res.json();
