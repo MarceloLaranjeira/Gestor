@@ -56,9 +56,17 @@ async function streamChat(
   // Send only role+content for AI messages
   const cleanMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
+  // Get the user's session token for authentication
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) {
+    onError("Não autorizado. Faça login novamente.");
+    return;
+  }
+
   const resp = await fetch(AGENT_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${SUPABASE_KEY}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ messages: cleanMessages, model, attachments }),
   });
 
