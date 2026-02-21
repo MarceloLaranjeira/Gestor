@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings, X, Bot, Volume2, VolumeX, MessageSquare, Mic, Loader2, Play, Square, Key, FileText, Eye, EyeOff, Thermometer, Zap, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -101,9 +102,11 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
   const fetchVoices = async () => {
     setLoadingVoices(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || SUPABASE_KEY;
       const res = await fetch(`${SUPABASE_URL}/functions/v1/elevenlabs-voices`, {
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
