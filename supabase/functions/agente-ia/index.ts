@@ -6,6 +6,38 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Validate file content by checking magic bytes
+function validateMagicBytes(bytes: Uint8Array, ext: string): boolean {
+  if (bytes.length < 4) return false;
+  switch (ext) {
+    case "pdf":
+      // %PDF
+      return bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
+    case "png":
+      // 89 50 4E 47
+      return bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
+    case "jpg":
+    case "jpeg":
+      // FF D8 FF
+      return bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
+    case "webp":
+      // RIFF....WEBP
+      return bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46
+        && bytes.length >= 12 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
+    case "gif":
+      // GIF8
+      return bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38;
+    case "bmp":
+      // BM
+      return bytes[0] === 0x42 && bytes[1] === 0x4D;
+    case "tiff":
+      // II or MM
+      return (bytes[0] === 0x49 && bytes[1] === 0x49) || (bytes[0] === 0x4D && bytes[1] === 0x4D);
+    default:
+      return false; // Reject unknown extensions
+  }
+}
+
 // Convert file from storage to base64
 async function getFileAsBase64(
   supabase: any,
@@ -21,6 +53,14 @@ async function getFileAsBase64(
 
   const arrayBuffer = await fileData.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
+
+  // Server-side magic byte validation
+  const ext = storagePath.split(".").pop()?.toLowerCase();
+  const validMagic = validateMagicBytes(bytes, ext || "");
+  if (!validMagic) {
+    throw new Error(`Invalid file content for extension .${ext}`);
+  }
+
   let binary = "";
   for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i]);
