@@ -106,6 +106,11 @@ Deno.serve(async (req) => {
       authUrl.searchParams.set("prompt", "consent");
       authUrl.searchParams.set("state", userId);
 
+      console.log("=== GOOGLE OAUTH DEBUG ===");
+      console.log("redirect_uri recebida:", redirectUri);
+      console.log("client_id usado:", GOOGLE_CLIENT_ID);
+      console.log("URL completa:", authUrl.toString());
+
       return new Response(JSON.stringify({ url: authUrl.toString() }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
