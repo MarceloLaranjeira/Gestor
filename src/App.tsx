@@ -21,6 +21,7 @@ import AgenteIA from "./pages/AgenteIA";
 import Financas from "./pages/Financas";
 import MovimentoDetalhes from "./pages/MovimentoDetalhes";
 import Permissoes from "./pages/Permissoes";
+import AcessoNegado from "./pages/AcessoNegado";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,7 +48,7 @@ const PermissionRoute = ({ children }: { children: React.ReactNode }) => {
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
   const module = getModuleForRoute(location.pathname);
-  if (module && !hasAccess(module)) return <Navigate to="/" replace />;
+  if (module && !hasAccess(module)) return <Navigate to="/acesso-negado" replace />;
 
   return <>{children}</>;
 };
@@ -76,6 +77,7 @@ const AppRoutes = () => (
     <Route path="/coordenacao/:id" element={<PermissionRoute><CoordenacaoPage /></PermissionRoute>} />
     <Route path="/financas" element={<PermissionRoute><Financas /></PermissionRoute>} />
     <Route path="/permissoes" element={<ProtectedRoute><Permissoes /></ProtectedRoute>} />
+    <Route path="/acesso-negado" element={<ProtectedRoute><AcessoNegado /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
