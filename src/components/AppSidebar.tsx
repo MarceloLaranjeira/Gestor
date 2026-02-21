@@ -1,15 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import logoDan from "@/assets/logo-dan.png";
 import { useSidebarState } from "./AppLayout";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard, Users, ClipboardList, Calendar, BarChart3, FileText, Settings,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare, Church,
   Megaphone, Database, Building2, UsersRound, Bot, Wallet, KeyRound,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePermissions, getModuleForRoute } from "@/hooks/usePermissions";
+import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 const coordenacaoItems = [
   { icon: Church, label: "Eclesiástica", path: "/coordenacao/eclesiastica" },
@@ -43,15 +45,17 @@ const bottomItems: NavItem[] = [
 export const SIDEBAR_WIDTH = 250;
 export const SIDEBAR_COLLAPSED_WIDTH = 68;
 
-const AppSidebar = () => {
-  const { collapsed, setCollapsed } = useSidebarState();
+const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
+  const { collapsed } = useSidebarState();
+  const isMobile = useIsMobile();
   const [coordOpen, setCoordOpen] = useState(true);
   const location = useLocation();
   const { user, logout } = useAuth();
-  const { hasAccess, loading: permLoading } = usePermissions();
+  const { hasAccess } = usePermissions();
 
   const isCoordActive = location.pathname.startsWith("/coordenacao");
   const isGestor = user?.role === "Gestor";
+  const showLabels = isMobile || !collapsed;
 
   const canSee = (item: NavItem) => {
     if (!item.module) return true;
@@ -60,7 +64,6 @@ const AppSidebar = () => {
 
   const renderLink = (item: NavItem, small = false) => {
     if (!canSee(item)) return null;
-    // Permissões page only for gestor
     if (item.path === "/permissoes" && !isGestor) return null;
     const isActive = location.pathname === item.path;
     const Icon = item.icon;
@@ -68,6 +71,7 @@ const AppSidebar = () => {
       <Link
         key={item.path}
         to={item.path}
+        onClick={onNavigate}
         className={cn(
           "flex items-center gap-3 rounded-lg text-sm transition-all duration-200 cursor-pointer",
           small ? "px-3 py-2 pl-10" : "px-3 py-2.5",
@@ -77,7 +81,7 @@ const AppSidebar = () => {
         )}
       >
         <Icon className={cn("shrink-0", small ? "w-4 h-4" : "w-5 h-5")} />
-        {!collapsed && <span className="truncate text-xs">{item.label}</span>}
+        {showLabels && <span className="truncate text-xs">{item.label}</span>}
       </Link>
     );
   };
@@ -85,18 +89,15 @@ const AppSidebar = () => {
   const showCoord = hasAccess("coordenacoes");
 
   return (
-    <aside
-      style={{ width: collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
-      className="fixed left-0 top-0 z-40 h-screen flex flex-col transition-all duration-300 gradient-primary"
-    >
+    <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="flex items-center gap-3 px-3 py-4 border-b border-sidebar-border">
         <img
           src={logoDan}
           alt="Gabinete CMD Dan"
-          className={collapsed ? "w-10 h-10 object-contain shrink-0" : "h-12 w-auto max-w-[160px] object-contain shrink-0"}
+          className={!showLabels ? "w-10 h-10 object-contain shrink-0" : "h-12 w-auto max-w-[160px] object-contain shrink-0"}
         />
-        {!collapsed && (
+        {showLabels && (
           <div className="overflow-hidden">
             <p className="text-[10px] text-sidebar-foreground/60 truncate leading-tight">
               Sistema de Gestão
@@ -109,7 +110,6 @@ const AppSidebar = () => {
       <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
         {navItems.map((item) => renderLink(item))}
 
-        {/* Coordenações expandable */}
         {showCoord && (
           <div>
             <button
@@ -122,14 +122,14 @@ const AppSidebar = () => {
               )}
             >
               <ClipboardList className="w-5 h-5 shrink-0" />
-              {!collapsed && (
+              {showLabels && (
                 <>
                   <span className="truncate flex-1 text-left text-xs">Coordenações</span>
                   <ChevronDown className={cn("w-4 h-4 transition-transform", coordOpen && "rotate-180")} />
                 </>
               )}
             </button>
-            {coordOpen && !collapsed && (
+            {coordOpen && showLabels && (
               <div className="mt-1 space-y-0.5">
                 {coordenacaoItems.map((item) => renderLink(item as NavItem, true))}
               </div>
@@ -143,7 +143,7 @@ const AppSidebar = () => {
 
       {/* User */}
       <div className="border-t border-sidebar-border p-3">
-        {!collapsed && user && (
+        {showLabels && user && (
           <div className="mb-2 px-2">
             <p className="text-xs font-semibold text-sidebar-foreground truncate">{user.name}</p>
             <p className="text-[10px] text-sidebar-foreground/50">{user.role}</p>
@@ -154,10 +154,33 @@ const AppSidebar = () => {
           className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          {!collapsed && <span>Sair</span>}
+          {showLabels && <span>Sair</span>}
         </button>
       </div>
+    </div>
+  );
+};
 
+const AppSidebar = () => {
+  const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebarState();
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="p-0 w-[280px] gradient-primary border-r-0">
+          <SidebarContent onNavigate={() => setMobileOpen(false)} />
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <aside
+      style={{ width: collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
+      className="fixed left-0 top-0 z-40 h-screen flex flex-col transition-all duration-300 gradient-primary"
+    >
+      <SidebarContent />
       {/* Collapse toggle */}
       <button
         onClick={(e) => { e.stopPropagation(); setCollapsed(!collapsed); }}
