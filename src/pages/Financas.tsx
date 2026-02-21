@@ -20,8 +20,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Legend, PieChart, Pie, Cell,
 } from "recharts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -226,22 +226,52 @@ const Financas = () => {
           </div>
         </div>
 
-        {/* Chart */}
-        <div className="glass-card rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-4 font-display">Receitas × Despesas — Últimos 6 Meses</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(v)} />
-              <Tooltip contentStyle={chartStyle}
-                formatter={(v: number) => fmt(v)} />
-              <Legend wrapperStyle={{ fontSize: "11px" }} />
-              <Area type="monotone" dataKey="receitas" stroke="hsl(var(--success))" fill="hsl(var(--success) / 0.12)" strokeWidth={2} name="Receitas" />
-              <Area type="monotone" dataKey="despesas" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive) / 0.10)" strokeWidth={2} name="Despesas" />
-            </AreaChart>
-          </ResponsiveContainer>
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Bar Chart */}
+          <div className="glass-card rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-foreground mb-4 font-display">Receitas × Despesas — Últimos 6 Meses</h3>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(v)} />
+                <Tooltip contentStyle={chartStyle} formatter={(v: number) => fmt(v)} />
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
+                <Bar dataKey="receitas" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} name="Receitas" />
+                <Bar dataKey="despesas" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} name="Despesas" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Pie Chart */}
+          <div className="glass-card rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-foreground mb-4 font-display">Distribuição Receitas × Despesas</h3>
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: "Receitas", value: totalReceitas },
+                    { name: "Despesas", value: totalDespesas },
+                  ].filter(d => d.value > 0)}
+                  cx="50%" cy="50%"
+                  innerRadius={55} outerRadius={85}
+                  paddingAngle={4}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                >
+                  <Cell fill="hsl(var(--success))" />
+                  <Cell fill="hsl(var(--destructive))" />
+                </Pie>
+                <Tooltip contentStyle={chartStyle} formatter={(v: number) => fmt(v)} />
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
+              </PieChart>
+            </ResponsiveContainer>
+            {totalReceitas === 0 && totalDespesas === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">Sem dados</div>
+            )}
+          </div>
         </div>
 
         {/* Analytics & Predictive */}
