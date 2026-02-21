@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Plus, Clock, MapPin, Users, Edit2, Trash2, Loader2, Calendar } from "lucide-react";
+import EventoCalendar from "@/components/EventoCalendar";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -175,21 +176,7 @@ const Eventos = () => {
         </div>
 
         {view === "calendario" ? (
-          <div className="glass-card rounded-xl overflow-hidden" style={{ minHeight: "600px" }}>
-            <iframe
-              src="https://calendar.google.com/calendar/embed?showTitle=0&showPrint=0&showCalendars=0&showTz=0&mode=MONTH&wkst=1&bgcolor=%23ffffff"
-              style={{ border: 0, width: "100%", height: "600px" }}
-              frameBorder="0"
-              scrolling="no"
-              title="Google Calendar"
-            />
-            <div className="p-4 border-t border-border">
-              <p className="text-xs text-muted-foreground">
-                💡 Para exibir seu calendário específico, adicione o ID do calendário na URL acima. 
-                Acesse <strong>Google Calendar → Configurações → Integrar calendário</strong> e copie o <em>ID do calendário</em>.
-              </p>
-            </div>
-          </div>
+          <EventoCalendar eventos={eventos} onEventClick={(ev) => openEdit(ev as any)} />
         ) : loading ? (
           <div className="flex items-center justify-center h-48">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
