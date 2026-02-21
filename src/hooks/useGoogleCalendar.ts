@@ -45,16 +45,21 @@ export function useGoogleCalendar() {
   }, [checkStatus]);
 
   const connect = async () => {
-    // Use the public-facing URL, not the internal iframe origin
-    const origin = window.location.origin.includes('lovableproject.com')
-      ? window.location.origin.replace('lovableproject.com', 'lovable.app').replace(/^(https?:\/\/)/, '$1id-preview--')
-      : window.location.origin;
+    // Build the public-facing origin for the redirect URI
+    let origin = window.location.origin;
+    if (origin.includes('lovableproject.com')) {
+      // Convert internal iframe domain to public domain
+      // e.g. https://UUID.lovableproject.com -> https://id-preview--UUID.lovable.app
+      const uuid = new URL(origin).hostname.replace('.lovableproject.com', '');
+      origin = `https://id-preview--${uuid}.lovable.app`;
+    }
     const redirectUri = `${origin}/auth/google-calendar/callback`;
     const headers = await getHeaders();
     const res = await fetch(`${FUNCTION_URL}?action=auth-url&redirect_uri=${encodeURIComponent(redirectUri)}`, { headers });
     const data = await res.json();
     if (data.url) {
-      window.location.href = data.url;
+      // Open in new tab to avoid iframe restrictions with Google OAuth
+      window.open(data.url, '_blank');
     }
   };
 
