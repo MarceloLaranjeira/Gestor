@@ -239,7 +239,10 @@ Deno.serve(async (req) => {
     // === Create event ===
     if (action === "create") {
       const body = await req.json();
-      const res = await fetch(`${calendarBase}/events`, {
+      
+      // Add conferenceDataVersion to support Meet link creation
+      const createUrl = `${calendarBase}/events?conferenceDataVersion=1`;
+      const res = await fetch(createUrl, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -259,7 +262,8 @@ Deno.serve(async (req) => {
     if (action === "update") {
       const eventId = url.searchParams.get("eventId");
       const body = await req.json();
-      const res = await fetch(`${calendarBase}/events/${eventId}`, {
+      const updateUrl = `${calendarBase}/events/${eventId}?conferenceDataVersion=1`;
+      const res = await fetch(updateUrl, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${accessToken}`,

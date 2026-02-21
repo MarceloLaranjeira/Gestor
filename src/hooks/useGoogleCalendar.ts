@@ -19,6 +19,11 @@ export interface GoogleCalendarEvent {
   start: { dateTime?: string; date?: string };
   end: { dateTime?: string; date?: string };
   location?: string;
+  hangoutLink?: string;
+  conferenceData?: {
+    entryPoints?: Array<{ entryPointType: string; uri: string; label?: string }>;
+    conferenceSolution?: { name?: { displayName?: string } };
+  };
 }
 
 export function useGoogleCalendar() {
