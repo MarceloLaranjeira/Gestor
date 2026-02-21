@@ -8,7 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SearchResult {
-  type: "pessoa" | "demanda" | "evento" | "pagina";
+  type: "pessoa" | "demanda" | "evento" | "pagina" | "tarefa";
   id: string;
   title: string;
   subtitle?: string;
@@ -83,10 +83,11 @@ const AppHeader = () => {
       });
 
       // Then search database
-      const [pessoas, demandas, eventos] = await Promise.all([
+      const [pessoas, demandas, eventos, tarefas] = await Promise.all([
         supabase.from("pessoas").select("id, nome, tipo").ilike("nome", term).limit(5),
         supabase.from("demandas").select("id, titulo, status").ilike("titulo", term).limit(5),
         supabase.from("eventos").select("id, titulo, data").ilike("titulo", term).limit(5),
+        supabase.from("tarefas").select("id, titulo, responsavel, secao_id").ilike("titulo", term).limit(5),
       ]);
 
       pessoas.data?.forEach((p) =>
@@ -97,6 +98,9 @@ const AppHeader = () => {
       );
       eventos.data?.forEach((e) =>
         items.push({ type: "evento", id: e.id, title: e.titulo, subtitle: e.data, path: "/eventos" })
+      );
+      tarefas.data?.forEach((t) =>
+        items.push({ type: "tarefa", id: t.id, title: t.titulo, subtitle: t.responsavel || "Sem responsável", path: "/relatorio-coordenacao" })
       );
 
       setResults(items);
@@ -118,6 +122,7 @@ const AppHeader = () => {
     demanda: "Demanda",
     evento: "Evento",
     pagina: "Página",
+    tarefa: "Tarefa",
   };
 
   const typeColor: Record<string, string> = {
@@ -125,6 +130,7 @@ const AppHeader = () => {
     demanda: "bg-accent/10 text-accent-foreground",
     evento: "bg-secondary/10 text-secondary",
     pagina: "bg-muted text-foreground",
+    tarefa: "bg-info/10 text-info",
   };
 
   const displayAvatar = user?.avatar_url;
