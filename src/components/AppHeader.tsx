@@ -1,13 +1,99 @@
-import { Search, Menu } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import NotificationPanel from "@/components/NotificationPanel";
 import { useSidebarState } from "./AppLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SearchResult {
+  type: "pessoa" | "demanda" | "evento";
+  id: string;
+  title: string;
+  subtitle?: string;
+  path: string;
+}
 
 const AppHeader = () => {
   const { user } = useAuth();
   const { setMobileOpen } = useSidebarState();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    const timeout = setTimeout(async () => {
+      setSearching(true);
+      const term = `%${query.trim()}%`;
+      const items: SearchResult[] = [];
+
+      const [pessoas, demandas, eventos] = await Promise.all([
+        supabase.from("pessoas").select("id, nome, tipo").ilike("nome", term).limit(5),
+        supabase.from("demandas").select("id, titulo, status").ilike("titulo", term).limit(5),
+        supabase.from("eventos").select("id, titulo, data").ilike("titulo", term).limit(5),
+      ]);
+
+      pessoas.data?.forEach((p) =>
+        items.push({ type: "pessoa", id: p.id, title: p.nome, subtitle: p.tipo, path: "/pessoas" })
+      );
+      demandas.data?.forEach((d) =>
+        items.push({ type: "demanda", id: d.id, title: d.titulo, subtitle: d.status, path: "/demandas" })
+      );
+      eventos.data?.forEach((e) =>
+        items.push({ type: "evento", id: e.id, title: e.titulo, subtitle: e.data, path: "/eventos" })
+      );
+
+      setResults(items);
+      setShowResults(true);
+      setSearching(false);
+    }, 350);
+
+    return () => clearTimeout(timeout);
+  }, [query]);
+
+  const handleSelect = (result: SearchResult) => {
+    setQuery("");
+    setShowResults(false);
+    navigate(result.path);
+  };
+
+  const typeLabel: Record<string, string> = {
+    pessoa: "Pessoa",
+    demanda: "Demanda",
+    evento: "Evento",
+  };
+
+  const typeColor: Record<string, string> = {
+    pessoa: "bg-primary/10 text-primary",
+    demanda: "bg-accent/10 text-accent-foreground",
+    evento: "bg-secondary/10 text-secondary",
+  };
+
+  const displayAvatar = user?.avatar_url;
 
   return (
     <header className="sticky top-0 z-30 h-14 sm:h-16 bg-card/90 backdrop-blur-md border-b border-border flex items-center justify-between px-3 sm:px-6 gap-2">
@@ -20,13 +106,46 @@ const AppHeader = () => {
             <Menu className="w-5 h-5 text-foreground" />
           </button>
         )}
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 max-w-md" ref={searchRef}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder={isMobile ? "Buscar..." : "Buscar demandas, pessoas, eventos..."}
-            className="w-full h-9 pl-10 pr-4 text-sm rounded-lg bg-muted/50 border-0 outline-none focus:ring-2 focus:ring-ring/20 placeholder:text-muted-foreground/60 text-foreground"
+            className="w-full h-9 pl-10 pr-8 text-sm rounded-lg bg-muted/50 border-0 outline-none focus:ring-2 focus:ring-ring/20 placeholder:text-muted-foreground/60 text-foreground"
           />
+          {query && (
+            <button onClick={() => { setQuery(""); setShowResults(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {showResults && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50 max-h-80 overflow-y-auto">
+              {searching ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">Buscando...</div>
+              ) : results.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">Nenhum resultado encontrado</div>
+              ) : (
+                results.map((r) => (
+                  <button
+                    key={`${r.type}-${r.id}`}
+                    onClick={() => handleSelect(r)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-muted/50 transition-colors"
+                  >
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${typeColor[r.type]}`}>
+                      {typeLabel[r.type]}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-foreground truncate">{r.title}</p>
+                      {r.subtitle && <p className="text-[11px] text-muted-foreground truncate">{r.subtitle}</p>}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -34,10 +153,14 @@ const AppHeader = () => {
         <NotificationPanel />
 
         <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-border">
-          <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
-            <span className="text-xs font-bold text-primary-foreground">
-              {user?.name?.charAt(0) || "U"}
-            </span>
+          <div className="w-8 h-8 rounded-full overflow-hidden border border-border flex items-center justify-center bg-muted">
+            {displayAvatar ? (
+              <img src={displayAvatar} alt={user?.name || "Avatar"} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xs font-bold text-primary">
+                {user?.name?.charAt(0) || "U"}
+              </span>
+            )}
           </div>
           <div className="hidden md:block">
             <p className="text-sm font-medium text-foreground">{user?.name}</p>
