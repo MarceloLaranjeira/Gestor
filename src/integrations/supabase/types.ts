@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      acoes_movimento: {
+        Row: {
+          created_at: string
+          data_prazo: string | null
+          descricao: string
+          id: string
+          movimento_id: string
+          responsavel: string
+          status: string
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_prazo?: string | null
+          descricao?: string
+          id?: string
+          movimento_id: string
+          responsavel?: string
+          status?: string
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_prazo?: string | null
+          descricao?: string
+          id?: string
+          movimento_id?: string
+          responsavel?: string
+          status?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acoes_movimento_movimento_id_fkey"
+            columns: ["movimento_id"]
+            isOneToOne: false
+            referencedRelation: "movimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coordenacoes: {
         Row: {
           created_at: string
@@ -125,6 +172,36 @@ export type Database = {
           titulo?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      movimentos: {
+        Row: {
+          cor: string
+          created_at: string
+          descricao: string
+          icone: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          descricao?: string
+          icone?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          descricao?: string
+          icone?: string
+          id?: string
+          nome?: string
+          updated_at?: string
         }
         Relationships: []
       }
