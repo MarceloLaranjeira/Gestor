@@ -67,7 +67,6 @@ async function getFileAsBase64(
   }
   const base64 = btoa(binary);
 
-  const ext = storagePath.split(".").pop()?.toLowerCase();
   const mimeTypes: Record<string, string> = {
     pdf: "application/pdf",
     png: "image/png",
