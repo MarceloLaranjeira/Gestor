@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { LogIn, Eye, EyeOff, UserPlus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import logoDan from "@/assets/logo-dan.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +14,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { login, signup } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -118,9 +120,25 @@ const Login = () => {
               </div>
             </div>
 
+            {isSignup && (
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="terms"
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                  className="mt-0.5"
+                />
+                <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                  Li e aceito os{" "}
+                  <a href="/termos-uso" target="_blank" className="text-primary hover:underline">Termos de Uso</a>{" "}e a{" "}
+                  <a href="/politica-privacidade" target="_blank" className="text-primary hover:underline">Política de Privacidade</a>.
+                </label>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (isSignup && !acceptedTerms)}
               className="w-full h-11 rounded-lg gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
