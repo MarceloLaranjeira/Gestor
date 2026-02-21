@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
-  Clock, MapPin, Calendar, RefreshCw, Unplug, Loader2,
-  Plus, ChevronLeft, ChevronRight, Edit2, Trash2, Video, ExternalLink,
+  Clock, MapPin, Calendar, RefreshCw, Unplug, Loader2, List,
+  Plus, ChevronLeft, ChevronRight, Edit2, Trash2, Video, ExternalLink, Grid3X3,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useGoogleCalendar, type GoogleCalendarEvent } from "@/hooks/useGoogleCalendar";
@@ -19,6 +19,34 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
+/* ─── Color system based on Google Calendar colorId ─── */
+const EVENT_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
+  "1":  { bg: "bg-blue-500/15",    text: "text-blue-700 dark:text-blue-300",    dot: "bg-blue-500" },
+  "2":  { bg: "bg-emerald-500/15", text: "text-emerald-700 dark:text-emerald-300", dot: "bg-emerald-500" },
+  "3":  { bg: "bg-purple-500/15",  text: "text-purple-700 dark:text-purple-300",  dot: "bg-purple-500" },
+  "4":  { bg: "bg-rose-500/15",    text: "text-rose-700 dark:text-rose-300",    dot: "bg-rose-500" },
+  "5":  { bg: "bg-amber-500/15",   text: "text-amber-700 dark:text-amber-300",   dot: "bg-amber-500" },
+  "6":  { bg: "bg-orange-500/15",  text: "text-orange-700 dark:text-orange-300",  dot: "bg-orange-500" },
+  "7":  { bg: "bg-cyan-500/15",    text: "text-cyan-700 dark:text-cyan-300",    dot: "bg-cyan-500" },
+  "8":  { bg: "bg-slate-500/15",   text: "text-slate-700 dark:text-slate-300",   dot: "bg-slate-500" },
+  "9":  { bg: "bg-indigo-500/15",  text: "text-indigo-700 dark:text-indigo-300",  dot: "bg-indigo-500" },
+  "10": { bg: "bg-teal-500/15",    text: "text-teal-700 dark:text-teal-300",    dot: "bg-teal-500" },
+  "11": { bg: "bg-red-500/15",     text: "text-red-700 dark:text-red-300",     dot: "bg-red-500" },
+};
+
+const DEFAULT_COLOR = { bg: "bg-primary/10", text: "text-primary", dot: "bg-primary" };
+
+function getEventColor(ev: GoogleCalendarEvent) {
+  if (ev.colorId && EVENT_COLORS[ev.colorId]) return EVENT_COLORS[ev.colorId];
+  // Hash summary to assign consistent color when no colorId
+  if (ev.summary) {
+    const hash = ev.summary.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+    const keys = Object.keys(EVENT_COLORS);
+    return EVENT_COLORS[keys[hash % keys.length]];
+  }
+  return DEFAULT_COLOR;
+}
+
 /* ─── helpers ─── */
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -30,27 +58,21 @@ function getMonthGrid(year: number, month: number) {
 
   const cells: Array<{ day: number; isCurrentMonth: boolean; dateStr: string }> = [];
 
-  // prev month padding
   const prevLast = new Date(year, month, 0).getDate();
   for (let i = startDay - 1; i >= 0; i--) {
     const d = prevLast - i;
     const dt = new Date(year, month - 1, d);
     cells.push({ day: d, isCurrentMonth: false, dateStr: dt.toISOString().split("T")[0] });
   }
-
-  // current month
   for (let d = 1; d <= totalDays; d++) {
     const dt = new Date(year, month, d);
     cells.push({ day: d, isCurrentMonth: true, dateStr: dt.toISOString().split("T")[0] });
   }
-
-  // next month padding
   const remaining = 42 - cells.length;
   for (let d = 1; d <= remaining; d++) {
     const dt = new Date(year, month + 1, d);
     cells.push({ day: d, isCurrentMonth: false, dateStr: dt.toISOString().split("T")[0] });
   }
-
   return cells;
 }
 
@@ -82,6 +104,7 @@ const Calendario = () => {
   const gcal = useGoogleCalendar();
   const { toast } = useToast();
   const [googleEvents, setGoogleEvents] = useState<GoogleCalendarEvent[]>([]);
+  const [viewMode, setViewMode] = useState<"grade" | "lista">("grade");
 
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
@@ -118,8 +141,31 @@ const Calendario = () => {
       if (!map[key]) map[key] = [];
       map[key].push(ev);
     }
+    // Sort events within each day by time
+    for (const key of Object.keys(map)) {
+      map[key].sort((a, b) => {
+        const aT = a.start.dateTime || a.start.date || "";
+        const bT = b.start.dateTime || b.start.date || "";
+        return aT.localeCompare(bT);
+      });
+    }
     return map;
   }, [googleEvents]);
+
+  /* ─── sorted dates for list view ─── */
+  const sortedMonthEvents = useMemo(() => {
+    const monthStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    const nextMonth = month === 11 ? `${year + 1}-01-01` : `${year}-${String(month + 2).padStart(2, "0")}-01`;
+    
+    const dates = Object.keys(eventsByDate)
+      .filter(d => d >= monthStart && d < nextMonth)
+      .sort();
+    
+    return dates.map(date => ({
+      date,
+      events: eventsByDate[date],
+    }));
+  }, [eventsByDate, year, month]);
 
   const grid = useMemo(() => getMonthGrid(year, month), [year, month]);
   const todayStr = today.toISOString().split("T")[0];
@@ -225,18 +271,39 @@ const Calendario = () => {
     <AppLayout>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold font-display text-foreground">Calendário</h1>
             <p className="text-sm text-muted-foreground">Google Calendar</p>
           </div>
           {gcal.connected && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* View toggle */}
+              <div className="flex rounded-lg border border-border overflow-hidden">
+                <button
+                  onClick={() => setViewMode("grade")}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1.5",
+                    viewMode === "grade" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <Grid3X3 className="w-3.5 h-3.5" /> Grade
+                </button>
+                <button
+                  onClick={() => setViewMode("lista")}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium transition-colors flex items-center gap-1.5",
+                    viewMode === "lista" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <List className="w-3.5 h-3.5" /> Agenda
+                </button>
+              </div>
               <Button size="sm" onClick={() => openCreate()} className="gradient-primary text-primary-foreground border-0">
                 <Plus className="w-4 h-4 mr-1" /> Novo Evento
               </Button>
               <Button variant="outline" size="sm" onClick={fetchRange} disabled={gcal.syncing}>
-                <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${gcal.syncing ? "animate-spin" : ""}`} />
+                <RefreshCw className={cn("w-3.5 h-3.5 mr-1.5", gcal.syncing && "animate-spin")} />
                 Sincronizar
               </Button>
               <Button variant="outline" size="sm" onClick={gcal.disconnect} className="text-destructive hover:text-destructive">
@@ -281,67 +348,185 @@ const Calendario = () => {
               </button>
             </div>
 
-            {/* Calendar Grid */}
-            <div className="glass-card rounded-xl overflow-hidden">
-              {/* Weekday headers */}
-              <div className="grid grid-cols-7 border-b border-border">
-                {WEEKDAYS.map((d) => (
-                  <div key={d} className="text-center py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    {d}
-                  </div>
-                ))}
-              </div>
+            {viewMode === "grade" ? (
+              /* ─── Calendar Grid ─── */
+              <div className="glass-card rounded-xl overflow-hidden">
+                <div className="grid grid-cols-7 border-b border-border">
+                  {WEEKDAYS.map((d) => (
+                    <div key={d} className="text-center py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      {d}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7">
+                  {grid.map((cell, i) => {
+                    const dayEvents = eventsByDate[cell.dateStr] || [];
+                    const isToday = cell.dateStr === todayStr;
 
-              {/* Day cells */}
-              <div className="grid grid-cols-7">
-                {grid.map((cell, i) => {
-                  const dayEvents = eventsByDate[cell.dateStr] || [];
-                  const isToday = cell.dateStr === todayStr;
-
-                  return (
-                    <div
-                      key={i}
-                      onClick={() => cell.isCurrentMonth && openCreate(cell.dateStr)}
-                      className={cn(
-                        "min-h-[90px] border-b border-r border-border/50 p-1 cursor-pointer hover:bg-muted/30 transition-colors",
-                        !cell.isCurrentMonth && "opacity-40",
-                      )}
-                    >
-                      <div className="flex justify-end">
-                        <span
-                          className={cn(
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => cell.isCurrentMonth && openCreate(cell.dateStr)}
+                        className={cn(
+                          "min-h-[90px] border-b border-r border-border/50 p-1 cursor-pointer hover:bg-muted/30 transition-colors",
+                          !cell.isCurrentMonth && "opacity-40",
+                        )}
+                      >
+                        <div className="flex justify-end">
+                          <span className={cn(
                             "text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full",
                             isToday ? "bg-primary text-primary-foreground" : "text-foreground"
+                          )}>
+                            {cell.day}
+                          </span>
+                        </div>
+                        <div className="space-y-0.5 mt-0.5">
+                          {dayEvents.slice(0, 3).map((ev) => {
+                            const color = getEventColor(ev);
+                            const time = ev.start.dateTime
+                              ? new Date(ev.start.dateTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                              : null;
+                            return (
+                              <button
+                                key={ev.id}
+                                onClick={(e) => { e.stopPropagation(); setDetailEvent(ev); }}
+                                className={cn(
+                                  "w-full text-left px-1.5 py-0.5 rounded text-[10px] leading-tight truncate transition-colors block",
+                                  color.bg, color.text, "hover:opacity-80"
+                                )}
+                              >
+                                <span className={cn("inline-block w-1.5 h-1.5 rounded-full mr-1 align-middle", color.dot)} />
+                                {time && <span className="font-semibold mr-0.5">{time}</span>}
+                                {ev.summary || "(Sem título)"}
+                              </button>
+                            );
+                          })}
+                          {dayEvents.length > 3 && (
+                            <span className="text-[10px] text-muted-foreground px-1.5">+{dayEvents.length - 3} mais</span>
                           )}
-                        >
-                          {cell.day}
-                        </span>
+                        </div>
                       </div>
-                      <div className="space-y-0.5 mt-0.5">
-                        {dayEvents.slice(0, 3).map((ev) => {
-                          const time = ev.start.dateTime
-                            ? new Date(ev.start.dateTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-                            : null;
-                          return (
-                            <button
-                              key={ev.id}
-                              onClick={(e) => { e.stopPropagation(); setDetailEvent(ev); }}
-                              className="w-full text-left px-1.5 py-0.5 rounded text-[10px] leading-tight truncate bg-primary/10 text-primary hover:bg-primary/20 transition-colors block"
-                            >
-                              {time && <span className="font-semibold mr-1">{time}</span>}
-                              {ev.summary || "(Sem título)"}
-                            </button>
-                          );
-                        })}
-                        {dayEvents.length > 3 && (
-                          <span className="text-[10px] text-muted-foreground px-1.5">+{dayEvents.length - 3} mais</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            ) : (
+              /* ─── Agenda / List View ─── */
+              <div className="space-y-4">
+                {sortedMonthEvents.length === 0 ? (
+                  <div className="glass-card rounded-xl p-12 text-center">
+                    <Calendar className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                    <p className="text-muted-foreground text-sm">Nenhum evento neste mês.</p>
+                  </div>
+                ) : (
+                  sortedMonthEvents.map(({ date, events }) => {
+                    const dt = new Date(date + "T12:00:00");
+                    const isToday = date === todayStr;
+                    const dayLabel = dt.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
+
+                    return (
+                      <div key={date}>
+                        <div className={cn(
+                          "flex items-center gap-3 mb-2 px-1",
+                          isToday && "text-primary"
+                        )}>
+                          <div className={cn(
+                            "text-center shrink-0 w-12",
+                          )}>
+                            <p className={cn(
+                              "text-2xl font-bold font-display leading-none",
+                              isToday ? "text-primary" : "text-foreground"
+                            )}>
+                              {String(dt.getDate()).padStart(2, "0")}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase">
+                              {dt.toLocaleDateString("pt-BR", { weekday: "short" })}
+                            </p>
+                          </div>
+                          {isToday && (
+                            <span className="text-[10px] font-semibold uppercase tracking-wide bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                              Hoje
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="space-y-2 ml-14">
+                          {events.map((ev) => {
+                            const color = getEventColor(ev);
+                            const startTime = ev.start.dateTime
+                              ? new Date(ev.start.dateTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                              : "Dia inteiro";
+                            const endTime = ev.end.dateTime
+                              ? new Date(ev.end.dateTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                              : null;
+                            const meetLink = ev.hangoutLink || ev.conferenceData?.entryPoints?.find(e => e.entryPointType === "video")?.uri;
+
+                            return (
+                              <motion.div
+                                key={ev.id}
+                                initial={{ opacity: 0, x: -8 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                onClick={() => setDetailEvent(ev)}
+                                className={cn(
+                                  "glass-card rounded-xl p-4 cursor-pointer hover:shadow-md transition-all border-l-4 group",
+                                )}
+                                style={{ borderLeftColor: `var(--event-color-${ev.colorId || "default"})` }}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className={cn("w-2.5 h-2.5 rounded-full mt-1 shrink-0", color.dot)} />
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="text-sm font-semibold text-foreground">{ev.summary || "(Sem título)"}</h3>
+                                    <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="w-3.5 h-3.5" />
+                                        {startTime}{endTime ? ` – ${endTime}` : ""}
+                                      </span>
+                                      {ev.location && (
+                                        <span className="flex items-center gap-1">
+                                          <MapPin className="w-3.5 h-3.5" /> {ev.location}
+                                        </span>
+                                      )}
+                                      {meetLink && (
+                                        <a
+                                          href={meetLink}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="flex items-center gap-1 text-primary hover:underline"
+                                        >
+                                          <Video className="w-3.5 h-3.5" /> Meet
+                                        </a>
+                                      )}
+                                    </div>
+                                    {ev.description && (
+                                      <p className="text-xs text-muted-foreground mt-1.5 line-clamp-1">{ev.description}</p>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); openEdit(ev); }}
+                                      className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(ev); }}
+                                      className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </>
         )}
 
@@ -349,7 +534,12 @@ const Calendario = () => {
         <Dialog open={!!detailEvent} onOpenChange={(open) => !open && setDetailEvent(null)}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-lg">{detailEvent?.summary || "(Sem título)"}</DialogTitle>
+              {detailEvent && (
+                <div className="flex items-center gap-2">
+                  <span className={cn("w-3 h-3 rounded-full shrink-0", getEventColor(detailEvent).dot)} />
+                  <DialogTitle className="text-lg">{detailEvent.summary || "(Sem título)"}</DialogTitle>
+                </div>
+              )}
             </DialogHeader>
             {detailEvent && (() => {
               const startStr = detailEvent.start.dateTime || detailEvent.start.date || "";
@@ -386,6 +576,12 @@ const Calendario = () => {
                       <span>Entrar no Google Meet</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
+                  )}
+
+                  {detailEvent.organizer && !detailEvent.organizer.self && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>Organizador: {detailEvent.organizer.displayName || detailEvent.organizer.email}</span>
+                    </div>
                   )}
 
                   {detailEvent.description && (
