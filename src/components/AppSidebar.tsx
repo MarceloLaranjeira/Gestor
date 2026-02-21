@@ -4,7 +4,7 @@ import logoDan from "@/assets/logo-dan.png";
 import { useSidebarState } from "./AppLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
-  LayoutDashboard, Users, ClipboardList, Calendar, BarChart3, FileText, Settings,
+  LayoutDashboard, Users, ClipboardList, Calendar, CalendarSync, BarChart3, FileText, Settings,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare, Church,
   Megaphone, Database, Building2, UsersRound, Bot, Wallet, KeyRound,
 } from "lucide-react";
@@ -30,7 +30,7 @@ const navItems: NavItem[] = [
   { icon: Users, label: "Pessoas", path: "/pessoas", module: "pessoas" },
   { icon: ClipboardList, label: "Demandas", path: "/demandas", module: "demandas" },
   { icon: Calendar, label: "Eventos", path: "/eventos", module: "eventos" },
-  { icon: Calendar, label: "Calendário", path: "/calendario", module: "calendario" },
+  { icon: CalendarSync, label: "Calendário", path: "/calendario", module: "calendario" },
   { icon: Wallet, label: "Financeiro", path: "/financas", module: "financas" },
   { icon: MessageSquare, label: "Movimentos", path: "/movimentos", module: "movimentos" },
 ];
