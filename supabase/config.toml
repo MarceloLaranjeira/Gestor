@@ -14,3 +14,12 @@ verify_jwt = false
 
 [functions.tts-multi]
 verify_jwt = false
+
+[functions.google-calendar]
+verify_jwt = false
+
+[functions.create-user]
+verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false

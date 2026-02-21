@@ -24,6 +24,7 @@ import Permissoes from "./pages/Permissoes";
 import AcessoNegado from "./pages/AcessoNegado";
 import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import TermosUso from "./pages/TermosUso";
+import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -82,6 +83,7 @@ const AppRoutes = () => (
     <Route path="/acesso-negado" element={<ProtectedRoute><AcessoNegado /></ProtectedRoute>} />
     <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
     <Route path="/termos-uso" element={<TermosUso />} />
+    <Route path="/auth/google-calendar/callback" element={<GoogleCalendarCallback />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
