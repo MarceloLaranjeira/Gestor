@@ -71,6 +71,7 @@ const MovimentoDetalhes = () => {
   const [movimento, setMovimento] = useState<Movimento | null>(null);
   const [acoes, setAcoes] = useState<Acao[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState<string>("todos");
 
   // Edit movimento
   const [editingMov, setEditingMov] = useState(false);
@@ -272,15 +273,32 @@ const MovimentoDetalhes = () => {
         </div>
 
         {/* Ações list */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <h2 className="text-lg font-bold font-display text-foreground">Ações</h2>
-          <Button onClick={openCreateAcao} size="sm" className="gradient-primary text-primary-foreground border-0">
-            <Plus className="w-4 h-4 mr-1" /> Nova Ação
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1.5">
+              {(["todos", "pendente", "em_andamento", "concluida"] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setFilterStatus(s)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    filterStatus === s
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {s === "todos" ? "Todos" : STATUS_LABELS[s]}
+                </button>
+              ))}
+            </div>
+            <Button onClick={openCreateAcao} size="sm" className="gradient-primary text-primary-foreground border-0">
+              <Plus className="w-4 h-4 mr-1" /> Nova Ação
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-2">
-          {acoes.map(a => (
+          {acoes.filter(a => filterStatus === "todos" || a.status === filterStatus).map(a => (
             <motion.div
               key={a.id}
               initial={{ opacity: 0, y: 6 }}
@@ -307,9 +325,9 @@ const MovimentoDetalhes = () => {
               </div>
             </motion.div>
           ))}
-          {acoes.length === 0 && (
+          {acoes.filter(a => filterStatus === "todos" || a.status === filterStatus).length === 0 && (
             <div className="text-center py-12 text-muted-foreground text-sm">
-              Nenhuma ação registrada ainda. Clique em "Nova Ação" para começar.
+              {filterStatus !== "todos" ? "Nenhuma ação com este status" : "Nenhuma ação registrada ainda. Clique em \"Nova Ação\" para começar."}
             </div>
           )}
         </div>
