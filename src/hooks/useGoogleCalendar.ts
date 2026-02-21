@@ -20,6 +20,8 @@ export interface GoogleCalendarEvent {
   end: { dateTime?: string; date?: string };
   location?: string;
   hangoutLink?: string;
+  colorId?: string;
+  organizer?: { displayName?: string; email?: string; self?: boolean };
   conferenceData?: {
     entryPoints?: Array<{ entryPointType: string; uri: string; label?: string }>;
     conferenceSolution?: { name?: { displayName?: string } };
