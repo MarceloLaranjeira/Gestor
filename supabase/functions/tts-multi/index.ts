@@ -42,22 +42,23 @@ async function generateWithElevenLabs(text: string, voiceId: string, stability: 
 }
 
 async function generateWithGoogle(text: string, apiKey: string, speed: number): Promise<ArrayBuffer> {
+  // Use Gemini 2.5 Flash Preview TTS via Google AI Studio API
   const response = await fetch(
-    `https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        input: { text },
-        voice: {
-          languageCode: "pt-BR",
-          name: "pt-BR-Neural2-B",
-          ssmlGender: "MALE",
-        },
-        audioConfig: {
-          audioEncoding: "MP3",
-          speakingRate: speed ?? 1.0,
-          sampleRateHertz: 24000,
+        contents: [{ parts: [{ text }] }],
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: {
+                voiceName: "Kore",
+              },
+            },
+          },
         },
       }),
     }
@@ -65,18 +66,51 @@ async function generateWithGoogle(text: string, apiKey: string, speed: number): 
 
   if (!response.ok) {
     const errText = await response.text();
-    console.error("Google TTS error:", response.status, errText);
-    throw new Error(`Google TTS erro: ${response.status}`);
+    console.error("Google AI Studio TTS error:", response.status, errText);
+    throw new Error(`Google AI Studio TTS erro: ${response.status}`);
   }
 
   const data = await response.json();
-  // Google returns base64 audioContent
-  const binaryString = atob(data.audioContent);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+  const audioData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+  if (!audioData) {
+    throw new Error("Google AI Studio TTS: nenhum áudio retornado");
   }
-  return bytes.buffer;
+
+  // Decode base64 PCM and convert to WAV
+  const binaryString = atob(audioData);
+  const pcmBytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    pcmBytes[i] = binaryString.charCodeAt(i);
+  }
+
+  // Wrap PCM in WAV header (24000Hz, 16-bit, mono)
+  const sampleRate = 24000;
+  const numChannels = 1;
+  const bitsPerSample = 16;
+  const dataSize = pcmBytes.length;
+  const wavHeader = new ArrayBuffer(44);
+  const view = new DataView(wavHeader);
+  // RIFF header
+  view.setUint32(0, 0x52494646, false); // "RIFF"
+  view.setUint32(4, 36 + dataSize, true);
+  view.setUint32(8, 0x57415645, false); // "WAVE"
+  // fmt chunk
+  view.setUint32(12, 0x666d7420, false); // "fmt "
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * bitsPerSample / 8, true);
+  view.setUint16(32, numChannels * bitsPerSample / 8, true);
+  view.setUint16(34, bitsPerSample, true);
+  // data chunk
+  view.setUint32(36, 0x64617461, false); // "data"
+  view.setUint32(40, dataSize, true);
+
+  const wavBytes = new Uint8Array(44 + dataSize);
+  wavBytes.set(new Uint8Array(wavHeader), 0);
+  wavBytes.set(pcmBytes, 44);
+  return wavBytes.buffer;
 }
 
 async function generateWithOpenAI(text: string, apiKey: string, speed: number): Promise<ArrayBuffer> {
@@ -156,10 +190,11 @@ serve(async (req) => {
         break;
     }
 
+    const contentType = provider === "google" ? "audio/wav" : "audio/mpeg";
     return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
-        "Content-Type": "audio/mpeg",
+        "Content-Type": contentType,
         "Content-Length": audioBuffer.byteLength.toString(),
       },
     });
