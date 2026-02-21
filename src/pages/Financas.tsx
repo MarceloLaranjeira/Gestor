@@ -39,8 +39,18 @@ interface Movimento {
   created_at: string;
 }
 
-const CATEGORIAS_RECEITA = ["Emenda Parlamentar", "Gabinete", "Doação", "Repasse", "Outro"];
-const CATEGORIAS_DESPESA = ["Pessoal", "Material", "Serviços", "Comunicação", "Eventos", "Transporte", "Outro"];
+const CATEGORIAS_RECEITA = ["Emenda Parlamentar", "Gabinete", "Doação", "Repasse", "Convênio", "Patrocínio", "Outro"];
+const CATEGORIAS_DESPESA = [
+  "Pessoal e Folha", "Encargos Sociais", "Serviços Terceirizados",
+  "Material de Consumo", "Material de Expediente",
+  "Comunicação e Marketing", "Tecnologia e Sistemas",
+  "Aluguel e Infraestrutura", "Energia e Utilities",
+  "Transporte e Logística", "Viagens e Diárias",
+  "Eventos e Cerimonial", "Consultoria e Assessoria",
+  "Capacitação e Treinamento", "Manutenção e Reparos",
+  "Seguros", "Impostos e Taxas", "Despesas Financeiras",
+  "Representação", "Outro",
+];
 const MONTH_NAMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 const chartStyle = {
