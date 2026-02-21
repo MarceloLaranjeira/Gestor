@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, X, Bot, Volume2, VolumeX, MessageSquare, Mic, Loader2, Play, Square, Key, FileText, Eye, EyeOff } from "lucide-react";
+import { Settings, X, Bot, Volume2, VolumeX, MessageSquare, Mic, Loader2, Play, Square, Key, FileText, Eye, EyeOff, Thermometer, Zap, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 export type ResponseMode = "text" | "voice" | "both";
 export type TtsProvider = "elevenlabs" | "google" | "openai";
 
+export type VoiceFormality = "formal" | "neutral" | "casual";
+
 export interface AgentSettings {
   model: string;
   responseMode: ResponseMode;
@@ -18,6 +20,9 @@ export interface AgentSettings {
   voiceName: string;
   stability: number;
   speed: number;
+  temperature: number;
+  assertiveness: number;
+  formality: VoiceFormality;
   customInstructions: string;
   ttsProvider: TtsProvider;
   googleTtsApiKey: string;
@@ -32,6 +37,9 @@ export const DEFAULT_SETTINGS: AgentSettings = {
   voiceName: "Brian",
   stability: 0.5,
   speed: 1.0,
+  temperature: 0.7,
+  assertiveness: 0.5,
+  formality: "neutral",
   customInstructions: "",
   ttsProvider: "elevenlabs",
   googleTtsApiKey: "",
@@ -193,6 +201,71 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
                   maxLength={2000}
                 />
                 <p className="text-[10px] text-muted-foreground">{settings.customInstructions.length}/2000 caracteres</p>
+              </div>
+
+              {/* Temperature */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Thermometer className="w-4 h-4 text-primary" />
+                  <Label className="text-sm font-semibold text-foreground">
+                    Temperatura: <span className="text-primary">{settings.temperature.toFixed(1)}</span>
+                  </Label>
+                </div>
+                <Slider
+                  min={0} max={1} step={0.1}
+                  value={[settings.temperature]}
+                  onValueChange={([v]) => onChange({ ...settings, temperature: v })}
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>Preciso / Focado</span>
+                  <span>Criativo / Variado</span>
+                </div>
+              </div>
+
+              {/* Assertiveness */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary" />
+                  <Label className="text-sm font-semibold text-foreground">
+                    Assertividade: <span className="text-primary">{Math.round(settings.assertiveness * 100)}%</span>
+                  </Label>
+                </div>
+                <Slider
+                  min={0} max={1} step={0.05}
+                  value={[settings.assertiveness]}
+                  onValueChange={([v]) => onChange({ ...settings, assertiveness: v })}
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>Sugestivo / Cauteloso</span>
+                  <span>Direto / Decisivo</span>
+                </div>
+              </div>
+
+              {/* Formality */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-primary" />
+                  <Label className="text-sm font-semibold text-foreground">Formalidade da Voz</Label>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: "formal" as VoiceFormality, label: "Formal" },
+                    { value: "neutral" as VoiceFormality, label: "Neutro" },
+                    { value: "casual" as VoiceFormality, label: "Casual" },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => onChange({ ...settings, formality: opt.value })}
+                      className={`p-2.5 rounded-xl border text-xs font-medium transition-all ${
+                        settings.formality === opt.value
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-muted/40 text-muted-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Response Mode */}

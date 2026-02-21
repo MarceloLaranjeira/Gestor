@@ -113,7 +113,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, model, attachments, customInstructions } = await req.json();
+    const { messages, model, attachments, customInstructions, temperature, assertiveness, formality } = await req.json();
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -208,7 +208,11 @@ Cidades atendidas: ${[...new Set(pessoas.map(p => p.cidade).filter(Boolean))].jo
 - Quando sugerir ações, seja específico e prático
 - Identifique padrões, tendências e pontos de atenção nos dados
 - Quando receber documentos ou imagens, analise seu conteúdo em detalhes
-- Data de hoje: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}${customInstructions ? `\n\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstructions}` : ""}`;
+- Data de hoje: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+
+## ESTILO DE COMUNICAÇÃO
+- Assertividade: ${assertiveness !== undefined ? Math.round(assertiveness * 100) : 50}% (${assertiveness >= 0.7 ? "Seja direto, decisivo e use tom firme" : assertiveness >= 0.4 ? "Equilibre sugestões com recomendações claras" : "Seja mais sugestivo, cauteloso e apresente alternativas"})
+- Formalidade: ${formality || "neutral"} (${formality === "formal" ? "Use linguagem formal, parlamentar, com tratamentos adequados (Vossa Excelência, etc.)" : formality === "casual" ? "Use linguagem acessível, direta e descontraída, mas profissional" : "Use linguagem profissional equilibrada, nem muito formal nem casual"})${customInstructions ? `\n\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstructions}` : ""}`;
 
     // Process attachments: download files from storage and convert to base64
     const processedAttachments: Array<{ data: string; mimeType: string; fileName: string }> = [];
@@ -278,6 +282,7 @@ Cidades atendidas: ${[...new Set(pessoas.map(p => p.cidade).filter(Boolean))].jo
         model: effectiveModel,
         messages: aiMessages,
         stream: true,
+        temperature: temperature !== undefined ? temperature : 0.7,
       }),
     });
 

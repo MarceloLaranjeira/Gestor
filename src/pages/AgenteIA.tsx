@@ -50,6 +50,7 @@ async function streamChat(
   model: string,
   attachments: Array<{ storagePath: string; fileName: string }>,
   customInstructions: string,
+  extraSettings: { temperature: number; assertiveness: number; formality: string },
   onDelta: (text: string) => void,
   onDone: () => void,
   onError: (msg: string) => void
@@ -68,7 +69,7 @@ async function streamChat(
   const resp = await fetch(AGENT_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ messages: cleanMessages, model, attachments, customInstructions }),
+    body: JSON.stringify({ messages: cleanMessages, model, attachments, customInstructions, ...extraSettings }),
   });
 
   if (!resp.ok) {
@@ -365,6 +366,7 @@ const AgenteIA = () => {
         settings.model,
         uploadedAttachments,
         settings.customInstructions,
+        { temperature: settings.temperature, assertiveness: settings.assertiveness, formality: settings.formality },
         upsertAssistant,
         async () => {
           setIsLoading(false);
