@@ -80,7 +80,7 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
 
   const TTS_PROVIDERS = [
     { value: "elevenlabs" as TtsProvider, label: "ElevenLabs" },
-    { value: "google" as TtsProvider, label: "Google Cloud TTS" },
+    { value: "google" as TtsProvider, label: "Google AI Studio TTS" },
     { value: "openai" as TtsProvider, label: "OpenAI TTS" },
   ];
 
@@ -237,7 +237,7 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
 
                   {settings.ttsProvider === "google" && (
                     <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Chave de API do Google Cloud</Label>
+                      <Label className="text-xs text-muted-foreground">Chave de API do Google AI Studio</Label>
                       <div className="relative">
                         <Input
                           type={showGoogleKey ? "text" : "password"}
