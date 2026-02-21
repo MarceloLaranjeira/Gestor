@@ -125,6 +125,12 @@ async function speakText(text: string, settings: AgentSettings): Promise<void> {
     .replace(/\n{2,}/g, ". ")
     .trim();
 
+  // Create Audio element immediately to preserve user gesture context
+  const audio = new Audio();
+  audio.preload = "auto";
+  // Unlock for iOS Safari
+  audio.play().catch(() => {});
+
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
   if (!token) throw new Error("Não autorizado");
@@ -144,12 +150,16 @@ async function speakText(text: string, settings: AgentSettings): Promise<void> {
     }),
   });
 
-  if (!resp.ok) throw new Error("Erro ao gerar áudio");
+  if (!resp.ok) {
+    const errData = await resp.json().catch(() => ({}));
+    throw new Error(errData.error || "Erro ao gerar áudio");
+  }
 
   const blob = await resp.blob();
   const url = URL.createObjectURL(blob);
+
   return new Promise((resolve, reject) => {
-    const audio = new Audio(url);
+    audio.src = url;
     audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
     audio.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Erro ao reproduzir áudio")); };
     audio.play().catch(reject);
