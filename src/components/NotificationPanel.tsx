@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Bell, Clock, AlertTriangle, CheckCircle2, X, Volume2, VolumeX } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -8,6 +9,7 @@ import { ptBR } from "date-fns/locale";
 
 interface Notification {
   id: string;
+  sourceId: string;
   type: "atrasada" | "prazo_proximo" | "pendente_antiga";
   title: string;
   description: string;
@@ -18,6 +20,7 @@ interface Notification {
 const NotificationPanel = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem("notification_sound");
@@ -72,7 +75,6 @@ const NotificationPanel = () => {
 
     const results: Notification[] = [];
 
-    // Demandas atrasadas (prazo vencido e não concluída)
     const { data: demandasAtrasadas } = await supabase
       .from("demandas")
       .select("id, titulo, data_prazo, status, responsavel")
@@ -83,6 +85,7 @@ const NotificationPanel = () => {
     demandasAtrasadas?.forEach((d) => {
       results.push({
         id: `demanda-atrasada-${d.id}`,
+        sourceId: d.id,
         type: "atrasada",
         title: d.titulo,
         description: `Prazo vencido em ${new Date(d.data_prazo + "T00:00:00").toLocaleDateString("pt-BR")}${d.responsavel ? ` • ${d.responsavel}` : ""}`,
@@ -91,7 +94,6 @@ const NotificationPanel = () => {
       });
     });
 
-    // Demandas com prazo próximo (3 dias)
     const { data: demandasProximas } = await supabase
       .from("demandas")
       .select("id, titulo, data_prazo, status, responsavel")
@@ -103,6 +105,7 @@ const NotificationPanel = () => {
     demandasProximas?.forEach((d) => {
       results.push({
         id: `demanda-proxima-${d.id}`,
+        sourceId: d.id,
         type: "prazo_proximo",
         title: d.titulo,
         description: `Prazo em ${new Date(d.data_prazo + "T00:00:00").toLocaleDateString("pt-BR")}${d.responsavel ? ` • ${d.responsavel}` : ""}`,
@@ -111,7 +114,6 @@ const NotificationPanel = () => {
       });
     });
 
-    // Demandas pendentes há muito tempo (>30 dias sem prazo definido)
     const { data: demandasAntigas } = await supabase
       .from("demandas")
       .select("id, titulo, created_at, status")
@@ -122,6 +124,7 @@ const NotificationPanel = () => {
     demandasAntigas?.forEach((d) => {
       results.push({
         id: `demanda-antiga-${d.id}`,
+        sourceId: d.id,
         type: "pendente_antiga",
         title: d.titulo,
         description: `Pendente há ${formatDistanceToNow(new Date(d.created_at), { locale: ptBR })}`,
@@ -130,10 +133,9 @@ const NotificationPanel = () => {
       });
     });
 
-    // Tarefas com prazo vencido
     const { data: tarefasAtrasadas } = await supabase
       .from("tarefas")
-      .select("id, titulo, data_fim, status, responsavel")
+      .select("id, titulo, data_fim, status, responsavel, secao_id")
       .lt("data_fim", today)
       .eq("status", false)
       .not("data_fim", "is", null);
@@ -141,6 +143,7 @@ const NotificationPanel = () => {
     tarefasAtrasadas?.forEach((t) => {
       results.push({
         id: `tarefa-atrasada-${t.id}`,
+        sourceId: t.secao_id,
         type: "atrasada",
         title: t.titulo,
         description: `Tarefa com prazo vencido em ${new Date(t.data_fim + "T00:00:00").toLocaleDateString("pt-BR")}${t.responsavel ? ` • ${t.responsavel}` : ""}`,
@@ -149,7 +152,6 @@ const NotificationPanel = () => {
       });
     });
 
-    // Sort: atrasadas first, then by date
     results.sort((a, b) => {
       const typeOrder = { atrasada: 0, prazo_proximo: 1, pendente_antiga: 2 };
       if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type];
@@ -165,7 +167,6 @@ const NotificationPanel = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Play sound when new notifications appear
   useEffect(() => {
     const visibleCount = notifications.filter((n) => !dismissed.has(n.id)).length;
     if (visibleCount > prevCountRef.current && prevCountRef.current >= 0) {
@@ -179,6 +180,32 @@ const NotificationPanel = () => {
     next.add(id);
     setDismissed(next);
     localStorage.setItem("dismissed_notifications", JSON.stringify([...next]));
+  };
+
+  const handleClick = async (n: Notification) => {
+    if (n.source === "demanda") {
+      navigate("/demandas");
+    } else {
+      // For tarefas, find the coordenação via seção
+      const { data: secao } = await supabase
+        .from("secoes")
+        .select("coordenacao_id")
+        .eq("id", n.sourceId)
+        .single();
+
+      if (secao) {
+        const { data: coord } = await supabase
+          .from("coordenacoes")
+          .select("slug")
+          .eq("id", secao.coordenacao_id)
+          .single();
+
+        if (coord) {
+          navigate(`/coordenacao/${coord.slug}`);
+        }
+      }
+    }
+    setOpen(false);
   };
 
   const visible = notifications.filter((n) => !dismissed.has(n.id));
@@ -237,7 +264,11 @@ const NotificationPanel = () => {
                 const cfg = typeConfig[n.type];
                 const Icon = cfg.icon;
                 return (
-                  <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-muted/50 transition-colors group">
+                  <div
+                    key={n.id}
+                    onClick={() => handleClick(n)}
+                    className="flex items-start gap-3 px-4 py-3 hover:bg-muted/50 transition-colors group cursor-pointer"
+                  >
                     <div className={`mt-0.5 p-1.5 rounded-lg ${cfg.bg}`}>
                       <Icon className={`w-3.5 h-3.5 ${cfg.style}`} />
                     </div>
@@ -247,7 +278,7 @@ const NotificationPanel = () => {
                       <span className="text-[10px] text-muted-foreground/60 capitalize">{n.source}</span>
                     </div>
                     <button
-                      onClick={() => dismiss(n.id)}
+                      onClick={(e) => { e.stopPropagation(); dismiss(n.id); }}
                       className="p-1 rounded hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
                       title="Dispensar"
                     >
