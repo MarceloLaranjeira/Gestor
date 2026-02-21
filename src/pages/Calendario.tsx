@@ -88,7 +88,23 @@ interface EventForm {
   endTime: string;
   location: string;
   addMeet: boolean;
+  colorId: string;
 }
+
+const COLOR_OPTIONS = [
+  { id: "",   label: "Padrão" },
+  { id: "1",  label: "Lavanda" },
+  { id: "2",  label: "Sálvia" },
+  { id: "3",  label: "Uva" },
+  { id: "4",  label: "Flamingo" },
+  { id: "5",  label: "Banana" },
+  { id: "6",  label: "Tangerina" },
+  { id: "7",  label: "Pavão" },
+  { id: "8",  label: "Grafite" },
+  { id: "9",  label: "Mirtilo" },
+  { id: "10", label: "Manjericão" },
+  { id: "11", label: "Tomate" },
+];
 
 const emptyForm = (dateStr?: string): EventForm => ({
   summary: "",
@@ -98,6 +114,7 @@ const emptyForm = (dateStr?: string): EventForm => ({
   endTime: "10:00",
   location: "",
   addMeet: false,
+  colorId: "",
 });
 
 const Calendario = () => {
@@ -204,6 +221,7 @@ const Calendario = () => {
       endTime,
       location: ev.location || "",
       addMeet: !!ev.hangoutLink,
+      colorId: ev.colorId || "",
     });
     setDetailEvent(null);
     setShowForm(true);
@@ -223,6 +241,7 @@ const Calendario = () => {
         start: { dateTime: `${form.date}T${form.startTime}:00`, timeZone: "America/Manaus" },
         end: { dateTime: `${form.date}T${form.endTime}:00`, timeZone: "America/Manaus" },
       };
+      if (form.colorId) payload.colorId = form.colorId;
 
       if (form.addMeet && !editTarget?.hangoutLink) {
         payload.conferenceData = {
@@ -653,6 +672,36 @@ const Calendario = () => {
                   <Video className="w-3.5 h-3.5" />
                   Adicionar link do Google Meet
                 </label>
+              </div>
+
+              {/* Color picker */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground">Cor do evento</label>
+                <div className="flex flex-wrap gap-2">
+                  {COLOR_OPTIONS.map((c) => {
+                    const color = c.id ? EVENT_COLORS[c.id] : DEFAULT_COLOR;
+                    const isSelected = form.colorId === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, colorId: c.id }))}
+                        className={cn(
+                          "w-7 h-7 rounded-full transition-all flex items-center justify-center",
+                          color.dot,
+                          isSelected ? "ring-2 ring-offset-2 ring-foreground/50 ring-offset-background scale-110" : "hover:scale-110 opacity-70 hover:opacity-100"
+                        )}
+                        title={c.label}
+                      >
+                        {isSelected && (
+                          <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="space-y-1.5">
