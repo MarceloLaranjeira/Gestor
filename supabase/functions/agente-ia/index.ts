@@ -113,7 +113,7 @@ serve(async (req) => {
       });
     }
 
-    const { messages, model, attachments } = await req.json();
+    const { messages, model, attachments, customInstructions } = await req.json();
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -208,7 +208,7 @@ Cidades atendidas: ${[...new Set(pessoas.map(p => p.cidade).filter(Boolean))].jo
 - Quando sugerir ações, seja específico e prático
 - Identifique padrões, tendências e pontos de atenção nos dados
 - Quando receber documentos ou imagens, analise seu conteúdo em detalhes
-- Data de hoje: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`;
+- Data de hoje: ${new Date().toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}${customInstructions ? `\n\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstructions}` : ""}`;
 
     // Process attachments: download files from storage and convert to base64
     const processedAttachments: Array<{ data: string; mimeType: string; fileName: string }> = [];

@@ -27,7 +27,7 @@ type Msg = {
 };
 
 const AGENT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agente-ia`;
-const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`;
+const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts-multi`;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const QUICK_PROMPTS = [
@@ -49,6 +49,7 @@ async function streamChat(
   messages: Msg[],
   model: string,
   attachments: Array<{ storagePath: string; fileName: string }>,
+  customInstructions: string,
   onDelta: (text: string) => void,
   onDone: () => void,
   onError: (msg: string) => void
@@ -67,7 +68,7 @@ async function streamChat(
   const resp = await fetch(AGENT_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ messages: cleanMessages, model, attachments }),
+    body: JSON.stringify({ messages: cleanMessages, model, attachments, customInstructions }),
   });
 
   if (!resp.ok) {
@@ -133,9 +134,12 @@ async function speakText(text: string, settings: AgentSettings): Promise<void> {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({
       text: clean.slice(0, 2500),
+      provider: settings.ttsProvider || "elevenlabs",
       voiceId: settings.voiceId,
       stability: settings.stability,
       speed: settings.speed,
+      googleApiKey: settings.googleTtsApiKey || undefined,
+      openaiApiKey: settings.openaiTtsApiKey || undefined,
     }),
   });
 
@@ -349,6 +353,7 @@ const AgenteIA = () => {
         newMessages,
         settings.model,
         uploadedAttachments,
+        settings.customInstructions,
         upsertAssistant,
         async () => {
           setIsLoading(false);

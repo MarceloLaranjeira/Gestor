@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.analise-financeira]
 verify_jwt = false
+
+[functions.tts-multi]
+verify_jwt = false
