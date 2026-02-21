@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, LayoutDashboard, Users, ClipboardList, Calendar, BarChart3, FileText, Settings, MessageSquare, Bot, Wallet, KeyRound, Church, Megaphone, Database, Shield, Building2, UsersRound } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import NotificationPanel from "@/components/NotificationPanel";
@@ -8,12 +8,33 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SearchResult {
-  type: "pessoa" | "demanda" | "evento";
+  type: "pessoa" | "demanda" | "evento" | "pagina";
   id: string;
   title: string;
   subtitle?: string;
   path: string;
 }
+
+const sidebarPages: { label: string; path: string; keywords: string[] }[] = [
+  { label: "Dashboard", path: "/", keywords: ["dashboard", "início", "home", "painel"] },
+  { label: "Assessor IA", path: "/agente-ia", keywords: ["assessor", "ia", "inteligência", "artificial", "agente", "bot"] },
+  { label: "Pessoas", path: "/pessoas", keywords: ["pessoas", "contatos", "cadastro"] },
+  { label: "Demandas", path: "/demandas", keywords: ["demandas", "solicitações", "pedidos"] },
+  { label: "Eventos", path: "/eventos", keywords: ["eventos", "agenda", "calendário"] },
+  { label: "Financeiro", path: "/financas", keywords: ["financeiro", "finanças", "dinheiro", "receita", "despesa"] },
+  { label: "Movimentos", path: "/movimentos", keywords: ["movimentos", "ações"] },
+  { label: "Relatórios", path: "/relatorios", keywords: ["relatórios", "relatório", "dados"] },
+  { label: "Rel. Coordenação", path: "/relatorio-coordenacao", keywords: ["relatório", "coordenação"] },
+  { label: "Usuários", path: "/usuarios", keywords: ["usuários", "gerenciar", "membros"] },
+  { label: "Permissões", path: "/permissoes", keywords: ["permissões", "acesso", "roles"] },
+  { label: "Configurações", path: "/configuracoes", keywords: ["configurações", "perfil", "conta", "senha"] },
+  { label: "Coord. Eclesiástica", path: "/coordenacao/eclesiastica", keywords: ["eclesiástica", "igreja", "coordenação"] },
+  { label: "Coord. Comunicação", path: "/coordenacao/comunicacao", keywords: ["comunicação", "mídia", "coordenação"] },
+  { label: "Coord. Inteligência de Dados", path: "/coordenacao/inteligencia", keywords: ["inteligência", "dados", "coordenação"] },
+  { label: "Coord. CSPJD", path: "/coordenacao/cspjd", keywords: ["cspjd", "segurança", "coordenação"] },
+  { label: "Coord. Gabinete", path: "/coordenacao/gabinete", keywords: ["gabinete", "coordenação"] },
+  { label: "Coord. Equipe CMT Dan", path: "/coordenacao/equipe", keywords: ["equipe", "cmt", "dan", "coordenação"] },
+];
 
 const AppHeader = () => {
   const { user } = useAuth();
@@ -49,8 +70,19 @@ const AppHeader = () => {
     const timeout = setTimeout(async () => {
       setSearching(true);
       const term = `%${query.trim()}%`;
+      const lowerQuery = query.trim().toLowerCase();
       const items: SearchResult[] = [];
 
+      // Search sidebar pages first
+      sidebarPages.forEach((page) => {
+        const matches = page.label.toLowerCase().includes(lowerQuery) ||
+          page.keywords.some((k) => k.includes(lowerQuery));
+        if (matches) {
+          items.push({ type: "pagina", id: page.path, title: page.label, subtitle: page.path, path: page.path });
+        }
+      });
+
+      // Then search database
       const [pessoas, demandas, eventos] = await Promise.all([
         supabase.from("pessoas").select("id, nome, tipo").ilike("nome", term).limit(5),
         supabase.from("demandas").select("id, titulo, status").ilike("titulo", term).limit(5),
@@ -85,12 +117,14 @@ const AppHeader = () => {
     pessoa: "Pessoa",
     demanda: "Demanda",
     evento: "Evento",
+    pagina: "Página",
   };
 
   const typeColor: Record<string, string> = {
     pessoa: "bg-primary/10 text-primary",
     demanda: "bg-accent/10 text-accent-foreground",
     evento: "bg-secondary/10 text-secondary",
+    pagina: "bg-muted text-foreground",
   };
 
   const displayAvatar = user?.avatar_url;
