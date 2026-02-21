@@ -246,8 +246,23 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {["Kore", "Puck", "Charon", "Fenrir", "Aoede", "Leda", "Orus", "Zephyr"].map(v => (
-                              <SelectItem key={v} value={v}>{v}</SelectItem>
+                            {[
+                              { name: "Kore", gender: "♀" },
+                              { name: "Aoede", gender: "♀" },
+                              { name: "Leda", gender: "♀" },
+                              { name: "Puck", gender: "♂" },
+                              { name: "Charon", gender: "♂" },
+                              { name: "Fenrir", gender: "♂" },
+                              { name: "Orus", gender: "♂" },
+                              { name: "Zephyr", gender: "♂" },
+                              { name: "Enceladus", gender: "♂" },
+                              { name: "Iapetus", gender: "♂" },
+                              { name: "Umbriel", gender: "♂" },
+                              { name: "Tethys", gender: "♂" },
+                              { name: "Proteus", gender: "♂" },
+                              { name: "Narvi", gender: "♂" },
+                            ].map(v => (
+                              <SelectItem key={v.name} value={v.name}>{v.gender} {v.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
