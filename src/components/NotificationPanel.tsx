@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Bell, Clock, AlertTriangle, CheckCircle2, X } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Bell, Clock, AlertTriangle, CheckCircle2, X, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,6 +18,16 @@ interface Notification {
 const NotificationPanel = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("notification_sound");
+      return saved !== "false";
+    } catch {
+      return true;
+    }
+  });
+  const prevCountRef = useRef(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem("dismissed_notifications");
@@ -26,6 +36,34 @@ const NotificationPanel = () => {
       return new Set();
     }
   });
+
+  const playNotificationSound = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioContext();
+      }
+      const ctx = audioCtxRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+    } catch {
+      // Audio not supported
+    }
+  }, [soundEnabled]);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    localStorage.setItem("notification_sound", String(next));
+  };
 
   const fetchNotifications = async () => {
     const today = new Date().toISOString().split("T")[0];
@@ -123,9 +161,18 @@ const NotificationPanel = () => {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5 * 60 * 1000); // refresh every 5 min
+    const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Play sound when new notifications appear
+  useEffect(() => {
+    const visibleCount = notifications.filter((n) => !dismissed.has(n.id)).length;
+    if (visibleCount > prevCountRef.current && prevCountRef.current >= 0) {
+      playNotificationSound();
+    }
+    prevCountRef.current = visibleCount;
+  }, [notifications, dismissed, playNotificationSound]);
 
   const dismiss = (id: string) => {
     const next = new Set(dismissed);
@@ -158,11 +205,24 @@ const NotificationPanel = () => {
       <PopoverContent className="w-96 p-0" align="end" sideOffset={8}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="text-sm font-semibold text-foreground">Notificações</h3>
-          {count > 0 && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">
-              {count} pendente{count !== 1 ? "s" : ""}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleSound}
+              className="p-1 rounded hover:bg-muted transition-colors"
+              title={soundEnabled ? "Desativar som" : "Ativar som"}
+            >
+              {soundEnabled ? (
+                <Volume2 className="w-3.5 h-3.5 text-muted-foreground" />
+              ) : (
+                <VolumeX className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+            </button>
+            {count > 0 && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">
+                {count} pendente{count !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
         </div>
         <ScrollArea className="max-h-80">
           {visible.length === 0 ? (
