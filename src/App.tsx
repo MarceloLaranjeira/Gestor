@@ -22,6 +22,8 @@ import Financas from "./pages/Financas";
 import MovimentoDetalhes from "./pages/MovimentoDetalhes";
 import Permissoes from "./pages/Permissoes";
 import AcessoNegado from "./pages/AcessoNegado";
+import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
+import TermosUso from "./pages/TermosUso";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +80,8 @@ const AppRoutes = () => (
     <Route path="/financas" element={<PermissionRoute><Financas /></PermissionRoute>} />
     <Route path="/permissoes" element={<ProtectedRoute><Permissoes /></ProtectedRoute>} />
     <Route path="/acesso-negado" element={<ProtectedRoute><AcessoNegado /></ProtectedRoute>} />
+    <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+    <Route path="/termos-uso" element={<TermosUso />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

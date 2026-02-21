@@ -139,6 +139,12 @@ const Login = () => {
           >
             {isSignup ? "Já tem conta? Faça login" : "Não tem conta? Cadastre-se"}
           </button>
+
+          <div className="flex justify-center gap-4 mt-3 text-[11px] text-muted-foreground">
+            <a href="/politica-privacidade" className="hover:text-primary transition-colors">Política de Privacidade</a>
+            <span>•</span>
+            <a href="/termos-uso" className="hover:text-primary transition-colors">Termos de Uso</a>
+          </div>
         </motion.div>
       </div>
     </div>
