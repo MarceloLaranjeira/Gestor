@@ -161,13 +161,11 @@ async function speakText(text: string, settings: AgentSettings): Promise<{ audio
   const blob = await resp.blob();
   const url = URL.createObjectURL(blob);
 
-  return new Promise((resolve, reject) => {
-    audio.src = url;
-    audio.onended = () => { URL.revokeObjectURL(url); resolve({ audio }); };
-    audio.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Erro ao reproduzir áudio")); };
-    audio.play().catch(reject);
-    resolve({ audio });
-  });
+  audio.src = url;
+  audio.onended = () => { URL.revokeObjectURL(url); };
+  audio.onerror = () => { URL.revokeObjectURL(url); };
+  await audio.play();
+  return { audio };
 }
 
 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
