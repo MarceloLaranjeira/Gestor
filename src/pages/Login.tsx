@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { LogIn, Eye, EyeOff, UserPlus } from "lucide-react";
@@ -42,14 +42,68 @@ const Login = () => {
     setLoading(false);
   };
 
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animId: number;
+    const resize = () => { canvas.width = canvas.offsetWidth * 2; canvas.height = canvas.offsetHeight * 2; };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const NUM = 120;
+    const particles = Array.from({ length: NUM }, (_, i) => {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Math.random() * 0.35 + 0.05;
+      return {
+        angle,
+        dist,
+        size: Math.random() * 3 + 1.5,
+        opacity: Math.random() * 0.5 + 0.25,
+        speed: (Math.random() * 0.003 + 0.001) * (i < NUM / 2 ? 1 : -1),
+        yOffset: (Math.random() - 0.5) * 0.1,
+        pulse: Math.random() * Math.PI * 2,
+        pulseSpeed: Math.random() * 0.02 + 0.005,
+      };
+    });
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const radius = Math.min(cx, cy) * 0.75;
+
+      for (const p of particles) {
+        p.angle += p.speed;
+        p.pulse += p.pulseSpeed;
+        const x = cx + Math.cos(p.angle) * radius * p.dist;
+        const y = cy + Math.sin(p.angle) * radius * p.dist + Math.sin(p.pulse) * 8;
+        const s = p.size * (1 + Math.sin(p.pulse) * 0.3);
+
+        ctx.beginPath();
+        ctx.arc(x, y, s, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(45, 85%, 65%, ${p.opacity * (0.7 + Math.sin(p.pulse) * 0.3)})`;
+        ctx.shadowColor = "hsla(45, 85%, 65%, 0.3)";
+        ctx.shadowBlur = 6;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
+  }, []);
+
   return (
     <div className="min-h-screen flex">
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 gradient-primary relative overflow-hidden items-center justify-center">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-64 h-64 rounded-full bg-sidebar-primary blur-[100px]" />
-          <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-secondary blur-[120px]" />
-        </div>
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
         <div className="relative z-10 text-center px-12">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <img src={logoDan} alt="Gabinete CMD Dan" className="w-64 mx-auto mb-8 drop-shadow-lg" />
