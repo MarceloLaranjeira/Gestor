@@ -103,10 +103,13 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
     setLoadingVoices(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || SUPABASE_KEY;
+      if (!session?.access_token) {
+        console.error("No active session for fetching voices");
+        return;
+      }
       const res = await fetch(`${SUPABASE_URL}/functions/v1/elevenlabs-voices`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${session.access_token}`,
           "Content-Type": "application/json",
         },
       });
