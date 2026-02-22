@@ -118,7 +118,23 @@ Deno.serve(async (req) => {
 
     // === OAuth: exchange code for tokens ===
     if (action === "callback") {
-      const { code, redirect_uri, user_id } = await req.json();
+      const userId = await getAuthenticatedUser(req);
+      if (!userId) {
+        return new Response(JSON.stringify({ error: "Não autorizado" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { code, redirect_uri, state } = await req.json();
+
+      // Validate state matches authenticated user to prevent token theft
+      if (state !== userId) {
+        return new Response(JSON.stringify({ error: "Estado inválido" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
@@ -144,7 +160,7 @@ Deno.serve(async (req) => {
       const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
 
       await admin.from("google_calendar_tokens").upsert({
-        user_id,
+        user_id: userId,
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
         expires_at: expiresAt,

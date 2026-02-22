@@ -43,7 +43,7 @@ const GoogleCalendarCallback = () => {
               Authorization: `Bearer ${session.session?.access_token}`,
               apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             },
-            body: JSON.stringify({ code, redirect_uri: redirectUri, user_id: state }),
+            body: JSON.stringify({ code, redirect_uri: redirectUri, state }),
           }
         );
 

@@ -3,6 +3,7 @@ import { Bot, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ReactMarkdown from "react-markdown";
+import { supabase } from "@/integrations/supabase/client";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analise-financeira`;
 
@@ -21,11 +22,18 @@ export default function FinancasAIButton() {
     abortRef.current = controller;
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setContent("❌ Sessão expirada. Faça login novamente.");
+        setLoading(false);
+        return;
+      }
+
       const resp = await fetch(FUNCTION_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({}),
         signal: controller.signal,
