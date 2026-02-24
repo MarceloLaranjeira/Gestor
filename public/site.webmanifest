@@ -1,0 +1,21 @@
+{
+  "name": "Gabinete CMD Dan — Gestão Inteligente",
+  "short_name": "Gabinete Dan",
+  "description": "Sistema de gestão inteligente do Gabinete do Deputado Estadual Comandante Dan.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
