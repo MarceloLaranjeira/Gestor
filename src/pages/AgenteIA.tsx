@@ -128,6 +128,17 @@ function createUnlockedAudio(): HTMLAudioElement {
   return audio;
 }
 
+async function requestMicrophonePermission(): Promise<boolean> {
+  if (!navigator.mediaDevices?.getUserMedia) return true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((track) => track.stop());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function speakText(text: string, settings: AgentSettings, preUnlockedAudio?: HTMLAudioElement): Promise<{ audio: HTMLAudioElement }> {
   const clean = text
     .replace(/#{1,6}\s/g, "")
@@ -203,6 +214,7 @@ const AgenteIA = () => {
   const recognitionRef = useRef<any>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const unlockedAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -220,6 +232,13 @@ const AgenteIA = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const ensureAudioUnlocked = useCallback(() => {
+    if (settings.responseMode === "text") return;
+    if (!unlockedAudioRef.current) {
+      unlockedAudioRef.current = createUnlockedAudio();
+    }
+  }, [settings.responseMode]);
 
   // Upload file to storage
   const uploadFile = async (file: File): Promise<string> => {
@@ -322,8 +341,9 @@ const AgenteIA = () => {
   const send = useCallback(async (text: string) => {
     if ((!text.trim() && pendingFiles.length === 0) || isLoading) return;
 
-    // Pre-unlock audio element from user gesture context (critical for iOS/mobile)
-    const preUnlockedAudio = settings.responseMode !== "text" ? createUnlockedAudio() : undefined;
+    const preUnlockedAudio = settings.responseMode !== "text"
+      ? unlockedAudioRef.current ?? undefined
+      : undefined;
 
     // Upload pending files first
     const uploadedAttachments: Array<{ storagePath: string; fileName: string }> = [];
@@ -426,20 +446,30 @@ const AgenteIA = () => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
+      ensureAudioUnlocked();
       send(input);
     }
   };
 
-  const toggleListening = useCallback(() => {
+  const toggleListening = useCallback(async () => {
     if (!SpeechRecognition) {
       toast({ title: "Não suportado", description: "Reconhecimento de voz não suportado neste navegador.", variant: "destructive" });
       return;
     }
+
     if (isListening && recognitionRef.current) {
-      // Stop listening — recognition.onend will handle sending
       recognitionRef.current.stop();
       return;
     }
+
+    const hasMicPermission = await requestMicrophonePermission();
+    if (!hasMicPermission) {
+      toast({ title: "Permissão negada", description: "Permita o uso do microfone no navegador para continuar.", variant: "destructive" });
+      return;
+    }
+
+    ensureAudioUnlocked();
+
     const recognition = new SpeechRecognition();
     recognition.lang = "pt-BR";
     recognition.continuous = true;
@@ -457,7 +487,6 @@ const AgenteIA = () => {
           interim += result[0].transcript;
         }
       }
-      // Show interim text in input field for feedback
       setInput(finalTranscript + interim);
     };
 
@@ -472,15 +501,28 @@ const AgenteIA = () => {
 
     recognition.onerror = (e: any) => {
       setIsListening(false);
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        toast({ title: "Permissão negada", description: "Permita o microfone nas configurações do navegador.", variant: "destructive" });
+        return;
+      }
+      if (e.error === "audio-capture") {
+        toast({ title: "Microfone indisponível", description: "Não foi possível acessar o microfone do dispositivo.", variant: "destructive" });
+        return;
+      }
       if (e.error !== "no-speech" && e.error !== "aborted") {
         toast({ title: "Erro no microfone", description: "Não foi possível capturar áudio.", variant: "destructive" });
       }
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-  }, [isListening, send, toast]);
+    try {
+      recognition.start();
+      setIsListening(true);
+    } catch {
+      toast({ title: "Erro no microfone", description: "Falha ao iniciar a gravação no mobile.", variant: "destructive" });
+      setIsListening(false);
+    }
+  }, [ensureAudioUnlocked, isListening, send, toast]);
 
   const modelLabel = (() => {
     if (settings.model.startsWith("google/")) return settings.model.replace("google/", "").replace(/-/g, " ");
@@ -588,7 +630,7 @@ const AgenteIA = () => {
                 {QUICK_PROMPTS.map((qp) => (
                   <button
                     key={qp.label}
-                    onClick={() => send(qp.prompt)}
+                    onClick={() => { ensureAudioUnlocked(); send(qp.prompt); }}
                     className="glass-card rounded-xl p-4 text-left hover:shadow-md hover:scale-[1.01] transition-all duration-200 group"
                   >
                     <div className="flex items-center gap-2 mb-2">
@@ -777,7 +819,7 @@ const AgenteIA = () => {
               </Button>
             ) : (
               <Button
-                onClick={() => send(input)}
+                onClick={() => { ensureAudioUnlocked(); send(input); }}
                 disabled={!input.trim() && pendingFiles.length === 0}
                 size="sm"
                 className="gradient-primary text-primary-foreground border-0 shrink-0 h-9 w-9 p-0"
