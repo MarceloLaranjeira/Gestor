@@ -102,10 +102,10 @@ serve(async (req) => {
 
     const headers = rawData[0].map((h: any) => String(h));
 
-    // Detect columns
+    // Detect columns - Tarefas
     const colCoord = findCol(headers, ["coordenadoria", "coordenacao", "coord", "area", "setor"]);
-    const colSecao = findCol(headers, ["secao", "secção", "submenu", "categoria", "grupo"]);
-    const colTarefa = findCol(headers, ["tarefa", "atividade", "acao", "demanda", "titulo", "descricao", "task"]);
+    const colSecao = findCol(headers, ["secao", "secção", "submenu", "grupo"]);
+    const colTarefa = findCol(headers, ["tarefa", "atividade", "acao", "task"]);
     const colResponsavel = findCol(headers, ["responsavel", "responsável", "encarregado", "assignee"]);
     const colCanal = findCol(headers, ["canal", "meio", "channel"]);
     const colStatus = findCol(headers, ["status", "situacao", "situação", "concluido", "concluída"]);
@@ -113,12 +113,21 @@ serve(async (req) => {
     const colDataFim = findCol(headers, ["data fim", "data_fim", "prazo", "deadline", "fim", "end"]);
     const colMotivo = findCol(headers, ["motivo", "observacao", "observação", "nota", "note"]);
 
-    if (colTarefa === -1 && colCoord === -1) {
-      // Try to provide useful feedback
+    // Detect columns - Demandas
+    const colDemanda = findCol(headers, ["demanda", "solicitacao", "solicitação", "pedido", "requerimento"]);
+    const colDemandaDesc = findCol(headers, ["descricao demanda", "descricao_demanda", "detalhe demanda", "detalhe"]);
+    const colSolicitante = findCol(headers, ["solicitante", "requerente", "quem pediu", "origem"]);
+    const colPrioridade = findCol(headers, ["prioridade", "urgencia", "urgência", "priority"]);
+    const colCategoria = findCol(headers, ["categoria", "tipo demanda", "tipo_demanda", "classificacao"]);
+    const colDataPrazo = findCol(headers, ["data prazo", "data_prazo", "vencimento", "due date"]);
+
+    // Use colResponsavel and colStatus for demandas too (shared columns)
+
+    if (colTarefa === -1 && colCoord === -1 && colDemanda === -1) {
       return new Response(JSON.stringify({
         error: "Não foi possível identificar as colunas da planilha.",
         detected_headers: headers,
-        hint: "A planilha deve ter pelo menos uma coluna de 'Coordenadoria' ou 'Tarefa'.",
+        hint: "A planilha deve ter pelo menos uma coluna de 'Coordenadoria', 'Tarefa' ou 'Demanda'.",
       }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -126,33 +135,37 @@ serve(async (req) => {
 
     // Get existing coordenações
     const { data: existingCoords } = await supabase.from("coordenacoes").select("id, nome, slug");
-    const coordMap = new Map<string, string>(); // normalizedName -> id
+    const coordMap = new Map<string, string>();
     for (const c of (existingCoords || [])) {
       coordMap.set(normalizeStr(c.nome), c.id);
     }
 
     // Get existing seções
     const { data: existingSecoes } = await supabase.from("secoes").select("id, titulo, coordenacao_id");
-    const secaoMap = new Map<string, string>(); // "coordId|normalizedTitulo" -> id
+    const secaoMap = new Map<string, string>();
     for (const s of (existingSecoes || [])) {
       secaoMap.set(`${s.coordenacao_id}|${normalizeStr(s.titulo)}`, s.id);
     }
 
-    const stats = { coordsCreated: 0, secoesCreated: 0, tarefasCreated: 0, rowsProcessed: 0, errors: [] as string[] };
+    const stats = {
+      coordsCreated: 0, secoesCreated: 0, tarefasCreated: 0,
+      demandasCreated: 0, rowsProcessed: 0, errors: [] as string[],
+    };
 
     for (let i = 1; i < rawData.length; i++) {
       const row = rawData[i];
-      if (!row || row.every((c: any) => !c && c !== 0)) continue; // skip empty rows
+      if (!row || row.every((c: any) => !c && c !== 0)) continue;
 
       stats.rowsProcessed++;
 
       const coordNome = colCoord !== -1 ? String(row[colCoord]).trim() : "";
       const secaoTitulo = colSecao !== -1 ? String(row[colSecao]).trim() : "";
       const tarefaTitulo = colTarefa !== -1 ? String(row[colTarefa]).trim() : "";
+      const demandaTitulo = colDemanda !== -1 ? String(row[colDemanda]).trim() : "";
 
-      if (!coordNome && !tarefaTitulo) continue;
+      if (!coordNome && !tarefaTitulo && !demandaTitulo) continue;
 
-      // Resolve or create coordenação
+      // --- Resolve or create coordenação (for tarefas) ---
       let coordId = "";
       if (coordNome) {
         const normCoord = normalizeStr(coordNome);
@@ -175,16 +188,10 @@ serve(async (req) => {
         }
       }
 
-      // If no coordId but we need to create tarefa, skip
-      if (!coordId && tarefaTitulo) {
-        stats.errors.push(`Linha ${i + 1}: Tarefa "${tarefaTitulo}" sem coordenadoria definida.`);
-        continue;
-      }
-
-      // Resolve or create seção
-      let secaoId = "";
-      const effectiveSecao = secaoTitulo || "Geral";
-      if (coordId) {
+      // --- Create tarefa if applicable ---
+      if (tarefaTitulo && coordId) {
+        let secaoId = "";
+        const effectiveSecao = secaoTitulo || "Geral";
         const secaoKey = `${coordId}|${normalizeStr(effectiveSecao)}`;
         if (secaoMap.has(secaoKey)) {
           secaoId = secaoMap.get(secaoKey)!;
@@ -196,39 +203,77 @@ serve(async (req) => {
             .single();
           if (secErr) {
             stats.errors.push(`Linha ${i + 1}: Erro ao criar seção "${effectiveSecao}": ${secErr.message}`);
-            continue;
+          } else {
+            secaoId = newSecao.id;
+            secaoMap.set(secaoKey, secaoId);
+            stats.secoesCreated++;
           }
-          secaoId = newSecao.id;
-          secaoMap.set(secaoKey, secaoId);
-          stats.secoesCreated++;
         }
+
+        if (secaoId) {
+          const statusVal = colStatus !== -1 ? String(row[colStatus]).trim().toLowerCase() : "";
+          const isCompleted = ["concluido", "concluída", "concluida", "done", "sim", "yes", "true", "1", "x"].includes(statusVal);
+
+          const tarefaData: any = { titulo: tarefaTitulo, secao_id: secaoId, status: isCompleted };
+          if (colResponsavel !== -1 && row[colResponsavel]) tarefaData.responsavel = String(row[colResponsavel]).trim();
+          if (colCanal !== -1 && row[colCanal]) tarefaData.canal = String(row[colCanal]).trim();
+          if (colMotivo !== -1 && row[colMotivo]) tarefaData.motivo = String(row[colMotivo]).trim();
+          const di = colDataInicio !== -1 ? parseDate(row[colDataInicio]) : null;
+          const df = colDataFim !== -1 ? parseDate(row[colDataFim]) : null;
+          if (di) tarefaData.data_inicio = di;
+          if (df) tarefaData.data_fim = df;
+
+          const { error: tarefaErr } = await supabase.from("tarefas").insert(tarefaData);
+          if (tarefaErr) {
+            stats.errors.push(`Linha ${i + 1}: Erro ao criar tarefa "${tarefaTitulo}": ${tarefaErr.message}`);
+          } else {
+            stats.tarefasCreated++;
+          }
+        }
+      } else if (tarefaTitulo && !coordId) {
+        stats.errors.push(`Linha ${i + 1}: Tarefa "${tarefaTitulo}" sem coordenadoria definida.`);
       }
 
-      // Create tarefa
-      if (tarefaTitulo && secaoId) {
+      // --- Create demanda if applicable ---
+      if (demandaTitulo) {
         const statusVal = colStatus !== -1 ? String(row[colStatus]).trim().toLowerCase() : "";
-        const isCompleted = ["concluido", "concluída", "concluida", "done", "sim", "yes", "true", "1", "x"].includes(statusVal);
+        const demandaStatus = ["concluido", "concluída", "concluida", "done"].includes(statusVal) ? "concluida"
+          : ["andamento", "em andamento", "in progress", "em curso"].includes(statusVal) ? "andamento"
+          : ["atrasada", "atrasado", "late", "overdue"].includes(statusVal) ? "atrasada"
+          : "pendente";
 
-        const tarefaData: any = {
-          titulo: tarefaTitulo,
-          secao_id: secaoId,
-          status: isCompleted,
+        const prioridadeVal = colPrioridade !== -1 ? String(row[colPrioridade]).trim().toLowerCase() : "";
+        const prioridade = ["alta", "high", "urgente"].includes(prioridadeVal) ? "alta"
+          : ["baixa", "low"].includes(prioridadeVal) ? "baixa"
+          : "media";
+
+        const demandaData: any = {
+          titulo: demandaTitulo,
+          user_id: user.id,
+          status: demandaStatus,
+          prioridade,
         };
 
-        if (colResponsavel !== -1 && row[colResponsavel]) tarefaData.responsavel = String(row[colResponsavel]).trim();
-        if (colCanal !== -1 && row[colCanal]) tarefaData.canal = String(row[colCanal]).trim();
-        if (colMotivo !== -1 && row[colMotivo]) tarefaData.motivo = String(row[colMotivo]).trim();
+        if (colDemandaDesc !== -1 && row[colDemandaDesc]) {
+          demandaData.descricao = String(row[colDemandaDesc]).trim();
+        }
+        if (colResponsavel !== -1 && row[colResponsavel]) {
+          demandaData.responsavel = String(row[colResponsavel]).trim();
+        }
+        if (colSolicitante !== -1 && row[colSolicitante]) {
+          demandaData.solicitante = String(row[colSolicitante]).trim();
+        }
+        if (colCategoria !== -1 && row[colCategoria]) {
+          demandaData.categoria = String(row[colCategoria]).trim();
+        }
+        const dprazo = colDataPrazo !== -1 ? parseDate(row[colDataPrazo]) : (colDataFim !== -1 ? parseDate(row[colDataFim]) : null);
+        if (dprazo) demandaData.data_prazo = dprazo;
 
-        const di = colDataInicio !== -1 ? parseDate(row[colDataInicio]) : null;
-        const df = colDataFim !== -1 ? parseDate(row[colDataFim]) : null;
-        if (di) tarefaData.data_inicio = di;
-        if (df) tarefaData.data_fim = df;
-
-        const { error: tarefaErr } = await supabase.from("tarefas").insert(tarefaData);
-        if (tarefaErr) {
-          stats.errors.push(`Linha ${i + 1}: Erro ao criar tarefa "${tarefaTitulo}": ${tarefaErr.message}`);
+        const { error: demandaErr } = await supabase.from("demandas").insert(demandaData);
+        if (demandaErr) {
+          stats.errors.push(`Linha ${i + 1}: Erro ao criar demanda "${demandaTitulo}": ${demandaErr.message}`);
         } else {
-          stats.tarefasCreated++;
+          stats.demandasCreated++;
         }
       }
     }
@@ -238,11 +283,16 @@ serve(async (req) => {
     if (colCoord !== -1) detectedCols.push(`Coordenadoria: "${headers[colCoord]}"`);
     if (colSecao !== -1) detectedCols.push(`Seção: "${headers[colSecao]}"`);
     if (colTarefa !== -1) detectedCols.push(`Tarefa: "${headers[colTarefa]}"`);
+    if (colDemanda !== -1) detectedCols.push(`Demanda: "${headers[colDemanda]}"`);
     if (colResponsavel !== -1) detectedCols.push(`Responsável: "${headers[colResponsavel]}"`);
+    if (colSolicitante !== -1) detectedCols.push(`Solicitante: "${headers[colSolicitante]}"`);
+    if (colCategoria !== -1) detectedCols.push(`Categoria: "${headers[colCategoria]}"`);
+    if (colPrioridade !== -1) detectedCols.push(`Prioridade: "${headers[colPrioridade]}"`);
     if (colCanal !== -1) detectedCols.push(`Canal: "${headers[colCanal]}"`);
     if (colStatus !== -1) detectedCols.push(`Status: "${headers[colStatus]}"`);
     if (colDataInicio !== -1) detectedCols.push(`Data Início: "${headers[colDataInicio]}"`);
     if (colDataFim !== -1) detectedCols.push(`Data Fim: "${headers[colDataFim]}"`);
+    if (colDataPrazo !== -1) detectedCols.push(`Data Prazo: "${headers[colDataPrazo]}"`);
     if (colMotivo !== -1) detectedCols.push(`Motivo: "${headers[colMotivo]}"`);
 
     return new Response(JSON.stringify({
@@ -254,6 +304,7 @@ serve(async (req) => {
         coordsCreated: stats.coordsCreated,
         secoesCreated: stats.secoesCreated,
         tarefasCreated: stats.tarefasCreated,
+        demandasCreated: stats.demandasCreated,
         errors: stats.errors.slice(0, 20),
         detectedColumns: detectedCols,
       },

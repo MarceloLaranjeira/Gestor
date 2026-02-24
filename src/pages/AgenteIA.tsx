@@ -417,6 +417,7 @@ const AgenteIA = () => {
             if (s.coordsCreated > 0) msg += `- 🏢 Coordenadorias criadas: ${s.coordsCreated}\n`;
             if (s.secoesCreated > 0) msg += `- 📂 Seções criadas: ${s.secoesCreated}\n`;
             if (s.tarefasCreated > 0) msg += `- ✅ Tarefas criadas: ${s.tarefasCreated}\n`;
+            if (s.demandasCreated > 0) msg += `- 📝 Demandas criadas: ${s.demandasCreated}\n`;
             if (s.detectedColumns?.length > 0) {
               msg += `\n📋 **Colunas detectadas:**\n${s.detectedColumns.map((c: string) => `- ${c}`).join("\n")}\n`;
             }
