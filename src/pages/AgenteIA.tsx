@@ -27,6 +27,7 @@ type Msg = {
 };
 
 const AGENT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agente-ia`;
+const IMPORT_EXCEL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-excel`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts-multi`;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -37,9 +38,15 @@ const QUICK_PROMPTS = [
   { icon: Sparkles, label: "Pauta da Semana", prompt: "Com base nos eventos próximos, demandas urgentes e tarefas atrasadas, sugira uma pauta de trabalho priorizada para esta semana. Organize por urgência e impacto." },
 ];
 
+const EXCEL_TYPES = [
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+];
+
 const ACCEPTED_TYPES = [
   "application/pdf",
   "image/png", "image/jpeg", "image/webp", "image/gif", "image/bmp",
+  ...EXCEL_TYPES,
 ];
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -263,7 +270,7 @@ const AgenteIA = () => {
     const newAttachments: Attachment[] = [];
     for (const file of Array.from(files)) {
       if (!ACCEPTED_TYPES.includes(file.type)) {
-        toast({ title: "Formato não suportado", description: `${file.name}: Use PDF, PNG, JPG ou WebP.`, variant: "destructive" });
+        toast({ title: "Formato não suportado", description: `${file.name}: Use PDF, PNG, JPG, WebP ou Excel.`, variant: "destructive" });
         continue;
       }
       if (file.size > MAX_FILE_SIZE) {
@@ -290,7 +297,7 @@ const AgenteIA = () => {
     const newAttachments: Attachment[] = [];
     for (const file of Array.from(files)) {
       if (!ACCEPTED_TYPES.includes(file.type)) {
-        toast({ title: "Formato não suportado", description: `${file.name}: Use PDF, PNG, JPG ou WebP.`, variant: "destructive" });
+        toast({ title: "Formato não suportado", description: `${file.name}: Use PDF, PNG, JPG, WebP ou Excel.`, variant: "destructive" });
         continue;
       }
       if (file.size > MAX_FILE_SIZE) {
@@ -346,14 +353,14 @@ const AgenteIA = () => {
       : undefined;
 
     // Upload pending files first
-    const uploadedAttachments: Array<{ storagePath: string; fileName: string }> = [];
+    const uploadedAttachments: Array<{ storagePath: string; fileName: string; type: string }> = [];
     const msgAttachments: Array<{ fileName: string; type: string; preview?: string }> = [];
 
     if (pendingFiles.length > 0) {
       for (const att of pendingFiles) {
         try {
           const storagePath = await uploadFile(att.file);
-          uploadedAttachments.push({ storagePath, fileName: att.file.name });
+          uploadedAttachments.push({ storagePath, fileName: att.file.name, type: att.file.type });
           msgAttachments.push({
             fileName: att.file.name,
             type: att.file.type,
@@ -366,6 +373,10 @@ const AgenteIA = () => {
       setPendingFiles([]);
     }
 
+    // Check if any attachment is Excel
+    const excelAttachments = uploadedAttachments.filter(a => EXCEL_TYPES.includes(a.type));
+    const nonExcelAttachments = uploadedAttachments.filter(a => !EXCEL_TYPES.includes(a.type));
+
     const displayText = text.trim() || `📎 ${msgAttachments.map(a => a.fileName).join(", ")}`;
     const userMsg: Msg = {
       role: "user",
@@ -377,6 +388,62 @@ const AgenteIA = () => {
     setInput("");
     setIsLoading(true);
 
+    // Handle Excel import
+    if (excelAttachments.length > 0) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) throw new Error("Não autorizado");
+
+        const results: string[] = [];
+        for (const att of excelAttachments) {
+          const resp = await fetch(IMPORT_EXCEL_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ storagePath: att.storagePath }),
+          });
+          const data = await resp.json();
+          if (!resp.ok) {
+            let errMsg = data.error || "Erro ao importar Excel";
+            if (data.detected_headers) errMsg += `\n\nColunas encontradas: ${data.detected_headers.join(", ")}`;
+            if (data.hint) errMsg += `\n\n💡 ${data.hint}`;
+            results.push(`❌ **${att.fileName}**: ${errMsg}`);
+          } else {
+            const s = data.summary;
+            let msg = `✅ **${att.fileName}** importado com sucesso!\n\n`;
+            msg += `📊 **Resumo da importação:**\n`;
+            msg += `- Planilha: "${s.sheet}"\n`;
+            msg += `- Linhas processadas: ${s.rowsProcessed} de ${s.totalRows}\n`;
+            if (s.coordsCreated > 0) msg += `- 🏢 Coordenadorias criadas: ${s.coordsCreated}\n`;
+            if (s.secoesCreated > 0) msg += `- 📂 Seções criadas: ${s.secoesCreated}\n`;
+            if (s.tarefasCreated > 0) msg += `- ✅ Tarefas criadas: ${s.tarefasCreated}\n`;
+            if (s.detectedColumns?.length > 0) {
+              msg += `\n📋 **Colunas detectadas:**\n${s.detectedColumns.map((c: string) => `- ${c}`).join("\n")}\n`;
+            }
+            if (s.errors?.length > 0) {
+              msg += `\n⚠️ **Avisos (${s.errors.length}):**\n${s.errors.slice(0, 10).map((e: string) => `- ${e}`).join("\n")}`;
+            }
+            results.push(msg);
+          }
+        }
+
+        const assistantContent = results.join("\n\n---\n\n");
+        setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
+      } catch (e: any) {
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: `❌ Erro ao processar Excel: ${e.message || "Erro desconhecido"}`,
+        }]);
+      }
+
+      // If there are also non-Excel attachments, continue with AI
+      if (nonExcelAttachments.length === 0 && !text.trim()) {
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Continue with normal AI flow for non-Excel attachments or text
     let assistantSoFar = "";
     let fullResponse = "";
 
@@ -401,7 +468,7 @@ const AgenteIA = () => {
       await streamChat(
         newMessages,
         settings.model,
-        uploadedAttachments,
+        nonExcelAttachments.map(a => ({ storagePath: a.storagePath, fileName: a.fileName })),
         settings.customInstructions,
         { temperature: settings.temperature, assertiveness: settings.assertiveness, formality: settings.formality },
         upsertAssistant,
@@ -416,7 +483,6 @@ const AgenteIA = () => {
             try {
               const { audio } = await speakText(fullResponse, settings, preUnlockedAudio);
               audioRef.current = audio;
-              // Wait for audio to finish
               await new Promise<void>((resolve) => {
                 audio.onended = () => { audioRef.current = null; resolve(); };
               });
@@ -438,7 +504,7 @@ const AgenteIA = () => {
     } catch (e: any) {
       abortControllerRef.current = null;
       setIsLoading(false);
-      if (e?.name === "AbortError") return; // user stopped
+      if (e?.name === "AbortError") return;
       toast({ title: "Erro de conexão", description: "Não foi possível conectar ao agente.", variant: "destructive" });
     }
   }, [messages, isLoading, settings, toast, pendingFiles]);
@@ -544,7 +610,7 @@ const AgenteIA = () => {
             <div className="text-center">
               <Paperclip className="w-10 h-10 text-primary mx-auto mb-2" />
               <p className="text-sm font-semibold text-primary">Solte o arquivo aqui</p>
-              <p className="text-xs text-muted-foreground">PDF, PNG, JPG ou WebP (máx. 10MB)</p>
+              <p className="text-xs text-muted-foreground">PDF, PNG, JPG, WebP ou Excel (máx. 10MB)</p>
             </div>
           </div>
         )}
@@ -768,14 +834,14 @@ const AgenteIA = () => {
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
               className="shrink-0 h-9 w-9 rounded-lg flex items-center justify-center hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all"
-              title="Enviar PDF ou imagem"
+              title="Enviar PDF, imagem ou Excel"
             >
               <Paperclip className="w-4 h-4" />
             </button>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp"
+              accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp,.xlsx,.xls"
               multiple
               onChange={handleFileSelect}
               className="hidden"
@@ -829,7 +895,7 @@ const AgenteIA = () => {
             )}
           </div>
           <p className="text-[10px] text-muted-foreground text-center mt-1.5">
-            🎤 Microfone · 📎 PDF/Imagem · Shift+Enter para nova linha ·{" "}
+            🎤 Microfone · 📎 PDF/Imagem/Excel · Shift+Enter para nova linha ·{" "}
             <span className="capitalize">{settings.voiceName || "Brian"}</span>
           </p>
         </div>
