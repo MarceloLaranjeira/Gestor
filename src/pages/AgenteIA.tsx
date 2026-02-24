@@ -117,7 +117,18 @@ async function streamChat(
 }
 
 // --- TTS ---
-async function speakText(text: string, settings: AgentSettings): Promise<{ audio: HTMLAudioElement }> {
+// Pre-create and unlock an Audio element from a user gesture context (click)
+function createUnlockedAudio(): HTMLAudioElement {
+  const audio = new Audio();
+  audio.preload = "auto";
+  // Play a tiny silent buffer to unlock audio on iOS/Safari
+  audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+  audio.volume = 0;
+  audio.play().then(() => { audio.pause(); audio.volume = 1; audio.currentTime = 0; }).catch(() => {});
+  return audio;
+}
+
+async function speakText(text: string, settings: AgentSettings, preUnlockedAudio?: HTMLAudioElement): Promise<{ audio: HTMLAudioElement }> {
   const clean = text
     .replace(/#{1,6}\s/g, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
@@ -128,11 +139,8 @@ async function speakText(text: string, settings: AgentSettings): Promise<{ audio
     .replace(/\n{2,}/g, ". ")
     .trim();
 
-  // Create Audio element immediately to preserve user gesture context
-  const audio = new Audio();
-  audio.preload = "auto";
-  // Unlock for iOS Safari
-  audio.play().catch(() => {});
+  // Use pre-unlocked audio element if available, otherwise create new one
+  const audio = preUnlockedAudio || new Audio();
 
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
@@ -314,6 +322,9 @@ const AgenteIA = () => {
   const send = useCallback(async (text: string) => {
     if ((!text.trim() && pendingFiles.length === 0) || isLoading) return;
 
+    // Pre-unlock audio element from user gesture context (critical for iOS/mobile)
+    const preUnlockedAudio = settings.responseMode !== "text" ? createUnlockedAudio() : undefined;
+
     // Upload pending files first
     const uploadedAttachments: Array<{ storagePath: string; fileName: string }> = [];
     const msgAttachments: Array<{ fileName: string; type: string; preview?: string }> = [];
@@ -383,7 +394,7 @@ const AgenteIA = () => {
           if (settings.responseMode !== "text" && fullResponse) {
             setIsSpeaking(true);
             try {
-              const { audio } = await speakText(fullResponse, settings);
+              const { audio } = await speakText(fullResponse, settings, preUnlockedAudio);
               audioRef.current = audio;
               // Wait for audio to finish
               await new Promise<void>((resolve) => {
