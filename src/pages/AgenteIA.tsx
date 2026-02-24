@@ -38,6 +38,8 @@ const QUICK_PROMPTS = [
   { icon: Sparkles, label: "Pauta da Semana", prompt: "Com base nos eventos próximos, demandas urgentes e tarefas atrasadas, sugira uma pauta de trabalho priorizada para esta semana. Organize por urgência e impacto." },
 ];
 
+const EXCEL_EXTENSIONS = [".xlsx", ".xls"];
+
 const EXCEL_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.ms-excel",
@@ -48,6 +50,18 @@ const ACCEPTED_TYPES = [
   "image/png", "image/jpeg", "image/webp", "image/gif", "image/bmp",
   ...EXCEL_TYPES,
 ];
+
+function isAcceptedFile(file: File): boolean {
+  if (ACCEPTED_TYPES.includes(file.type)) return true;
+  const ext = "." + file.name.split(".").pop()?.toLowerCase();
+  return EXCEL_EXTENSIONS.includes(ext);
+}
+
+function isExcelFile(file: File): boolean {
+  if (EXCEL_TYPES.includes(file.type)) return true;
+  const ext = "." + file.name.split(".").pop()?.toLowerCase();
+  return EXCEL_EXTENSIONS.includes(ext);
+}
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -269,7 +283,7 @@ const AgenteIA = () => {
 
     const newAttachments: Attachment[] = [];
     for (const file of Array.from(files)) {
-      if (!ACCEPTED_TYPES.includes(file.type)) {
+      if (!isAcceptedFile(file)) {
         toast({ title: "Formato não suportado", description: `${file.name}: Use PDF, PNG, JPG, WebP ou Excel.`, variant: "destructive" });
         continue;
       }
@@ -296,7 +310,7 @@ const AgenteIA = () => {
   const processDroppedFiles = (files: FileList | File[]) => {
     const newAttachments: Attachment[] = [];
     for (const file of Array.from(files)) {
-      if (!ACCEPTED_TYPES.includes(file.type)) {
+      if (!isAcceptedFile(file)) {
         toast({ title: "Formato não suportado", description: `${file.name}: Use PDF, PNG, JPG, WebP ou Excel.`, variant: "destructive" });
         continue;
       }
@@ -374,8 +388,13 @@ const AgenteIA = () => {
     }
 
     // Check if any attachment is Excel
-    const excelAttachments = uploadedAttachments.filter(a => EXCEL_TYPES.includes(a.type));
-    const nonExcelAttachments = uploadedAttachments.filter(a => !EXCEL_TYPES.includes(a.type));
+    const isExcelAtt = (a: { type: string; fileName: string }) => {
+      if (EXCEL_TYPES.includes(a.type)) return true;
+      const ext = "." + a.fileName.split(".").pop()?.toLowerCase();
+      return EXCEL_EXTENSIONS.includes(ext);
+    };
+    const excelAttachments = uploadedAttachments.filter(isExcelAtt);
+    const nonExcelAttachments = uploadedAttachments.filter(a => !isExcelAtt(a));
 
     const displayText = text.trim() || `📎 ${msgAttachments.map(a => a.fileName).join(", ")}`;
     const userMsg: Msg = {
