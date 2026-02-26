@@ -19,9 +19,11 @@ interface Calha {
   percentual_cristaos: number;
   potencial_votos: number;
   regiao: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
-const emptyForm = { nome: "", municipios: 0, votos_validos: 0, percentual_cristaos: 0, potencial_votos: 0, regiao: "" };
+const emptyForm = { nome: "", municipios: 0, votos_validos: 0, percentual_cristaos: 0, potencial_votos: 0, regiao: "", latitude: "" as string, longitude: "" as string };
 
 const CampanhaCalhas = () => {
   const [calhas, setCalhas] = useState<Calha[]>([]);
@@ -43,10 +45,11 @@ const CampanhaCalhas = () => {
 
   const handleSave = async () => {
     if (!form.nome.trim()) { toast({ title: "Nome obrigatório", variant: "destructive" }); return; }
+    const payload = { ...form, latitude: form.latitude ? +form.latitude : null, longitude: form.longitude ? +form.longitude : null };
     if (editId) {
-      await supabase.from("campanha_calhas").update(form).eq("id", editId);
+      await supabase.from("campanha_calhas").update(payload).eq("id", editId);
     } else {
-      await supabase.from("campanha_calhas").insert(form);
+      await supabase.from("campanha_calhas").insert(payload);
     }
     setOpen(false);
     setForm(emptyForm);
@@ -56,7 +59,7 @@ const CampanhaCalhas = () => {
   };
 
   const handleEdit = (c: Calha) => {
-    setForm({ nome: c.nome, municipios: c.municipios, votos_validos: c.votos_validos, percentual_cristaos: Number(c.percentual_cristaos), potencial_votos: c.potencial_votos, regiao: c.regiao });
+    setForm({ nome: c.nome, municipios: c.municipios, votos_validos: c.votos_validos, percentual_cristaos: Number(c.percentual_cristaos), potencial_votos: c.potencial_votos, regiao: c.regiao, latitude: c.latitude != null ? String(c.latitude) : "", longitude: c.longitude != null ? String(c.longitude) : "" });
     setEditId(c.id);
     setOpen(true);
   };
@@ -88,6 +91,10 @@ const CampanhaCalhas = () => {
                     <div><Label>Potencial Votos</Label><Input type="number" value={form.potencial_votos} onChange={(e) => setForm({ ...form, potencial_votos: +e.target.value })} /></div>
                   </div>
                   <div><Label>Região</Label><Input value={form.regiao} onChange={(e) => setForm({ ...form, regiao: e.target.value })} /></div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Latitude</Label><Input type="number" step="any" placeholder="-3.1190" value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} /></div>
+                    <div><Label>Longitude</Label><Input type="number" step="any" placeholder="-60.0217" value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} /></div>
+                  </div>
                   <Button onClick={handleSave} className="w-full">Salvar</Button>
                 </div>
               </DialogContent>

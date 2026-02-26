@@ -106,6 +106,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          latitude: number | null
+          longitude: number | null
           municipios: number
           nome: string
           percentual_cristaos: number
@@ -117,6 +119,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           municipios?: number
           nome: string
           percentual_cristaos?: number
@@ -128,6 +132,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           municipios?: number
           nome?: string
           percentual_cristaos?: number
