@@ -28,6 +28,14 @@ import TermosUso from "./pages/TermosUso";
 import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 import NotFound from "./pages/NotFound";
 
+// Campanha
+import CampanhaDashboard from "./pages/campanha/CampanhaDashboard";
+import CampanhaCalhas from "./pages/campanha/CampanhaCalhas";
+import CampanhaCoordenadores from "./pages/campanha/CampanhaCoordenadores";
+import CampanhaAssessores from "./pages/campanha/CampanhaAssessores";
+import CampanhaVisitas from "./pages/campanha/CampanhaVisitas";
+import CampanhaRelatorios from "./pages/campanha/CampanhaRelatorios";
+
 const queryClient = new QueryClient();
 
 const LoadingScreen = () => (
@@ -86,6 +94,13 @@ const AppRoutes = () => (
     <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
     <Route path="/termos-uso" element={<TermosUso />} />
     <Route path="/auth/google-calendar/callback" element={<GoogleCalendarCallback />} />
+    {/* Campanha */}
+    <Route path="/campanha" element={<PermissionRoute><CampanhaDashboard /></PermissionRoute>} />
+    <Route path="/campanha/calhas" element={<PermissionRoute><CampanhaCalhas /></PermissionRoute>} />
+    <Route path="/campanha/coordenadores" element={<PermissionRoute><CampanhaCoordenadores /></PermissionRoute>} />
+    <Route path="/campanha/assessores" element={<PermissionRoute><CampanhaAssessores /></PermissionRoute>} />
+    <Route path="/campanha/visitas" element={<PermissionRoute><CampanhaVisitas /></PermissionRoute>} />
+    <Route path="/campanha/relatorios" element={<PermissionRoute><CampanhaRelatorios /></PermissionRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

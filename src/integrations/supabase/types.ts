@@ -61,6 +61,219 @@ export type Database = {
           },
         ]
       }
+      campanha_assessores: {
+        Row: {
+          coordenador_id: string | null
+          created_at: string
+          email: string
+          funcao: string
+          id: string
+          nome: string
+          telefone: string
+          updated_at: string
+        }
+        Insert: {
+          coordenador_id?: string | null
+          created_at?: string
+          email?: string
+          funcao?: string
+          id?: string
+          nome: string
+          telefone?: string
+          updated_at?: string
+        }
+        Update: {
+          coordenador_id?: string | null
+          created_at?: string
+          email?: string
+          funcao?: string
+          id?: string
+          nome?: string
+          telefone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanha_assessores_coordenador_id_fkey"
+            columns: ["coordenador_id"]
+            isOneToOne: false
+            referencedRelation: "campanha_coordenadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campanha_calhas: {
+        Row: {
+          created_at: string
+          id: string
+          municipios: number
+          nome: string
+          percentual_cristaos: number
+          potencial_votos: number
+          regiao: string
+          updated_at: string
+          votos_validos: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          municipios?: number
+          nome: string
+          percentual_cristaos?: number
+          potencial_votos?: number
+          regiao?: string
+          updated_at?: string
+          votos_validos?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          municipios?: number
+          nome?: string
+          percentual_cristaos?: number
+          potencial_votos?: number
+          regiao?: string
+          updated_at?: string
+          votos_validos?: number
+        }
+        Relationships: []
+      }
+      campanha_contatos: {
+        Row: {
+          coordenador_id: string | null
+          created_at: string
+          data_contato: string
+          id: string
+          observacoes: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          coordenador_id?: string | null
+          created_at?: string
+          data_contato?: string
+          id?: string
+          observacoes?: string
+          tipo?: string
+          user_id: string
+        }
+        Update: {
+          coordenador_id?: string | null
+          created_at?: string
+          data_contato?: string
+          id?: string
+          observacoes?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanha_contatos_coordenador_id_fkey"
+            columns: ["coordenador_id"]
+            isOneToOne: false
+            referencedRelation: "campanha_coordenadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campanha_coordenadores: {
+        Row: {
+          calha_id: string | null
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          status: string
+          telefone: string
+          ultimo_contato: string | null
+          updated_at: string
+        }
+        Insert: {
+          calha_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          nome: string
+          status?: string
+          telefone?: string
+          ultimo_contato?: string | null
+          updated_at?: string
+        }
+        Update: {
+          calha_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          status?: string
+          telefone?: string
+          ultimo_contato?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanha_coordenadores_calha_id_fkey"
+            columns: ["calha_id"]
+            isOneToOne: false
+            referencedRelation: "campanha_calhas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campanha_visitas: {
+        Row: {
+          calha_id: string | null
+          coordenador_id: string | null
+          created_at: string
+          data_visita: string
+          id: string
+          objetivo: string
+          observacoes: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calha_id?: string | null
+          coordenador_id?: string | null
+          created_at?: string
+          data_visita: string
+          id?: string
+          objetivo?: string
+          observacoes?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calha_id?: string | null
+          coordenador_id?: string | null
+          created_at?: string
+          data_visita?: string
+          id?: string
+          objetivo?: string
+          observacoes?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanha_visitas_calha_id_fkey"
+            columns: ["calha_id"]
+            isOneToOne: false
+            referencedRelation: "campanha_calhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campanha_visitas_coordenador_id_fkey"
+            columns: ["coordenador_id"]
+            isOneToOne: false
+            referencedRelation: "campanha_coordenadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coordenacoes: {
         Row: {
           created_at: string

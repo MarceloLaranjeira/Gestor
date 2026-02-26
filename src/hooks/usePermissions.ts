@@ -22,6 +22,7 @@ const MODULE_LABELS: Record<string, string> = {
   "relatorio-coordenacao": "Rel. Coordenação",
   usuarios: "Usuários",
   configuracoes: "Configurações",
+  campanha: "Modo Campanha",
 };
 
 export const ALL_MODULES = Object.keys(MODULE_LABELS);
@@ -41,11 +42,13 @@ const ROUTE_TO_MODULE: Record<string, string> = {
   "/relatorio-coordenacao": "relatorio-coordenacao",
   "/usuarios": "usuarios",
   "/configuracoes": "configuracoes",
+  "/campanha": "campanha",
 };
 
 export function getModuleForRoute(path: string): string | null {
   if (path.startsWith("/coordenacao")) return "coordenacoes";
   if (path.startsWith("/movimentos/")) return "movimentos";
+  if (path.startsWith("/campanha")) return "campanha";
   return ROUTE_TO_MODULE[path] || null;
 }
 
