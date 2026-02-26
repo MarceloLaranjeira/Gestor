@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { supabase } from "@/integrations/supabase/client";
 import CampanhaLayout from "@/components/campanha/CampanhaLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import "leaflet/dist/leaflet.css";
 
 interface Calha {
   id: string;
@@ -18,16 +19,12 @@ interface Calha {
   longitude: number | null;
 }
 
-// Auto-fit bounds to markers
 const FitBounds = ({ positions }: { positions: [number, number][] }) => {
   const map = useMap();
   useEffect(() => {
     if (positions.length > 0) {
-      const L = (window as any).L;
-      if (L) {
-        const bounds = L.latLngBounds(positions.map(([lat, lng]: [number, number]) => [lat, lng]));
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
-      }
+      const bounds = L.latLngBounds(positions);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
     }
   }, [positions, map]);
   return null;
@@ -38,12 +35,12 @@ const CampanhaMapa = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
+    const load = async () => {
       const { data } = await supabase.from("campanha_calhas").select("*").order("nome");
       setCalhas((data as Calha[]) || []);
       setLoading(false);
     };
-    fetch();
+    load();
   }, []);
 
   const calhasComCoord = useMemo(
@@ -59,19 +56,15 @@ const CampanhaMapa = () => {
   );
 
   const maxVotos = Math.max(...calhasComCoord.map((c) => c.potencial_votos), 1);
-
-  // Radius scale: min 8, max 30
   const getRadius = (votos: number) => 8 + (votos / maxVotos) * 22;
 
-  // Color by percentual_cristaos
   const getColor = (pct: number) => {
-    if (pct >= 40) return "hsl(142, 76%, 36%)"; // green
-    if (pct >= 25) return "hsl(var(--primary))";
-    if (pct >= 10) return "hsl(45, 93%, 47%)"; // yellow
-    return "hsl(var(--destructive))";
+    if (pct >= 40) return "#16a34a";
+    if (pct >= 25) return "#1e40af";
+    if (pct >= 10) return "#eab308";
+    return "#dc2626";
   };
 
-  // Center on Amazonas if no markers
   const defaultCenter: [number, number] = [-3.1, -60.0];
 
   return (
@@ -100,7 +93,7 @@ const CampanhaMapa = () => {
                       pathOptions={{
                         fillColor: getColor(Number(c.percentual_cristaos)),
                         fillOpacity: 0.7,
-                        color: "hsl(var(--foreground))",
+                        color: "#333",
                         weight: 1,
                       }}
                     >
@@ -122,7 +115,6 @@ const CampanhaMapa = () => {
           </Card>
         </div>
 
-        {/* Legend & missing coordinates */}
         <div className="space-y-4">
           <Card>
             <CardContent className="p-4 space-y-3">
@@ -130,10 +122,10 @@ const CampanhaMapa = () => {
               <p className="text-xs text-muted-foreground">Tamanho = potencial de votos</p>
               <div className="space-y-2">
                 {[
-                  { label: "≥ 40% cristãos", color: "hsl(142, 76%, 36%)" },
-                  { label: "25–39%", color: "hsl(var(--primary))" },
-                  { label: "10–24%", color: "hsl(45, 93%, 47%)" },
-                  { label: "< 10%", color: "hsl(var(--destructive))" },
+                  { label: "≥ 40% cristãos", color: "#16a34a" },
+                  { label: "25–39%", color: "#1e40af" },
+                  { label: "10–24%", color: "#eab308" },
+                  { label: "< 10%", color: "#dc2626" },
                 ].map((l) => (
                   <div key={l.label} className="flex items-center gap-2">
                     <div className="w-4 h-4 rounded-full" style={{ backgroundColor: l.color, opacity: 0.7 }} />
