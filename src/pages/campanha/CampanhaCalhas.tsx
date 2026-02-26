@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +32,7 @@ const CampanhaCalhas = () => {
   const [editId, setEditId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const isGestor = user?.role === "Gestor";
@@ -64,8 +66,10 @@ const CampanhaCalhas = () => {
     setOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    await supabase.from("campanha_calhas").delete().eq("id", id);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await supabase.from("campanha_calhas").delete().eq("id", deleteTarget);
+    setDeleteTarget(null);
     fetchData();
     toast({ title: "Calha removida" });
   };
@@ -128,7 +132,7 @@ const CampanhaCalhas = () => {
                   {isGestor && (
                     <TableCell className="text-right space-x-1">
                       <Button size="icon" variant="ghost" onClick={() => handleEdit(c)}><Pencil className="w-4 h-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDelete(c.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => setDeleteTarget(c.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                     </TableCell>
                   )}
                 </TableRow>
@@ -137,6 +141,18 @@ const CampanhaCalhas = () => {
           </Table>
         </CardContent>
       </Card>
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>Tem certeza que deseja remover esta calha? Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </CampanhaLayout>
   );
 };
