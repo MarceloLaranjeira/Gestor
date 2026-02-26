@@ -1,5 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
+import { useEffect, useState, useMemo, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,20 +18,18 @@ interface Calha {
   longitude: number | null;
 }
 
-const FitBounds = ({ positions }: { positions: [number, number][] }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (positions.length > 0) {
-      const bounds = L.latLngBounds(positions);
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
-    }
-  }, [positions, map]);
-  return null;
+const getColor = (pct: number) => {
+  if (pct >= 40) return "#16a34a";
+  if (pct >= 25) return "#1e40af";
+  if (pct >= 10) return "#eab308";
+  return "#dc2626";
 };
 
 const CampanhaMapa = () => {
   const [calhas, setCalhas] = useState<Calha[]>([]);
   const [loading, setLoading] = useState(true);
+  const mapRef = useRef<L.Map | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -43,29 +40,64 @@ const CampanhaMapa = () => {
     load();
   }, []);
 
-  const calhasComCoord = useMemo(
-    () => calhas.filter((c) => c.latitude !== null && c.longitude !== null),
-    [calhas]
-  );
+  // Initialize map
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+
+    mapRef.current = L.map(containerRef.current).setView([-3.1, -60.0], 6);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    }).addTo(mapRef.current);
+
+    return () => {
+      mapRef.current?.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  // Update markers when calhas change
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const map = mapRef.current;
+    const calhasComCoord = calhas.filter((c) => c.latitude != null && c.longitude != null);
+    const maxVotos = Math.max(...calhasComCoord.map((c) => c.potencial_votos), 1);
+
+    // Clear existing layers (except tile layer)
+    map.eachLayer((layer) => {
+      if (layer instanceof L.CircleMarker) map.removeLayer(layer);
+    });
+
+    calhasComCoord.forEach((c) => {
+      const radius = 8 + (c.potencial_votos / maxVotos) * 22;
+      const marker = L.circleMarker([Number(c.latitude), Number(c.longitude)], {
+        radius,
+        fillColor: getColor(Number(c.percentual_cristaos)),
+        fillOpacity: 0.7,
+        color: "#333",
+        weight: 1,
+      }).addTo(map);
+
+      marker.bindPopup(`
+        <div style="min-width:160px">
+          <p style="font-weight:bold;font-size:14px;margin:0 0 4px">${c.nome}</p>
+          <p style="margin:2px 0">Região: ${c.regiao || "—"}</p>
+          <p style="margin:2px 0">Municípios: ${c.municipios}</p>
+          <p style="margin:2px 0">Votos válidos: ${c.votos_validos.toLocaleString("pt-BR")}</p>
+          <p style="margin:2px 0">Potencial: ${c.potencial_votos.toLocaleString("pt-BR")}</p>
+          <p style="margin:2px 0">% Cristãos: ${Number(c.percentual_cristaos).toFixed(1)}%</p>
+        </div>
+      `);
+    });
+
+    if (calhasComCoord.length > 0) {
+      const bounds = L.latLngBounds(calhasComCoord.map((c) => [Number(c.latitude), Number(c.longitude)] as [number, number]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
+    }
+  }, [calhas]);
 
   const calhasSemCoord = calhas.filter((c) => c.latitude === null || c.longitude === null);
-
-  const positions = useMemo(
-    () => calhasComCoord.map((c) => [Number(c.latitude), Number(c.longitude)] as [number, number]),
-    [calhasComCoord]
-  );
-
-  const maxVotos = Math.max(...calhasComCoord.map((c) => c.potencial_votos), 1);
-  const getRadius = (votos: number) => 8 + (votos / maxVotos) * 22;
-
-  const getColor = (pct: number) => {
-    if (pct >= 40) return "#16a34a";
-    if (pct >= 25) return "#1e40af";
-    if (pct >= 10) return "#eab308";
-    return "#dc2626";
-  };
-
-  const defaultCenter: [number, number] = [-3.1, -60.0];
+  const calhasComCoord = calhas.filter((c) => c.latitude !== null && c.longitude !== null);
 
   return (
     <CampanhaLayout title="Mapa Eleitoral">
@@ -73,44 +105,7 @@ const CampanhaMapa = () => {
         <div className="lg:col-span-3">
           <Card className="overflow-hidden">
             <CardContent className="p-0">
-              <div className="h-[500px] lg:h-[600px]">
-                <MapContainer
-                  center={defaultCenter}
-                  zoom={6}
-                  className="h-full w-full rounded-lg"
-                  scrollWheelZoom
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  {positions.length > 0 && <FitBounds positions={positions} />}
-                  {calhasComCoord.map((c) => (
-                    <CircleMarker
-                      key={c.id}
-                      center={[Number(c.latitude), Number(c.longitude)]}
-                      radius={getRadius(c.potencial_votos)}
-                      pathOptions={{
-                        fillColor: getColor(Number(c.percentual_cristaos)),
-                        fillOpacity: 0.7,
-                        color: "#333",
-                        weight: 1,
-                      }}
-                    >
-                      <Popup>
-                        <div className="text-sm space-y-1 min-w-[160px]">
-                          <p className="font-bold text-base">{c.nome}</p>
-                          <p>Região: {c.regiao || "—"}</p>
-                          <p>Municípios: {c.municipios}</p>
-                          <p>Votos válidos: {c.votos_validos.toLocaleString("pt-BR")}</p>
-                          <p>Potencial: {c.potencial_votos.toLocaleString("pt-BR")}</p>
-                          <p>% Cristãos: {Number(c.percentual_cristaos).toFixed(1)}%</p>
-                        </div>
-                      </Popup>
-                    </CircleMarker>
-                  ))}
-                </MapContainer>
-              </div>
+              <div ref={containerRef} className="h-[500px] lg:h-[600px] rounded-lg" />
             </CardContent>
           </Card>
         </div>
