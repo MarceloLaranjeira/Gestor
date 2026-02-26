@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -34,6 +35,7 @@ const CampanhaCoordenadores = () => {
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const isGestor = user?.role === "Gestor";
@@ -68,8 +70,10 @@ const CampanhaCoordenadores = () => {
     setEditId(c.id); setOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    await supabase.from("campanha_coordenadores").delete().eq("id", id);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await supabase.from("campanha_coordenadores").delete().eq("id", deleteTarget);
+    setDeleteTarget(null);
     fetchData(); toast({ title: "Removido" });
   };
 
@@ -142,7 +146,7 @@ const CampanhaCoordenadores = () => {
                   {isGestor && (
                     <TableCell className="text-right space-x-1">
                       <Button size="icon" variant="ghost" onClick={() => handleEdit(c)}><Pencil className="w-4 h-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleDelete(c.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                      <Button size="icon" variant="ghost" onClick={() => setDeleteTarget(c.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                     </TableCell>
                   )}
                 </TableRow>
@@ -151,6 +155,18 @@ const CampanhaCoordenadores = () => {
           </Table>
         </CardContent>
       </Card>
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>Tem certeza que deseja remover este coordenador? Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </CampanhaLayout>
   );
 };
