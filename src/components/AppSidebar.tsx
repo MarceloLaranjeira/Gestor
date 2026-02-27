@@ -16,10 +16,10 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 const coordenacaoItems = [
   { icon: Church, label: "Eclesiástica", path: "/coordenacao/eclesiastica" },
   { icon: Megaphone, label: "Comunicação", path: "/coordenacao/comunicacao" },
-  { icon: Database, label: "Inteligência de Dados", path: "/coordenacao/inteligencia" },
+  { icon: Database, label: "Inteligência", path: "/coordenacao/inteligencia" },
   { icon: Shield, label: "CSPJD", path: "/coordenacao/cspjd" },
   { icon: Building2, label: "Gabinete", path: "/coordenacao/gabinete" },
-  { icon: UsersRound, label: "Equipe CMT Dan", path: "/coordenacao/equipe" },
+  { icon: UsersRound, label: "Equipe CMT", path: "/coordenacao/equipe" },
   { icon: ClipboardList, label: "Plenária", path: "/coordenacao/plenaria" },
 ];
 
@@ -57,7 +57,7 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const { user, logout } = useAuth();
   const { hasAccess } = usePermissions();
 
-  const isCoordActive = location.pathname.startsWith("/coordenacao");
+  const isCoordActive = location.pathname.startsWith("/coordenacao") || location.pathname === "/coordenacoes";
   const isGestor = user?.role === "Gestor";
   const showLabels = isMobile || !collapsed;
 
@@ -116,8 +116,9 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
 
         {showCoord && (
           <div>
-            <button
-              onClick={(e) => { e.stopPropagation(); setCoordOpen(!coordOpen); }}
+            <Link
+              to="/coordenacoes"
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 w-full cursor-pointer",
                 isCoordActive
@@ -129,10 +130,15 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
               {showLabels && (
                 <>
                   <span className="truncate flex-1 text-left text-xs">Coordenações</span>
-                  <ChevronDown className={cn("w-4 h-4 transition-transform", coordOpen && "rotate-180")} />
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCoordOpen(!coordOpen); }}
+                    className="p-0.5 rounded hover:bg-sidebar-accent/80"
+                  >
+                    <ChevronDown className={cn("w-4 h-4 transition-transform", coordOpen && "rotate-180")} />
+                  </button>
                 </>
               )}
-            </button>
+            </Link>
             {coordOpen && showLabels && (
               <div className="mt-1 space-y-0.5">
                 {coordenacaoItems.map((item) => renderLink(item as NavItem, true))}
