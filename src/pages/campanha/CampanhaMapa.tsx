@@ -259,7 +259,7 @@ const CampanhaMapa = () => {
     if (lat && lng) {
       const latNum = Number(lat);
       const lngNum = Number(lng);
-      mapRef.current.setView([latNum, lngNum], 16);
+      mapRef.current.setView([latNum, lngNum], 18);
       // Find matching local marker and open its popup
       markersRef.current?.eachLayer((layer: any) => {
         const ll = layer.getLatLng?.();
