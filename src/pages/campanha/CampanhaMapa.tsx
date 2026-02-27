@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +51,7 @@ const tipoIcon: Record<string, string> = {
 };
 
 const CampanhaMapa = () => {
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [calhas, setCalhas] = useState<Calha[]>([]);
   const [locais, setLocais] = useState<Local[]>([]);
@@ -247,6 +249,26 @@ const CampanhaMapa = () => {
       mapRef.current.fitBounds(L.latLngBounds(allPoints), { padding: [40, 40], maxZoom: 10 });
     }
   }, [calhas, locais]);
+
+  // Focus on location from query params
+  useEffect(() => {
+    if (!mapRef.current || loading) return;
+    const lat = searchParams.get("lat");
+    const lng = searchParams.get("lng");
+    const nome = searchParams.get("nome");
+    if (lat && lng) {
+      const latNum = Number(lat);
+      const lngNum = Number(lng);
+      mapRef.current.setView([latNum, lngNum], 16);
+      // Find matching local marker and open its popup
+      markersRef.current?.eachLayer((layer: any) => {
+        const ll = layer.getLatLng?.();
+        if (ll && Math.abs(ll.lat - latNum) < 0.0001 && Math.abs(ll.lng - lngNum) < 0.0001) {
+          layer.openPopup();
+        }
+      });
+    }
+  }, [searchParams, loading, locais]);
 
   const calhasSemCoord = calhas.filter((c) => c.latitude === null || c.longitude === null);
   const calhasComCoord = calhas.filter((c) => c.latitude !== null && c.longitude !== null);

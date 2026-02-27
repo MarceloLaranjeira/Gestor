@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import CampanhaLayout from "@/components/campanha/CampanhaLayout";
@@ -40,6 +41,7 @@ const TIPOS = [
 ];
 
 const CampanhaLocais = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [locais, setLocais] = useState<Local[]>([]);
   const [calhas, setCalhas] = useState<Calha[]>([]);
@@ -221,7 +223,7 @@ const CampanhaLocais = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {filteredLocais.map((l) => (
-          <Card key={l.id} className="hover:shadow-md transition-shadow">
+          <Card key={l.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/campanha/mapa?lat=${l.latitude}&lng=${l.longitude}&nome=${encodeURIComponent(l.nome)}`)}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
@@ -237,7 +239,7 @@ const CampanhaLocais = () => {
                   </div>
                   {l.descricao && <p className="text-xs text-muted-foreground mt-1">{l.descricao}</p>}
                 </div>
-                <Button size="icon" variant="ghost" className="text-destructive h-7 w-7" onClick={() => handleDelete(l.id)}>
+                <Button size="icon" variant="ghost" className="text-destructive h-7 w-7" onClick={(e) => { e.stopPropagation(); handleDelete(l.id); }}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
