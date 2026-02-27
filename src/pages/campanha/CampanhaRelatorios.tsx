@@ -227,8 +227,42 @@ const CampanhaRelatorios = () => {
           {renderKpiGrid(["visitas_7d", "visitas_30d", "locais", "geo"])}
           {renderKpiGrid(["cobertura_visitas", "assessores", "sem_contato", "sem_coord"])}
 
+          {/* Row 1: Potencial por Região + Cobertura Gauges */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedKpi(kpiCards.find(k => k.id === "potencial")!)}>
+              <CardHeader><CardTitle className="text-sm">Potencial de Votos por Região</CardTitle></CardHeader>
+              <CardContent>
+                {regioesData.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">Sem dados.</p> : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={regioesData}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="nome" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip formatter={(v: number) => v.toLocaleString("pt-BR")} />
+                      <Bar dataKey="potencial" name="Potencial" fill="#1e40af" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="votos" name="Votos Válidos" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                      <Legend />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedKpi(kpiCards.find(k => k.id === "cobertura")!)}>
+              <CardHeader><CardTitle className="text-sm">Indicadores de Cobertura</CardTitle></CardHeader>
+              <CardContent className="space-y-5 py-4">
+                {[
+                  { label: "Calhas com Coordenador", value: kpis.cobertura, color: "hsl(var(--primary))" },
+                  { label: "Calhas Visitadas", value: kpis.coberturaVisitas, color: "#16a34a" },
+                  { label: "Calhas Geolocalizadas", value: kpis.geoCobertura, color: "#6366f1" },
+                ].map(item => (
+                  <div key={item.label} className="space-y-1">
+                    <div className="flex justify-between text-xs"><span>{item.label}</span><span className="font-bold">{item.value.toFixed(0)}%</span></div>
+                    <div className="h-3 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${item.value}%`, backgroundColor: item.color }} /></div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 2: Visitas por Status + Coordenadores Ativo/Inativo */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedKpi(kpiCards.find(k => k.id === "visitas_realizadas")!)}>
               <CardHeader><CardTitle className="text-sm">Visitas por Status</CardTitle></CardHeader>
               <CardContent>
                 {visitasStatusData.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">Sem dados.</p> : (
@@ -240,7 +274,23 @@ const CampanhaRelatorios = () => {
                 )}
               </CardContent>
             </Card>
-            <Card>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedKpi(kpiCards.find(k => k.id === "coord_ativos")!)}>
+              <CardHeader><CardTitle className="text-sm">Coordenadores — Status</CardTitle></CardHeader>
+              <CardContent>
+                {coordenadores.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">Sem dados.</p> : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart><Pie data={[{ name: "Ativos", value: kpis.coordAtivos.length }, { name: "Inativos", value: kpis.coordInativos.length }]} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85} label>
+                      <Cell fill="#16a34a" /><Cell fill="#dc2626" />
+                    </Pie><Tooltip /><Legend /></PieChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 3: Locais por Tipo + Assessores por Coordenador */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedKpi(kpiCards.find(k => k.id === "locais")!)}>
               <CardHeader><CardTitle className="text-sm">Locais por Tipo</CardTitle></CardHeader>
               <CardContent>
                 {locaisData.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">Sem dados.</p> : (
@@ -250,6 +300,87 @@ const CampanhaRelatorios = () => {
                     </Pie><Tooltip /><Legend /></PieChart>
                   </ResponsiveContainer>
                 )}
+              </CardContent>
+            </Card>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedKpi(kpiCards.find(k => k.id === "assessores")!)}>
+              <CardHeader><CardTitle className="text-sm">Assessores por Coordenador (Top 10)</CardTitle></CardHeader>
+              <CardContent>
+                {kpis.assessoresPorCoord.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">Sem dados.</p> : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={kpis.assessoresPorCoord.slice(0, 10)} layout="vertical"><CartesianGrid strokeDasharray="3 3" /><XAxis type="number" allowDecimals={false} />
+                      <YAxis dataKey="nome" type="category" width={100} tick={{ fontSize: 10 }} /><Tooltip />
+                      <Bar dataKey="assessores" name="Assessores" fill="#6366f1" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 4: Top 10 Calhas + Radar Regional */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedKpi(kpiCards.find(k => k.id === "potencial")!)}>
+              <CardHeader><CardTitle className="text-sm">Top 10 Calhas — Potencial de Votos</CardTitle></CardHeader>
+              <CardContent>
+                {kpis.topCalhas.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">Sem dados.</p> : (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={kpis.topCalhas} layout="vertical"><CartesianGrid strokeDasharray="3 3" /><XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v: number) => v.toLocaleString("pt-BR")} />
+                      <YAxis dataKey="nome" type="category" width={100} tick={{ fontSize: 10 }} /><Tooltip formatter={(v: number) => v.toLocaleString("pt-BR")} />
+                      <Bar dataKey="potencial_votos" name="Potencial" fill="#1e40af" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedKpi(kpiCards.find(k => k.id === "cobertura")!)}>
+              <CardHeader><CardTitle className="text-sm">Radar Regional</CardTitle></CardHeader>
+              <CardContent>
+                {kpis.radarData.length === 0 ? <p className="text-sm text-muted-foreground text-center py-8">Sem dados.</p> : (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <RadarChart data={kpis.radarData}><PolarGrid /><PolarAngleAxis dataKey="regiao" tick={{ fontSize: 10 }} /><PolarRadiusAxis />
+                      <Radar name="Calhas" dataKey="Calhas" stroke="#1e40af" fill="#1e40af" fillOpacity={0.3} />
+                      <Radar name="Coordenadores" dataKey="Coordenadores" stroke="#16a34a" fill="#16a34a" fillOpacity={0.3} />
+                      <Tooltip /><Legend />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 5: Taxa de Conversão + Alertas resumo */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedKpi(kpiCards.find(k => k.id === "visitas_realizadas")!)}>
+              <CardHeader><CardTitle className="text-sm">Taxa de Conversão de Visitas</CardTitle></CardHeader>
+              <CardContent className="flex items-center justify-center py-6">
+                <div className="relative w-32 h-32">
+                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="hsl(var(--muted))" strokeWidth="2.5" />
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="hsl(var(--primary))" strokeWidth="2.5" strokeDasharray={`${kpis.taxaConversao} ${100 - kpis.taxaConversao}`} strokeLinecap="round" />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center"><span className="text-2xl font-bold">{kpis.taxaConversao.toFixed(0)}%</span></div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow border-destructive/30" onClick={() => setSelectedKpi(kpiCards.find(k => k.id === "sem_contato")!)}>
+              <CardHeader><CardTitle className="text-sm flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-destructive" />Resumo de Alertas</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    { label: "Calhas sem coordenador", value: kpis.calhasSemCoord.length, color: "#eab308" },
+                    { label: "Coordenadores sem contato +30d", value: kpis.coordSemContato30d.length, color: "#dc2626" },
+                    { label: "Calhas em risco (score ≥ 3)", value: kpis.calhasRisco.length, color: "#f97316" },
+                    { label: "Visitas canceladas", value: kpis.visitasCanceladas.length, color: "#6366f1" },
+                  ].map(item => (
+                    <div key={item.label} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-xs">{item.label}</span>
+                      </div>
+                      <Badge variant={item.value > 0 ? "destructive" : "secondary"} className="text-[10px]">{item.value}</Badge>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
