@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import CoordenacaoModuloLayout from "@/components/coordenacao/CoordenacaoModuloLayout";
+import CampanhaLayout from "@/components/campanha/CampanhaLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,7 +112,7 @@ const CoordCoordenadores = () => {
     const coordTarefas = tarefas.filter(t => t.coordenador_id === coord.id);
 
     return (
-      <CoordenacaoModuloLayout title="Prontuário do Coordenador">
+      <CampanhaLayout title="Prontuário do Coordenador">
         <Button variant="ghost" size="sm" onClick={() => setSelected(null)} className="mb-4">
           <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
         </Button>
@@ -240,12 +240,12 @@ const CoordCoordenadores = () => {
             </Card>
           </TabsContent>
         </Tabs>
-      </CoordenacaoModuloLayout>
+      </CampanhaLayout>
     );
   }
 
   return (
-    <CoordenacaoModuloLayout title="Coordenadores">
+    <CampanhaLayout title="Coordenadores">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">CRM de Coordenadores</CardTitle>
@@ -305,7 +305,7 @@ const CoordCoordenadores = () => {
           </Table>
         </CardContent>
       </Card>
-    </CoordenacaoModuloLayout>
+    </CampanhaLayout>
   );
 };
 

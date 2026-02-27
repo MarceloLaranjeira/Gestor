@@ -14,11 +14,13 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 const coordenacaoItems = [
-  { icon: Database, label: "Calhas e Municípios", path: "/coord/calhas-municipios" },
-  { icon: UsersRound, label: "Coordenadores", path: "/coord/coordenadores" },
-  { icon: Shield, label: "Assessores", path: "/coord/assessores" },
-  { icon: Megaphone, label: "Monitor de Contatos", path: "/coord/monitor" },
-  { icon: Church, label: "Planejamento de Visitas", path: "/coord/planejamento" },
+  { icon: Church, label: "Eclesiástica", path: "/coordenacao/eclesiastica" },
+  { icon: Megaphone, label: "Comunicação", path: "/coordenacao/comunicacao" },
+  { icon: Database, label: "Inteligência de Dados", path: "/coordenacao/inteligencia" },
+  { icon: Shield, label: "CSPJD", path: "/coordenacao/cspjd" },
+  { icon: Building2, label: "Gabinete", path: "/coordenacao/gabinete" },
+  { icon: UsersRound, label: "Equipe CMT Dan", path: "/coordenacao/equipe" },
+  { icon: ClipboardList, label: "Plenária", path: "/coordenacao/plenaria" },
 ];
 
 interface NavItem { icon: any; label: string; path: string; module?: string }
@@ -55,7 +57,7 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const { user, logout } = useAuth();
   const { hasAccess } = usePermissions();
 
-  const isCoordActive = location.pathname.startsWith("/coord");
+  const isCoordActive = location.pathname.startsWith("/coordenacao");
   const isGestor = user?.role === "Gestor";
   const showLabels = isMobile || !collapsed;
 
