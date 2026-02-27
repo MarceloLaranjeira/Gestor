@@ -45,8 +45,14 @@ const CampanhaMapa = () => {
     if (!containerRef.current || mapRef.current) return;
 
     mapRef.current = L.map(containerRef.current).setView([-3.1, -60.0], 6);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+      attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+      maxZoom: 18,
+    }).addTo(mapRef.current);
+
+    // Labels overlay for readability
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", {
+      maxZoom: 18,
     }).addTo(mapRef.current);
 
     return () => {
