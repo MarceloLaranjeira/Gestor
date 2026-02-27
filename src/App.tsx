@@ -36,6 +36,7 @@ import CampanhaAssessores from "./pages/campanha/CampanhaAssessores";
 import CampanhaVisitas from "./pages/campanha/CampanhaVisitas";
 import CampanhaRelatorios from "./pages/campanha/CampanhaRelatorios";
 import CampanhaMapa from "./pages/campanha/CampanhaMapa";
+import CampanhaLocais from "./pages/campanha/CampanhaLocais";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +100,7 @@ const AppRoutes = () => (
     <Route path="/campanha" element={<PermissionRoute><CampanhaDashboard /></PermissionRoute>} />
     <Route path="/campanha/calhas" element={<PermissionRoute><CampanhaCalhas /></PermissionRoute>} />
     <Route path="/campanha/mapa" element={<PermissionRoute><CampanhaMapa /></PermissionRoute>} />
+    <Route path="/campanha/locais" element={<PermissionRoute><CampanhaLocais /></PermissionRoute>} />
     <Route path="/campanha/coordenadores" element={<PermissionRoute><CampanhaCoordenadores /></PermissionRoute>} />
     <Route path="/campanha/assessores" element={<PermissionRoute><CampanhaAssessores /></PermissionRoute>} />
     <Route path="/campanha/visitas" element={<PermissionRoute><CampanhaVisitas /></PermissionRoute>} />
