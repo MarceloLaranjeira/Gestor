@@ -1,15 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Church, Megaphone, Database, Shield, Building2, UsersRound, ClipboardList,
-  ChevronRight, CheckCircle2, Clock, ListTodo, Loader2, Gavel,
+  ChevronRight, CheckCircle2, Clock, ListTodo, Loader2, Gavel, Search, AlertTriangle,
 } from "lucide-react";
 
 const iconMap: Record<string, any> = {
@@ -40,11 +40,13 @@ interface CoordData {
   totalTarefas: number;
   tarefasConcluidas: number;
   totalSecoes: number;
+  tarefasAtrasadas: number;
 }
 
 const Coordenacoes = () => {
   const [coordenacoes, setCoordenacoes] = useState<CoordData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busca, setBusca] = useState("");
   const navigate = useNavigate();
 
   const loadData = useCallback(async () => {
@@ -62,18 +64,22 @@ const Coordenacoes = () => {
     const secaoIds = (secoes || []).map(s => s.id);
     const { data: tarefas } = await supabase
       .from("tarefas")
-      .select("id, secao_id, status")
+      .select("id, secao_id, status, data_fim, titulo, responsavel")
       .in("secao_id", secaoIds.length > 0 ? secaoIds : ["none"]);
+
+    const hoje = new Date().toISOString().split("T")[0];
 
     const coordData: CoordData[] = coords.map(c => {
       const coordSecoes = (secoes || []).filter(s => s.coordenacao_id === c.id);
       const coordSecaoIds = coordSecoes.map(s => s.id);
       const coordTarefas = (tarefas || []).filter(t => coordSecaoIds.includes(t.secao_id));
+      const atrasadas = coordTarefas.filter(t => !t.status && t.data_fim && t.data_fim < hoje).length;
       return {
         ...c,
         totalTarefas: coordTarefas.length,
         tarefasConcluidas: coordTarefas.filter(t => t.status === true).length,
         totalSecoes: coordSecoes.length,
+        tarefasAtrasadas: atrasadas,
       };
     });
 
@@ -82,6 +88,15 @@ const Coordenacoes = () => {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  const filtered = useMemo(() => {
+    if (!busca.trim()) return coordenacoes;
+    const q = busca.toLowerCase();
+    return coordenacoes.filter(c =>
+      c.nome.toLowerCase().includes(q) ||
+      (c.descricao || "").toLowerCase().includes(q)
+    );
+  }, [coordenacoes, busca]);
 
   if (loading) {
     return (
@@ -96,18 +111,30 @@ const Coordenacoes = () => {
   const totalTarefas = coordenacoes.reduce((s, c) => s + c.totalTarefas, 0);
   const totalConcluidas = coordenacoes.reduce((s, c) => s + c.tarefasConcluidas, 0);
   const totalPendentes = totalTarefas - totalConcluidas;
+  const totalAtrasadas = coordenacoes.reduce((s, c) => s + c.tarefasAtrasadas, 0);
   const progressGeral = totalTarefas > 0 ? (totalConcluidas / totalTarefas) * 100 : 0;
 
   return (
     <AppLayout>
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold font-display">Coordenações do Gabinete</h1>
-          <p className="text-sm text-muted-foreground">Gerencie seções e tarefas de cada coordenação</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold font-display">Coordenações do Gabinete</h1>
+            <p className="text-sm text-muted-foreground">Gerencie seções e tarefas de cada coordenação</p>
+          </div>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar coordenação..."
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              className="pl-9"
+            />
+          </div>
         </div>
 
         {/* Stats resumo */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-5 flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -126,7 +153,7 @@ const Coordenacoes = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalTarefas}</p>
-                <p className="text-xs text-muted-foreground">Total de Tarefas</p>
+                <p className="text-xs text-muted-foreground">Total Tarefas</p>
               </div>
             </CardContent>
           </Card>
@@ -152,6 +179,17 @@ const Coordenacoes = () => {
               </div>
             </CardContent>
           </Card>
+          <Card className={totalAtrasadas > 0 ? "border-destructive/50" : ""}>
+            <CardContent className="pt-5 flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${totalAtrasadas > 0 ? "bg-destructive/10" : "bg-muted"}`}>
+                <AlertTriangle className={`w-5 h-5 ${totalAtrasadas > 0 ? "text-destructive" : "text-muted-foreground"}`} />
+              </div>
+              <div>
+                <p className={`text-2xl font-bold ${totalAtrasadas > 0 ? "text-destructive" : ""}`}>{totalAtrasadas}</p>
+                <p className="text-xs text-muted-foreground">Atrasadas</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Progresso geral */}
@@ -166,59 +204,72 @@ const Coordenacoes = () => {
         </Card>
 
         {/* Cards das coordenações */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {coordenacoes.map((coord, i) => {
-            const Icon = iconMap[coord.slug] || Building2;
-            const colors = colorMap[coord.slug] || "from-muted/50 to-muted/20 border-border";
-            const progress = coord.totalTarefas > 0 ? (coord.tarefasConcluidas / coord.totalTarefas) * 100 : 0;
+        {filtered.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p>Nenhuma coordenação encontrada para "{busca}"</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((coord, i) => {
+              const Icon = iconMap[coord.slug] || Building2;
+              const colors = colorMap[coord.slug] || "from-muted/50 to-muted/20 border-border";
+              const progress = coord.totalTarefas > 0 ? (coord.tarefasConcluidas / coord.totalTarefas) * 100 : 0;
+              const temAtraso = coord.tarefasAtrasadas > 0;
 
-            return (
-              <motion.div
-                key={coord.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Card
-                  className={`cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-200 border bg-gradient-to-br ${colors}`}
-                  onClick={() => navigate(`/coordenacao/${coord.slug}`)}
+              return (
+                <motion.div
+                  key={coord.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
                 >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-background/80 flex items-center justify-center shadow-sm">
-                          <Icon className="w-5 h-5 text-primary" />
+                  <Card
+                    className={`cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all duration-200 border bg-gradient-to-br ${colors} ${temAtraso ? "ring-2 ring-destructive/40" : ""}`}
+                    onClick={() => navigate(`/coordenacao/${coord.slug}`)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-background/80 flex items-center justify-center shadow-sm">
+                            <Icon className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-sm leading-tight">{coord.nome}</CardTitle>
+                            <CardDescription className="text-[11px] mt-0.5 line-clamp-1">{coord.descricao || ""}</CardDescription>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-sm leading-tight">{coord.nome}</CardTitle>
-                          <CardDescription className="text-[11px] mt-0.5 line-clamp-1">{coord.descricao || ""}</CardDescription>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <Badge variant="outline" className="text-[10px] gap-1">
+                          <ListTodo className="w-3 h-3" /> {coord.totalSecoes} seções
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> {coord.tarefasConcluidas}/{coord.totalTarefas}
+                        </Badge>
+                        {temAtraso && (
+                          <Badge variant="destructive" className="text-[10px] gap-1 animate-pulse">
+                            <AlertTriangle className="w-3 h-3" /> {coord.tarefasAtrasadas} atrasada{coord.tarefasAtrasadas > 1 ? "s" : ""}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px] text-muted-foreground">
+                          <span>Progresso</span>
+                          <span className="font-medium">{progress.toFixed(0)}%</span>
                         </div>
+                        <Progress value={progress} className="h-1.5" />
                       </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Badge variant="outline" className="text-[10px] gap-1">
-                        <ListTodo className="w-3 h-3" /> {coord.totalSecoes} seções
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px] gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> {coord.tarefasConcluidas}/{coord.totalTarefas}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[11px] text-muted-foreground">
-                        <span>Progresso</span>
-                        <span className="font-medium">{progress.toFixed(0)}%</span>
-                      </div>
-                      <Progress value={progress} className="h-1.5" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </motion.div>
     </AppLayout>
   );
