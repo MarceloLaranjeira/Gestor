@@ -37,6 +37,7 @@ async function getFileAsBase64(supabase: any, storagePath: string): Promise<{ da
 
 // ─── CRUD Tool definitions ───
 const crudTools = [
+  // ── DEMANDAS ──
   {
     type: "function",
     function: {
@@ -99,6 +100,7 @@ const crudTools = [
       },
     },
   },
+  // ── EVENTOS ──
   {
     type: "function",
     function: {
@@ -130,12 +132,8 @@ const crudTools = [
         properties: {
           busca_titulo: { type: "string", description: "Título (ou parte) do evento a editar" },
           id: { type: "string", description: "ID UUID do evento" },
-          titulo: { type: "string" },
-          data: { type: "string" },
-          hora: { type: "string" },
-          local: { type: "string" },
-          tipo: { type: "string" },
-          descricao: { type: "string" },
+          titulo: { type: "string" }, data: { type: "string" }, hora: { type: "string" },
+          local: { type: "string" }, tipo: { type: "string" }, descricao: { type: "string" },
           participantes: { type: "number" },
         },
         required: [],
@@ -159,6 +157,7 @@ const crudTools = [
       },
     },
   },
+  // ── PESSOAS ──
   {
     type: "function",
     function: {
@@ -169,10 +168,8 @@ const crudTools = [
         properties: {
           nome: { type: "string", description: "Nome completo" },
           tipo: { type: "string", description: "Tipo: Liderança, Apoiador, Contato, etc." },
-          telefone: { type: "string" },
-          email: { type: "string" },
-          bairro: { type: "string" },
-          cidade: { type: "string" },
+          telefone: { type: "string" }, email: { type: "string" },
+          bairro: { type: "string" }, cidade: { type: "string" },
           tags: { type: "array", items: { type: "string" }, description: "Tags/etiquetas" },
         },
         required: ["nome"],
@@ -190,12 +187,9 @@ const crudTools = [
         properties: {
           busca_nome: { type: "string", description: "Nome (ou parte) da pessoa a editar" },
           id: { type: "string", description: "ID UUID da pessoa" },
-          nome: { type: "string" },
-          tipo: { type: "string" },
-          telefone: { type: "string" },
-          email: { type: "string" },
-          bairro: { type: "string" },
-          cidade: { type: "string" },
+          nome: { type: "string" }, tipo: { type: "string" },
+          telefone: { type: "string" }, email: { type: "string" },
+          bairro: { type: "string" }, cidade: { type: "string" },
           tags: { type: "array", items: { type: "string" } },
         },
         required: [],
@@ -219,6 +213,7 @@ const crudTools = [
       },
     },
   },
+  // ── LISTAR ──
   {
     type: "function",
     function: {
@@ -262,10 +257,339 @@ const crudTools = [
       parameters: {
         type: "object",
         properties: {
-          tipo: { type: "string" },
-          cidade: { type: "string" },
-          busca_nome: { type: "string" },
+          tipo: { type: "string" }, cidade: { type: "string" },
+          busca_nome: { type: "string" }, limite: { type: "number" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  // ══════════════════════════════════════════════
+  // ── MODO CAMPANHA — CALHAS ──
+  // ══════════════════════════════════════════════
+  {
+    type: "function",
+    function: {
+      name: "criar_calha",
+      description: "Cria uma nova calha (região eleitoral) no modo campanha",
+      parameters: {
+        type: "object",
+        properties: {
+          nome: { type: "string", description: "Nome da calha" },
+          regiao: { type: "string", description: "Região geográfica" },
+          municipios: { type: "number", description: "Número de municípios" },
+          votos_validos: { type: "number", description: "Total de votos válidos" },
+          potencial_votos: { type: "number", description: "Potencial de votos" },
+          percentual_cristaos: { type: "number", description: "Percentual de cristãos (0-100)" },
+          latitude: { type: "number" }, longitude: { type: "number" },
+        },
+        required: ["nome"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "editar_calha",
+      description: "Edita uma calha existente pelo nome ou ID",
+      parameters: {
+        type: "object",
+        properties: {
+          busca_nome: { type: "string" }, id: { type: "string" },
+          nome: { type: "string" }, regiao: { type: "string" },
+          municipios: { type: "number" }, votos_validos: { type: "number" },
+          potencial_votos: { type: "number" }, percentual_cristaos: { type: "number" },
+          latitude: { type: "number" }, longitude: { type: "number" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "excluir_calha",
+      description: "Exclui uma calha pelo nome ou ID",
+      parameters: {
+        type: "object",
+        properties: {
+          busca_nome: { type: "string" }, id: { type: "string" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "listar_calhas",
+      description: "Lista calhas do modo campanha com filtros opcionais",
+      parameters: {
+        type: "object",
+        properties: {
+          regiao: { type: "string" }, limite: { type: "number" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  // ── MODO CAMPANHA — COORDENADORES ──
+  {
+    type: "function",
+    function: {
+      name: "criar_coordenador_campanha",
+      description: "Cadastra um novo coordenador no modo campanha",
+      parameters: {
+        type: "object",
+        properties: {
+          nome: { type: "string", description: "Nome do coordenador" },
+          telefone: { type: "string" }, email: { type: "string" },
+          status: { type: "string", enum: ["ativo", "inativo"], description: "Status do coordenador" },
+          calha_id: { type: "string", description: "ID da calha vinculada" },
+        },
+        required: ["nome"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "editar_coordenador_campanha",
+      description: "Edita um coordenador do modo campanha",
+      parameters: {
+        type: "object",
+        properties: {
+          busca_nome: { type: "string" }, id: { type: "string" },
+          nome: { type: "string" }, telefone: { type: "string" }, email: { type: "string" },
+          status: { type: "string", enum: ["ativo", "inativo"] },
+          calha_id: { type: "string" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "excluir_coordenador_campanha",
+      description: "Exclui um coordenador do modo campanha",
+      parameters: {
+        type: "object",
+        properties: { busca_nome: { type: "string" }, id: { type: "string" } },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "listar_coordenadores_campanha",
+      description: "Lista coordenadores do modo campanha",
+      parameters: {
+        type: "object",
+        properties: { status: { type: "string" }, limite: { type: "number" } },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  // ── MODO CAMPANHA — ASSESSORES ──
+  {
+    type: "function",
+    function: {
+      name: "criar_assessor_campanha",
+      description: "Cadastra um novo assessor no modo campanha",
+      parameters: {
+        type: "object",
+        properties: {
+          nome: { type: "string" }, funcao: { type: "string" },
+          telefone: { type: "string" }, email: { type: "string" },
+          coordenador_id: { type: "string", description: "ID do coordenador vinculado" },
+        },
+        required: ["nome"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "editar_assessor_campanha",
+      description: "Edita um assessor do modo campanha",
+      parameters: {
+        type: "object",
+        properties: {
+          busca_nome: { type: "string" }, id: { type: "string" },
+          nome: { type: "string" }, funcao: { type: "string" },
+          telefone: { type: "string" }, email: { type: "string" },
+          coordenador_id: { type: "string" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "excluir_assessor_campanha",
+      description: "Exclui um assessor do modo campanha",
+      parameters: {
+        type: "object",
+        properties: { busca_nome: { type: "string" }, id: { type: "string" } },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "listar_assessores_campanha",
+      description: "Lista assessores do modo campanha",
+      parameters: {
+        type: "object",
+        properties: { limite: { type: "number" } },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  // ── MODO CAMPANHA — VISITAS ──
+  {
+    type: "function",
+    function: {
+      name: "criar_visita",
+      description: "Cria uma nova visita de campanha",
+      parameters: {
+        type: "object",
+        properties: {
+          data_visita: { type: "string", description: "Data no formato YYYY-MM-DD" },
+          objetivo: { type: "string" }, observacoes: { type: "string" },
+          status: { type: "string", enum: ["planejada", "realizada", "cancelada"] },
+          calha_id: { type: "string" }, coordenador_id: { type: "string" },
+        },
+        required: ["data_visita"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "editar_visita",
+      description: "Edita uma visita de campanha",
+      parameters: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          data_visita: { type: "string" }, objetivo: { type: "string" },
+          observacoes: { type: "string" },
+          status: { type: "string", enum: ["planejada", "realizada", "cancelada"] },
+          calha_id: { type: "string" }, coordenador_id: { type: "string" },
+        },
+        required: ["id"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "excluir_visita",
+      description: "Exclui uma visita de campanha pelo ID",
+      parameters: {
+        type: "object",
+        properties: { id: { type: "string" } },
+        required: ["id"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "listar_visitas",
+      description: "Lista visitas de campanha com filtros",
+      parameters: {
+        type: "object",
+        properties: {
+          status: { type: "string", enum: ["planejada", "realizada", "cancelada"] },
+          data_inicio: { type: "string" }, data_fim: { type: "string" },
           limite: { type: "number" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  // ── MODO CAMPANHA — LOCAIS ──
+  {
+    type: "function",
+    function: {
+      name: "criar_local",
+      description: "Cria um novo local mapeado no modo campanha",
+      parameters: {
+        type: "object",
+        properties: {
+          nome: { type: "string" }, endereco: { type: "string" },
+          latitude: { type: "number" }, longitude: { type: "number" },
+          tipo: { type: "string", enum: ["igreja", "comite", "ponto_de_apoio", "escola", "associacao", "outro"] },
+          descricao: { type: "string" }, calha_id: { type: "string" },
+        },
+        required: ["nome", "latitude", "longitude"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "editar_local",
+      description: "Edita um local mapeado no modo campanha",
+      parameters: {
+        type: "object",
+        properties: {
+          busca_nome: { type: "string" }, id: { type: "string" },
+          nome: { type: "string" }, endereco: { type: "string" },
+          latitude: { type: "number" }, longitude: { type: "number" },
+          tipo: { type: "string" }, descricao: { type: "string" }, calha_id: { type: "string" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "excluir_local",
+      description: "Exclui um local mapeado pelo nome ou ID",
+      parameters: {
+        type: "object",
+        properties: { busca_nome: { type: "string" }, id: { type: "string" } },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "listar_locais",
+      description: "Lista locais mapeados do modo campanha",
+      parameters: {
+        type: "object",
+        properties: {
+          tipo: { type: "string" }, limite: { type: "number" },
         },
         required: [],
         additionalProperties: false,
@@ -274,6 +598,14 @@ const crudTools = [
   },
 ];
 
+// ─── Generic search helper ───
+async function findByNameOrId(supabase: any, table: string, nameField: string, searchName?: string, id?: string) {
+  if (id) return id;
+  if (!searchName) return null;
+  const { data } = await supabase.from(table).select("id").ilike(nameField, `%${searchName}%`).limit(1).single();
+  return data?.id || null;
+}
+
 // ─── Execute CRUD tool calls ───
 async function executeTool(supabase: any, userId: string, name: string, args: any): Promise<string> {
   try {
@@ -281,15 +613,10 @@ async function executeTool(supabase: any, userId: string, name: string, args: an
       // ── DEMANDAS ──
       case "criar_demanda": {
         const { data, error } = await supabase.from("demandas").insert({
-          titulo: args.titulo,
-          descricao: args.descricao || "",
-          prioridade: args.prioridade || "media",
-          status: args.status || "pendente",
-          responsavel: args.responsavel || "",
-          solicitante: args.solicitante || "",
-          categoria: args.categoria || "",
-          data_prazo: args.data_prazo || null,
-          user_id: userId,
+          titulo: args.titulo, descricao: args.descricao || "", prioridade: args.prioridade || "media",
+          status: args.status || "pendente", responsavel: args.responsavel || "",
+          solicitante: args.solicitante || "", categoria: args.categoria || "",
+          data_prazo: args.data_prazo || null, user_id: userId,
         }).select().single();
         if (error) return `❌ Erro ao criar demanda: ${error.message}`;
         return `✅ Demanda "${data.titulo}" criada com sucesso! (ID: ${data.id}) | Status: ${data.status} | Prioridade: ${data.prioridade}`;
@@ -326,14 +653,9 @@ async function executeTool(supabase: any, userId: string, name: string, args: an
       // ── EVENTOS ──
       case "criar_evento": {
         const { data, error } = await supabase.from("eventos").insert({
-          titulo: args.titulo,
-          data: args.data,
-          hora: args.hora || "08:00",
-          local: args.local || "",
-          tipo: args.tipo || "Interno",
-          descricao: args.descricao || "",
-          participantes: args.participantes || 0,
-          user_id: userId,
+          titulo: args.titulo, data: args.data, hora: args.hora || "08:00",
+          local: args.local || "", tipo: args.tipo || "Interno",
+          descricao: args.descricao || "", participantes: args.participantes || 0, user_id: userId,
         }).select().single();
         if (error) return `❌ Erro ao criar evento: ${error.message}`;
         return `✅ Evento "${data.titulo}" criado para ${data.data} às ${data.hora}! (ID: ${data.id})`;
@@ -370,14 +692,9 @@ async function executeTool(supabase: any, userId: string, name: string, args: an
       // ── PESSOAS ──
       case "criar_pessoa": {
         const { data, error } = await supabase.from("pessoas").insert({
-          nome: args.nome,
-          tipo: args.tipo || "",
-          telefone: args.telefone || "",
-          email: args.email || "",
-          bairro: args.bairro || "",
-          cidade: args.cidade || "Manaus",
-          tags: args.tags || [],
-          user_id: userId,
+          nome: args.nome, tipo: args.tipo || "", telefone: args.telefone || "",
+          email: args.email || "", bairro: args.bairro || "", cidade: args.cidade || "Manaus",
+          tags: args.tags || [], user_id: userId,
         }).select().single();
         if (error) return `❌ Erro ao cadastrar pessoa: ${error.message}`;
         return `✅ Pessoa "${data.nome}" cadastrada com sucesso! (ID: ${data.id}) | Tipo: ${data.tipo || "não definido"}`;
@@ -411,7 +728,7 @@ async function executeTool(supabase: any, userId: string, name: string, args: an
         return `✅ Pessoa excluída com sucesso!`;
       }
 
-      // ── LISTAR ──
+      // ── LISTAR (mandato) ──
       case "listar_demandas": {
         let query = supabase.from("demandas").select("id, titulo, status, prioridade, responsavel, categoria, data_prazo").order("created_at", { ascending: false });
         if (args.status) query = query.eq("status", args.status);
@@ -446,6 +763,201 @@ async function executeTool(supabase: any, userId: string, name: string, args: an
         if (!data || data.length === 0) return "👥 Nenhuma pessoa encontrada com os filtros aplicados.";
         const lines = data.map((p: any) => `• ${p.nome} — ${p.tipo || "sem tipo"} — ${p.cidade || ""} ${p.bairro || ""} (ID: ${p.id})`);
         return `👥 **${data.length} pessoa(s) encontrada(s):**\n${lines.join("\n")}`;
+      }
+
+      // ══════════════════════════════════════════════
+      // ── MODO CAMPANHA — CALHAS ──
+      // ══════════════════════════════════════════════
+      case "criar_calha": {
+        const { data, error } = await supabase.from("campanha_calhas").insert({
+          nome: args.nome, regiao: args.regiao || "", municipios: args.municipios || 0,
+          votos_validos: args.votos_validos || 0, potencial_votos: args.potencial_votos || 0,
+          percentual_cristaos: args.percentual_cristaos || 0,
+          latitude: args.latitude || null, longitude: args.longitude || null,
+        }).select().single();
+        if (error) return `❌ Erro ao criar calha: ${error.message}`;
+        return `✅ Calha "${data.nome}" criada! Região: ${data.regiao || "não definida"} | Potencial: ${data.potencial_votos} votos (ID: ${data.id})`;
+      }
+      case "editar_calha": {
+        const targetId = await findByNameOrId(supabase, "campanha_calhas", "nome", args.busca_nome, args.id);
+        if (!targetId) return "❌ Calha não encontrada. Forneça o nome ou ID.";
+        const updates: any = {};
+        for (const key of ["nome", "regiao", "municipios", "votos_validos", "potencial_votos", "percentual_cristaos", "latitude", "longitude"]) {
+          if (args[key] !== undefined) updates[key] = args[key];
+        }
+        const { data, error } = await supabase.from("campanha_calhas").update(updates).eq("id", targetId).select().single();
+        if (error) return `❌ Erro ao editar calha: ${error.message}`;
+        return `✅ Calha "${data.nome}" atualizada com sucesso!`;
+      }
+      case "excluir_calha": {
+        const targetId = await findByNameOrId(supabase, "campanha_calhas", "nome", args.busca_nome, args.id);
+        if (!targetId) return "❌ Calha não encontrada.";
+        const { error } = await supabase.from("campanha_calhas").delete().eq("id", targetId);
+        if (error) return `❌ Erro ao excluir calha: ${error.message}`;
+        return `✅ Calha excluída com sucesso!`;
+      }
+      case "listar_calhas": {
+        let query = supabase.from("campanha_calhas").select("id, nome, regiao, municipios, votos_validos, potencial_votos, percentual_cristaos").order("nome");
+        if (args.regiao) query = query.ilike("regiao", `%${args.regiao}%`);
+        query = query.limit(args.limite || 50);
+        const { data, error } = await query;
+        if (error) return `❌ Erro: ${error.message}`;
+        if (!data?.length) return "🗺️ Nenhuma calha encontrada.";
+        const lines = data.map((c: any) => `• ${c.nome} — ${c.regiao || "sem região"} — ${c.municipios} municípios — Potencial: ${c.potencial_votos} votos (ID: ${c.id})`);
+        return `🗺️ **${data.length} calha(s):**\n${lines.join("\n")}`;
+      }
+
+      // ── COORDENADORES CAMPANHA ──
+      case "criar_coordenador_campanha": {
+        const { data, error } = await supabase.from("campanha_coordenadores").insert({
+          nome: args.nome, telefone: args.telefone || "", email: args.email || "",
+          status: args.status || "ativo", calha_id: args.calha_id || null,
+        }).select().single();
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Coordenador "${data.nome}" cadastrado! Status: ${data.status} (ID: ${data.id})`;
+      }
+      case "editar_coordenador_campanha": {
+        const targetId = await findByNameOrId(supabase, "campanha_coordenadores", "nome", args.busca_nome, args.id);
+        if (!targetId) return "❌ Coordenador não encontrado.";
+        const updates: any = {};
+        for (const key of ["nome", "telefone", "email", "status", "calha_id"]) {
+          if (args[key] !== undefined) updates[key] = args[key];
+        }
+        const { data, error } = await supabase.from("campanha_coordenadores").update(updates).eq("id", targetId).select().single();
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Coordenador "${data.nome}" atualizado!`;
+      }
+      case "excluir_coordenador_campanha": {
+        const targetId = await findByNameOrId(supabase, "campanha_coordenadores", "nome", args.busca_nome, args.id);
+        if (!targetId) return "❌ Coordenador não encontrado.";
+        const { error } = await supabase.from("campanha_coordenadores").delete().eq("id", targetId);
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Coordenador excluído!`;
+      }
+      case "listar_coordenadores_campanha": {
+        let query = supabase.from("campanha_coordenadores").select("id, nome, telefone, email, status, calha_id").order("nome");
+        if (args.status) query = query.eq("status", args.status);
+        query = query.limit(args.limite || 50);
+        const { data, error } = await query;
+        if (error) return `❌ Erro: ${error.message}`;
+        if (!data?.length) return "👤 Nenhum coordenador encontrado.";
+        const lines = data.map((c: any) => `• ${c.nome} — ${c.status} — ${c.telefone || "sem telefone"} (ID: ${c.id})`);
+        return `👤 **${data.length} coordenador(es):**\n${lines.join("\n")}`;
+      }
+
+      // ── ASSESSORES CAMPANHA ──
+      case "criar_assessor_campanha": {
+        const { data, error } = await supabase.from("campanha_assessores").insert({
+          nome: args.nome, funcao: args.funcao || "", telefone: args.telefone || "",
+          email: args.email || "", coordenador_id: args.coordenador_id || null,
+        }).select().single();
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Assessor "${data.nome}" cadastrado! Função: ${data.funcao || "não definida"} (ID: ${data.id})`;
+      }
+      case "editar_assessor_campanha": {
+        const targetId = await findByNameOrId(supabase, "campanha_assessores", "nome", args.busca_nome, args.id);
+        if (!targetId) return "❌ Assessor não encontrado.";
+        const updates: any = {};
+        for (const key of ["nome", "funcao", "telefone", "email", "coordenador_id"]) {
+          if (args[key] !== undefined) updates[key] = args[key];
+        }
+        const { data, error } = await supabase.from("campanha_assessores").update(updates).eq("id", targetId).select().single();
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Assessor "${data.nome}" atualizado!`;
+      }
+      case "excluir_assessor_campanha": {
+        const targetId = await findByNameOrId(supabase, "campanha_assessores", "nome", args.busca_nome, args.id);
+        if (!targetId) return "❌ Assessor não encontrado.";
+        const { error } = await supabase.from("campanha_assessores").delete().eq("id", targetId);
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Assessor excluído!`;
+      }
+      case "listar_assessores_campanha": {
+        const { data, error } = await supabase.from("campanha_assessores").select("id, nome, funcao, telefone, email, coordenador_id").order("nome").limit(args.limite || 50);
+        if (error) return `❌ Erro: ${error.message}`;
+        if (!data?.length) return "👥 Nenhum assessor de campanha encontrado.";
+        const lines = data.map((a: any) => `• ${a.nome} — ${a.funcao || "sem função"} — ${a.telefone || ""} (ID: ${a.id})`);
+        return `👥 **${data.length} assessor(es):**\n${lines.join("\n")}`;
+      }
+
+      // ── VISITAS ──
+      case "criar_visita": {
+        const { data, error } = await supabase.from("campanha_visitas").insert({
+          data_visita: args.data_visita, objetivo: args.objetivo || "",
+          observacoes: args.observacoes || "", status: args.status || "planejada",
+          calha_id: args.calha_id || null, coordenador_id: args.coordenador_id || null,
+          user_id: userId,
+        }).select().single();
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Visita criada para ${data.data_visita}! Status: ${data.status} (ID: ${data.id})`;
+      }
+      case "editar_visita": {
+        if (!args.id) return "❌ Forneça o ID da visita.";
+        const updates: any = {};
+        for (const key of ["data_visita", "objetivo", "observacoes", "status", "calha_id", "coordenador_id"]) {
+          if (args[key] !== undefined) updates[key] = args[key];
+        }
+        const { data, error } = await supabase.from("campanha_visitas").update(updates).eq("id", args.id).select().single();
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Visita atualizada! Data: ${data.data_visita} | Status: ${data.status}`;
+      }
+      case "excluir_visita": {
+        if (!args.id) return "❌ Forneça o ID da visita.";
+        const { error } = await supabase.from("campanha_visitas").delete().eq("id", args.id);
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Visita excluída!`;
+      }
+      case "listar_visitas": {
+        let query = supabase.from("campanha_visitas").select("id, data_visita, objetivo, status, observacoes, calha_id, coordenador_id").order("data_visita", { ascending: false });
+        if (args.status) query = query.eq("status", args.status);
+        if (args.data_inicio) query = query.gte("data_visita", args.data_inicio);
+        if (args.data_fim) query = query.lte("data_visita", args.data_fim);
+        query = query.limit(args.limite || 20);
+        const { data, error } = await query;
+        if (error) return `❌ Erro: ${error.message}`;
+        if (!data?.length) return "📍 Nenhuma visita encontrada.";
+        const lines = data.map((v: any) => `• ${v.data_visita} — [${v.status?.toUpperCase()}] ${v.objetivo || "sem objetivo"} (ID: ${v.id})`);
+        return `📍 **${data.length} visita(s):**\n${lines.join("\n")}`;
+      }
+
+      // ── LOCAIS ──
+      case "criar_local": {
+        const { data, error } = await supabase.from("campanha_locais").insert({
+          nome: args.nome, endereco: args.endereco || "",
+          latitude: args.latitude, longitude: args.longitude,
+          tipo: args.tipo || "ponto_de_apoio", descricao: args.descricao || "",
+          calha_id: args.calha_id || null, user_id: userId,
+        }).select().single();
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Local "${data.nome}" mapeado! Tipo: ${data.tipo} | Coords: ${data.latitude}, ${data.longitude} (ID: ${data.id})`;
+      }
+      case "editar_local": {
+        const targetId = await findByNameOrId(supabase, "campanha_locais", "nome", args.busca_nome, args.id);
+        if (!targetId) return "❌ Local não encontrado.";
+        const updates: any = {};
+        for (const key of ["nome", "endereco", "latitude", "longitude", "tipo", "descricao", "calha_id"]) {
+          if (args[key] !== undefined) updates[key] = args[key];
+        }
+        const { data, error } = await supabase.from("campanha_locais").update(updates).eq("id", targetId).select().single();
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Local "${data.nome}" atualizado!`;
+      }
+      case "excluir_local": {
+        const targetId = await findByNameOrId(supabase, "campanha_locais", "nome", args.busca_nome, args.id);
+        if (!targetId) return "❌ Local não encontrado.";
+        const { error } = await supabase.from("campanha_locais").delete().eq("id", targetId);
+        if (error) return `❌ Erro: ${error.message}`;
+        return `✅ Local excluído!`;
+      }
+      case "listar_locais": {
+        let query = supabase.from("campanha_locais").select("id, nome, endereco, tipo, latitude, longitude, calha_id").order("nome");
+        if (args.tipo) query = query.eq("tipo", args.tipo);
+        query = query.limit(args.limite || 50);
+        const { data, error } = await query;
+        if (error) return `❌ Erro: ${error.message}`;
+        if (!data?.length) return "📌 Nenhum local encontrado.";
+        const lines = data.map((l: any) => `• ${l.nome} — ${l.tipo} — ${l.endereco || "sem endereço"} (ID: ${l.id})`);
+        return `📌 **${data.length} local(is):**\n${lines.join("\n")}`;
       }
 
       default:
@@ -489,14 +1001,19 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Fetch system data
-    const [coordsRes, secoesRes, tarefasRes, demandasRes, eventosRes, pessoasRes] = await Promise.all([
+    // Fetch system data (mandato + campanha)
+    const [coordsRes, secoesRes, tarefasRes, demandasRes, eventosRes, pessoasRes, calhasRes, coordCampRes, assessCampRes, visitasRes, locaisRes] = await Promise.all([
       supabase.from("coordenacoes").select("nome, descricao, slug"),
       supabase.from("secoes").select("titulo, coordenacao_id"),
       supabase.from("tarefas").select("titulo, status, responsavel, canal, data_inicio, data_fim, secao_id, motivo"),
       supabase.from("demandas").select("titulo, descricao, status, prioridade, responsavel, solicitante, categoria, data_prazo").order("created_at", { ascending: false }).limit(100),
       supabase.from("eventos").select("titulo, data, hora, local, tipo, participantes").order("data", { ascending: false }).limit(50),
       supabase.from("pessoas").select("nome, tipo, bairro, cidade, tags").limit(200),
+      supabase.from("campanha_calhas").select("id, nome, regiao, municipios, votos_validos, potencial_votos, percentual_cristaos"),
+      supabase.from("campanha_coordenadores").select("id, nome, telefone, email, status, calha_id, ultimo_contato"),
+      supabase.from("campanha_assessores").select("id, nome, funcao, telefone, email, coordenador_id"),
+      supabase.from("campanha_visitas").select("id, data_visita, objetivo, status, observacoes, calha_id, coordenador_id").order("data_visita", { ascending: false }).limit(50),
+      supabase.from("campanha_locais").select("id, nome, endereco, tipo, latitude, longitude, calha_id").limit(100),
     ]);
 
     const coords = coordsRes.data || [];
@@ -505,6 +1022,11 @@ serve(async (req) => {
     const demandas = demandasRes.data || [];
     const eventos = eventosRes.data || [];
     const pessoas = pessoasRes.data || [];
+    const calhas = calhasRes.data || [];
+    const coordCamp = coordCampRes.data || [];
+    const assessCamp = assessCampRes.data || [];
+    const visitas = visitasRes.data || [];
+    const locais = locaisRes.data || [];
 
     const totalTarefas = tarefas.length;
     const tarefasConcluidas = tarefas.filter(t => t.status).length;
@@ -525,7 +1047,13 @@ serve(async (req) => {
       return acc;
     }, {});
 
-    const systemPrompt = `Você é o Assessor de Inteligência Digital do Deputado Estadual Comandante Dan, especializado em gestão parlamentar, análise política e governança pública no Amazonas.
+    // Campanha stats
+    const totalPotencial = calhas.reduce((s, c) => s + (c.potencial_votos || 0), 0);
+    const coordAtivos = coordCamp.filter(c => c.status === "ativo").length;
+    const visitasPlanejadas = visitas.filter(v => v.status === "planejada").length;
+    const visitasRealizadas = visitas.filter(v => v.status === "realizada").length;
+
+    const systemPrompt = `Você é HORUS 🦅 — o Assessor de Inteligência Digital do Deputado Estadual Comandante Dan. Você é o responsável absoluto por tudo dentro do sistema: gestão do mandato E modo campanha.
 
 ## SOBRE O DEPUTADO ESTADUAL COMANDANTE DAN
 - Nome: Comandante Dan
@@ -562,20 +1090,44 @@ ${[...new Set(pessoas.map(p => p.tipo).filter(Boolean))].map(tipo => {
 }).join("\n") || "Dados não disponíveis"}
 Cidades atendidas: ${[...new Set(pessoas.map(p => p.cidade).filter(Boolean))].join(", ") || "Manaus"}
 
-## SUAS CAPACIDADES
-1. **Análise de dados**: Interprete os dados acima e gere análises profundas
+## ══════════════════════════════════════════════
+## MODO CAMPANHA — DADOS ESTRATÉGICOS EM TEMPO REAL
+## ══════════════════════════════════════════════
+
+### CALHAS ELEITORAIS (${calhas.length}):
+${calhas.map(c => `• ${c.nome} — ${c.regiao || "sem região"} — ${c.municipios} municípios — Votos válidos: ${c.votos_validos} — Potencial: ${c.potencial_votos} — Cristãos: ${c.percentual_cristaos}%`).join("\n") || "Nenhuma calha cadastrada"}
+**Potencial total de votos: ${totalPotencial.toLocaleString("pt-BR")}**
+
+### COORDENADORES DE CAMPANHA (${coordCamp.length} — ${coordAtivos} ativos):
+${coordCamp.map(c => `• ${c.nome} — ${c.status} — Tel: ${c.telefone || "não informado"} — Último contato: ${c.ultimo_contato || "nunca"}`).join("\n") || "Nenhum coordenador cadastrado"}
+
+### ASSESSORES DE CAMPANHA (${assessCamp.length}):
+${assessCamp.map(a => `• ${a.nome} — ${a.funcao || "sem função"} — Tel: ${a.telefone || ""}`).join("\n") || "Nenhum assessor cadastrado"}
+
+### VISITAS (${visitas.length} — ${visitasPlanejadas} planejadas, ${visitasRealizadas} realizadas):
+${visitas.slice(0, 15).map(v => `• ${v.data_visita} — [${v.status?.toUpperCase()}] ${v.objetivo || "sem objetivo"}`).join("\n") || "Nenhuma visita registrada"}
+
+### LOCAIS MAPEADOS (${locais.length}):
+${locais.slice(0, 20).map(l => `• ${l.nome} — ${l.tipo} — ${l.endereco || "sem endereço"}`).join("\n") || "Nenhum local mapeado"}
+
+## SUAS CAPACIDADES (PODERES TOTAIS)
+1. **Análise de dados**: Interprete TODOS os dados do mandato e da campanha
 2. **Relatórios**: Crie relatórios executivos, setoriais e temáticos
-3. **CRUD de dados**: Você pode CRIAR, EDITAR e EXCLUIR demandas, eventos e pessoas usando as ferramentas disponíveis
+3. **CRUD COMPLETO**: Você pode CRIAR, EDITAR e EXCLUIR:
+   - Demandas, eventos e pessoas (mandato)
+   - Calhas, coordenadores, assessores, visitas e locais (campanha)
 4. **Insights políticos**: Sugira estratégias baseadas nos dados
 5. **Gestão de demandas**: Priorize, categorize e resolva demandas
 6. **Análise de documentos**: Analise PDFs e imagens enviados
+7. **Gestão de campanha**: Crie e gerencie toda a estrutura de campanha
 
 ## DIRETRIZES PARA CRUD
 - Quando o usuário pedir para criar, editar ou excluir dados, USE AS FERRAMENTAS disponíveis
 - Sempre confirme a ação realizada mostrando os dados alterados
-- Para edições, busque o registro pelo título antes de editar
-- Seja proativo: se o usuário mencionar algo que pode ser uma demanda/evento/pessoa, sugira criar
+- Para edições, busque o registro pelo título/nome antes de editar
+- Seja proativo: se o usuário mencionar algo que pode ser uma demanda/evento/pessoa/visita, sugira criar
 - Ao criar demandas, defina prioridade e status adequados automaticamente
+- Para campanha: vincule calhas, coordenadores e locais quando possível
 
 ## ESTILO DE COMUNICAÇÃO
 - Assertividade: ${assertiveness !== undefined ? Math.round(assertiveness * 100) : 50}%
@@ -638,7 +1190,6 @@ ${customInstructions ? `\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstru
 
     // If no tool calls, stream the response normally
     if (!choice?.message?.tool_calls || choice.message.tool_calls.length === 0) {
-      // Re-call with streaming for normal text responses
       const streamResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -695,7 +1246,6 @@ ${customInstructions ? `\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstru
     });
 
     if (!finalResponse.ok) {
-      // If streaming fails after tools, return tool results directly
       const resultText = toolResults.join("\n\n");
       const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content: resultText } }] })}\n\ndata: [DONE]\n\n`;
       return new Response(sseData, {
