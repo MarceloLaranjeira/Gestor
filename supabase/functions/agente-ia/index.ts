@@ -1165,89 +1165,88 @@ ${customInstructions ? `\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstru
 
     const selectedModel = model || "google/gemini-2.5-flash";
 
-    // ─── First AI call (may return tool calls) ───
-    const firstResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages: aiMessages,
-        tools: crudTools,
-        temperature: temperature !== undefined ? temperature : 0.7,
-      }),
-    });
+    // ─── Iterative tool-calling loop (up to 5 rounds) ───
+    let currentMessages = [...aiMessages];
+    const MAX_TOOL_ROUNDS = 5;
 
-    if (!firstResponse.ok) {
-      if (firstResponse.status === 429) return new Response(JSON.stringify({ error: "Limite de requisições atingido." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (firstResponse.status === 402) return new Response(JSON.stringify({ error: "Créditos insuficientes." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      const t = await firstResponse.text();
-      console.error("AI gateway error:", firstResponse.status, t);
-      return new Response(JSON.stringify({ error: "Erro no gateway de IA" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const firstData = await firstResponse.json();
-    const choice = firstData.choices?.[0];
-
-    // If no tool calls, stream the response normally
-    if (!choice?.message?.tool_calls || choice.message.tool_calls.length === 0) {
-      const streamResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: selectedModel,
-          messages: aiMessages,
+          messages: currentMessages,
           tools: crudTools,
-          stream: true,
           temperature: temperature !== undefined ? temperature : 0.7,
         }),
       });
 
-      if (!streamResponse.ok) {
-        const t = await streamResponse.text();
-        console.error("Stream error:", streamResponse.status, t);
+      if (!aiResponse.ok) {
+        if (aiResponse.status === 429) return new Response(JSON.stringify({ error: "Limite de requisições atingido." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (aiResponse.status === 402) return new Response(JSON.stringify({ error: "Créditos insuficientes." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        const t = await aiResponse.text();
+        console.error("AI gateway error:", aiResponse.status, t);
         return new Response(JSON.stringify({ error: "Erro no gateway de IA" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
-      return new Response(streamResponse.body, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-      });
+      const aiData = await aiResponse.json();
+      const choice = aiData.choices?.[0];
+
+      // No tool calls → stream final response
+      if (!choice?.message?.tool_calls || choice.message.tool_calls.length === 0) {
+        const streamResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: selectedModel,
+            messages: currentMessages,
+            tools: crudTools,
+            stream: true,
+            temperature: temperature !== undefined ? temperature : 0.7,
+          }),
+        });
+
+        if (!streamResponse.ok) {
+          const t = await streamResponse.text();
+          console.error("Stream error:", streamResponse.status, t);
+          return new Response(JSON.stringify({ error: "Erro no gateway de IA" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        return new Response(streamResponse.body, {
+          headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+        });
+      }
+
+      // Execute tool calls and add results to conversation
+      const toolCalls = choice.message.tool_calls;
+      currentMessages.push(choice.message);
+
+      for (const tc of toolCalls) {
+        const args = typeof tc.function.arguments === "string" ? JSON.parse(tc.function.arguments) : tc.function.arguments;
+        const result = await executeTool(supabase, user.id, tc.function.name, args);
+        currentMessages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          content: result,
+        });
+      }
+      // Loop continues — AI will see tool results and may issue more tool calls
     }
 
-    // ─── Execute tool calls ───
-    const toolCalls = choice.message.tool_calls;
-    const toolResults: string[] = [];
-
-    for (const tc of toolCalls) {
-      const args = typeof tc.function.arguments === "string" ? JSON.parse(tc.function.arguments) : tc.function.arguments;
-      const result = await executeTool(supabase, user.id, tc.function.name, args);
-      toolResults.push(result);
-    }
-
-    // Build messages with tool results and get final response
-    const toolMessages = [...aiMessages, choice.message];
-    for (let i = 0; i < toolCalls.length; i++) {
-      toolMessages.push({
-        role: "tool",
-        tool_call_id: toolCalls[i].id,
-        content: toolResults[i],
-      });
-    }
-
-    // Get final streamed response after tool execution
+    // If we exhausted all rounds, stream final response
     const finalResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: selectedModel,
-        messages: toolMessages,
+        messages: currentMessages,
         stream: true,
         temperature: temperature !== undefined ? temperature : 0.7,
       }),
     });
 
     if (!finalResponse.ok) {
-      const resultText = toolResults.join("\n\n");
-      const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content: resultText } }] })}\n\ndata: [DONE]\n\n`;
+      const sseData = `data: ${JSON.stringify({ choices: [{ delta: { content: "Operações concluídas." } }] })}\n\ndata: [DONE]\n\n`;
       return new Response(sseData, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
