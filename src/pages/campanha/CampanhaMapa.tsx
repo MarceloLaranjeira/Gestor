@@ -154,30 +154,76 @@ const CampanhaMapa = () => {
   // Build popup form HTML
   const buildPopupForm = (lat: number, lng: number) => {
     const container = document.createElement("div");
-    container.style.minWidth = "260px";
+    container.style.minWidth = "280px";
+    const fieldStyle = "width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px;box-sizing:border-box";
+    const labelStyle = "font-size:11px;font-weight:600;display:block;margin-bottom:2px";
+    const infoStyle = "font-size:11px;color:#555;background:#f0f4ff;padding:4px 8px;border-radius:4px;margin-bottom:2px";
+
     container.innerHTML = `
       <div style="font-weight:bold;font-size:14px;margin-bottom:8px;color:#1e40af">📍 Novo Local</div>
-      <p style="font-size:11px;color:#666;margin:0 0 8px">Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}</p>
-      <div style="margin-bottom:6px">
-        <label style="font-size:11px;font-weight:600;display:block;margin-bottom:2px">Nome *</label>
-        <input id="popup-nome" type="text" placeholder="Nome do local" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px;box-sizing:border-box" />
+      <p style="font-size:11px;color:#666;margin:0 0 6px">Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}</p>
+      <div id="popup-geo-loading" style="font-size:11px;color:#1e40af;margin-bottom:8px">⏳ Buscando informações do local...</div>
+      <div id="popup-geo-info" style="display:none;margin-bottom:8px;space-y:2px">
+        <p id="popup-rua" style="${infoStyle}">🛣️ Rua: —</p>
+        <p id="popup-bairro" style="${infoStyle}">🏘️ Bairro: —</p>
+        <p id="popup-zona" style="${infoStyle}">📍 Zona: —</p>
+        <p id="popup-cidade" style="${infoStyle}">🏙️ Cidade: —</p>
       </div>
       <div style="margin-bottom:6px">
-        <label style="font-size:11px;font-weight:600;display:block;margin-bottom:2px">Tipo</label>
-        <select id="popup-tipo" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px;box-sizing:border-box;background:#fff">
+        <label style="${labelStyle}">Nome *</label>
+        <input id="popup-nome" type="text" placeholder="Nome do local" style="${fieldStyle}" />
+      </div>
+      <div style="margin-bottom:6px">
+        <label style="${labelStyle}">Tipo</label>
+        <select id="popup-tipo" style="${fieldStyle};background:#fff">
           ${TIPOS.map((t) => `<option value="${t.value}">${t.label}</option>`).join("")}
         </select>
       </div>
       <div style="margin-bottom:8px">
-        <label style="font-size:11px;font-weight:600;display:block;margin-bottom:2px">Descrição</label>
-        <textarea id="popup-descricao" rows="2" placeholder="Descrição (opcional)" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px;box-sizing:border-box;resize:vertical"></textarea>
+        <label style="${labelStyle}">Descrição</label>
+        <textarea id="popup-descricao" rows="2" placeholder="Descrição (opcional)" style="${fieldStyle};resize:vertical"></textarea>
       </div>
       <button id="popup-salvar" style="width:100%;padding:8px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">
         Salvar Local
       </button>
     `;
 
-    // Attach event after DOM insert
+    // Fetch geo info and fill fields
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&zoom=18`)
+      .then((r) => r.json())
+      .then((data) => {
+        const addr = data.address || {};
+        const rua = addr.road || addr.pedestrian || addr.footway || "Não identificada";
+        const bairro = addr.suburb || addr.neighbourhood || addr.quarter || "Não identificado";
+        const zona = addr.city_district || addr.district || addr.borough || "Não identificada";
+        const cidade = addr.city || addr.town || addr.village || addr.municipality || "Não identificada";
+
+        const ruaEl = container.querySelector("#popup-rua");
+        const bairroEl = container.querySelector("#popup-bairro");
+        const zonaEl = container.querySelector("#popup-zona");
+        const cidadeEl = container.querySelector("#popup-cidade");
+        if (ruaEl) ruaEl.textContent = `🛣️ Rua: ${rua}`;
+        if (bairroEl) bairroEl.textContent = `🏘️ Bairro: ${bairro}`;
+        if (zonaEl) zonaEl.textContent = `📍 Zona: ${zona}`;
+        if (cidadeEl) cidadeEl.textContent = `🏙️ Cidade: ${cidade}`;
+
+        const loadingEl = container.querySelector("#popup-geo-loading") as HTMLElement;
+        const infoEl = container.querySelector("#popup-geo-info") as HTMLElement;
+        if (loadingEl) loadingEl.style.display = "none";
+        if (infoEl) infoEl.style.display = "block";
+
+        // Auto-suggest name from road
+        const nomeInput = container.querySelector("#popup-nome") as HTMLInputElement;
+        if (nomeInput && !nomeInput.value && rua !== "Não identificada") {
+          nomeInput.value = rua;
+        }
+      })
+      .catch(() => {
+        const loadingEl = container.querySelector("#popup-geo-loading") as HTMLElement;
+        if (loadingEl) loadingEl.textContent = "⚠️ Não foi possível buscar informações do local";
+      });
+
+    // Attach save event
     setTimeout(() => {
       const btn = container.querySelector("#popup-salvar") as HTMLButtonElement;
       if (btn) {
