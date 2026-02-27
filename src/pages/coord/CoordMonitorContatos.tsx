@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import CoordenacaoModuloLayout from "@/components/coordenacao/CoordenacaoModuloLayout";
+import CampanhaLayout from "@/components/campanha/CampanhaLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,7 +110,7 @@ const CoordMonitorContatos = () => {
   const whatsappLink = (tel: string) => `https://wa.me/55${tel.replace(/\D/g, "")}`;
 
   return (
-    <CoordenacaoModuloLayout title="Monitor de Contatos">
+    <CampanhaLayout title="Monitor de Contatos">
       {/* Indicadores */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <Card><CardContent className="pt-6 text-center">
@@ -248,7 +248,7 @@ const CoordMonitorContatos = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </CoordenacaoModuloLayout>
+    </CampanhaLayout>
   );
 };
 

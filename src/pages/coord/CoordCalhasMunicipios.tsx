@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import CoordenacaoModuloLayout from "@/components/coordenacao/CoordenacaoModuloLayout";
+import CampanhaLayout from "@/components/campanha/CampanhaLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,7 +81,7 @@ const CoordCalhasMunicipios = () => {
     const avgCristaos = muns.length > 0 ? muns.reduce((s, m) => s + Number(m.percentual_cristaos), 0) / muns.length : Number(selectedCalha.percentual_cristaos);
 
     return (
-      <CoordenacaoModuloLayout title="Detalhes da Calha">
+      <CampanhaLayout title="Detalhes da Calha">
         <Button variant="ghost" size="sm" onClick={() => setSelectedCalha(null)} className="mb-4">
           <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
         </Button>
@@ -164,12 +164,12 @@ const CoordCalhasMunicipios = () => {
             </Table>
           </CardContent>
         </Card>
-      </CoordenacaoModuloLayout>
+      </CampanhaLayout>
     );
   }
 
   return (
-    <CoordenacaoModuloLayout title="Calhas e Municípios">
+    <CampanhaLayout title="Calhas e Municípios">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Calhas Eleitorais</CardTitle>
@@ -229,7 +229,7 @@ const CoordCalhasMunicipios = () => {
           </Table>
         </CardContent>
       </Card>
-    </CoordenacaoModuloLayout>
+    </CampanhaLayout>
   );
 };
 

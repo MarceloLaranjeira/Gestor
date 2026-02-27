@@ -103,12 +103,12 @@ const AppRoutes = () => (
     <Route path="/usuarios" element={<PermissionRoute><GerenciarUsuarios /></PermissionRoute>} />
     <Route path="/relatorio-coordenacao" element={<PermissionRoute><RelatorioCoordenacao /></PermissionRoute>} />
     <Route path="/coordenacao/:id" element={<PermissionRoute><CoordenacaoPage /></PermissionRoute>} />
-    {/* Coordenações Estratégicas */}
-    <Route path="/coord/calhas-municipios" element={<PermissionRoute><CoordCalhasMunicipios /></PermissionRoute>} />
-    <Route path="/coord/coordenadores" element={<PermissionRoute><CoordCoordenadores /></PermissionRoute>} />
-    <Route path="/coord/assessores" element={<PermissionRoute><CoordAssessores /></PermissionRoute>} />
-    <Route path="/coord/monitor" element={<PermissionRoute><CoordMonitorContatos /></PermissionRoute>} />
-    <Route path="/coord/planejamento" element={<PermissionRoute><CoordPlanejamentoVisitas /></PermissionRoute>} />
+    {/* Coordenações Estratégicas (dentro de Campanha) */}
+    <Route path="/campanha/coord/calhas" element={<PermissionRoute><CoordCalhasMunicipios /></PermissionRoute>} />
+    <Route path="/campanha/coord/coordenadores" element={<PermissionRoute><CoordCoordenadores /></PermissionRoute>} />
+    <Route path="/campanha/coord/assessores" element={<PermissionRoute><CoordAssessores /></PermissionRoute>} />
+    <Route path="/campanha/coord/monitor" element={<PermissionRoute><CoordMonitorContatos /></PermissionRoute>} />
+    <Route path="/campanha/coord/planejamento" element={<PermissionRoute><CoordPlanejamentoVisitas /></PermissionRoute>} />
     <Route path="/financas" element={<PermissionRoute><Financas /></PermissionRoute>} />
     <Route path="/permissoes" element={<ProtectedRoute><Permissoes /></ProtectedRoute>} />
     <Route path="/acesso-negado" element={<ProtectedRoute><AcessoNegado /></ProtectedRoute>} />

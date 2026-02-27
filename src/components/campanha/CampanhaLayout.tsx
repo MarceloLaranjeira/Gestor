@@ -4,6 +4,7 @@ import AppLayout from "@/components/AppLayout";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Map, Users, UserCheck, CalendarCheck, BarChart3, Globe, MapPin,
+  Database, Megaphone, Shield, Navigation, Activity,
 } from "lucide-react";
 
 const tabs = [
@@ -15,6 +16,11 @@ const tabs = [
   { icon: UserCheck, label: "Assessores", path: "/campanha/assessores" },
   { icon: CalendarCheck, label: "Visitas", path: "/campanha/visitas" },
   { icon: BarChart3, label: "Relatórios", path: "/campanha/relatorios" },
+  { icon: Database, label: "Calhas e Municípios", path: "/campanha/coord/calhas" },
+  { icon: Shield, label: "CRM Coordenadores", path: "/campanha/coord/coordenadores" },
+  { icon: UserCheck, label: "Assessores Coord.", path: "/campanha/coord/assessores" },
+  { icon: Activity, label: "Monitor Contatos", path: "/campanha/coord/monitor" },
+  { icon: Navigation, label: "Plan. Visitas", path: "/campanha/coord/planejamento" },
 ];
 
 interface Props {

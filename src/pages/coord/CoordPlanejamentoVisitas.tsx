@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import CoordenacaoModuloLayout from "@/components/coordenacao/CoordenacaoModuloLayout";
+import CampanhaLayout from "@/components/campanha/CampanhaLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,7 +86,7 @@ const CoordPlanejamentoVisitas = () => {
   const visitasAgendadas = visitas.filter(v => v.status === "planejada");
 
   return (
-    <CoordenacaoModuloLayout title="Planejamento de Visitas do Comandante">
+    <CampanhaLayout title="Planejamento de Visitas do Comandante">
       {/* Parâmetros */}
       <Card className="mb-6">
         <CardHeader>
@@ -246,7 +246,7 @@ const CoordPlanejamentoVisitas = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </CoordenacaoModuloLayout>
+    </CampanhaLayout>
   );
 };
 

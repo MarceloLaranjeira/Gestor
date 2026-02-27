@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import CoordenacaoModuloLayout from "@/components/coordenacao/CoordenacaoModuloLayout";
+import CampanhaLayout from "@/components/campanha/CampanhaLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -93,7 +93,7 @@ const CoordAssessores = () => {
     const pendentes = tarefas.filter(t => t.assessor_id === selected.id && t.status !== "concluido").length;
 
     return (
-      <CoordenacaoModuloLayout title="Detalhes do Assessor">
+      <CampanhaLayout title="Detalhes do Assessor">
         <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)} className="mb-4">
           <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
         </Button>
@@ -155,12 +155,12 @@ const CoordAssessores = () => {
             </Table>
           </CardContent>
         </Card>
-      </CoordenacaoModuloLayout>
+      </CampanhaLayout>
     );
   }
 
   return (
-    <CoordenacaoModuloLayout title="Assessores de Coordenação">
+    <CampanhaLayout title="Assessores de Coordenação">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Assessores</CardTitle>
@@ -211,7 +211,7 @@ const CoordAssessores = () => {
           </Table>
         </CardContent>
       </Card>
-    </CoordenacaoModuloLayout>
+    </CampanhaLayout>
   );
 };
 
