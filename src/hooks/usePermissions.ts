@@ -24,6 +24,7 @@ const MODULE_LABELS: Record<string, string> = {
   configuracoes: "Configurações",
   campanha: "Modo Campanha",
   prontuario: "Prontuário Parlamentar",
+  logbook: "Logbook de Calhas",
 };
 
 export const ALL_MODULES = Object.keys(MODULE_LABELS);
@@ -52,6 +53,7 @@ export function getModuleForRoute(path: string): string | null {
   if (path.startsWith("/movimentos/")) return "movimentos";
   if (path.startsWith("/campanha")) return "campanha";
   if (path.startsWith("/prontuario")) return "prontuario";
+  if (path.startsWith("/logbook")) return "logbook";
   return ROUTE_TO_MODULE[path] || null;
 }
 

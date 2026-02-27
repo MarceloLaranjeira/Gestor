@@ -641,6 +641,121 @@ export type Database = {
           },
         ]
       }
+      logbook_calhas: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      logbook_municipios: {
+        Row: {
+          calha_id: string
+          created_at: string
+          id: string
+          nome: string
+          percentual_cristaos_2010: number
+          percentual_cristaos_2022: number
+          percentual_nao_cristaos_2010: number
+          percentual_nao_cristaos_2022: number
+          populacao_2022: number
+          updated_at: string
+        }
+        Insert: {
+          calha_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          percentual_cristaos_2010?: number
+          percentual_cristaos_2022?: number
+          percentual_nao_cristaos_2010?: number
+          percentual_nao_cristaos_2022?: number
+          populacao_2022?: number
+          updated_at?: string
+        }
+        Update: {
+          calha_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          percentual_cristaos_2010?: number
+          percentual_cristaos_2022?: number
+          percentual_nao_cristaos_2010?: number
+          percentual_nao_cristaos_2022?: number
+          populacao_2022?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logbook_municipios_calha_id_fkey"
+            columns: ["calha_id"]
+            isOneToOne: false
+            referencedRelation: "logbook_calhas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logbook_votos_historico: {
+        Row: {
+          ano_eleicao: number
+          cargo: Database["public"]["Enums"]["cargo_eleicao"]
+          created_at: string
+          id: string
+          municipio_id: string
+          percentual_votos_candidato: number | null
+          updated_at: string
+          votos_candidato: number
+          votos_validos_totais: number
+        }
+        Insert: {
+          ano_eleicao: number
+          cargo: Database["public"]["Enums"]["cargo_eleicao"]
+          created_at?: string
+          id?: string
+          municipio_id: string
+          percentual_votos_candidato?: number | null
+          updated_at?: string
+          votos_candidato?: number
+          votos_validos_totais?: number
+        }
+        Update: {
+          ano_eleicao?: number
+          cargo?: Database["public"]["Enums"]["cargo_eleicao"]
+          created_at?: string
+          id?: string
+          municipio_id?: string
+          percentual_votos_candidato?: number | null
+          updated_at?: string
+          votos_candidato?: number
+          votos_validos_totais?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logbook_votos_historico_municipio_id_fkey"
+            columns: ["municipio_id"]
+            isOneToOne: false
+            referencedRelation: "logbook_municipios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       movimentos: {
         Row: {
           cor: string
@@ -1011,6 +1126,7 @@ export type Database = {
     }
     Enums: {
       app_role: "gestor" | "assessor" | "coordenador"
+      cargo_eleicao: "federal" | "estadual"
       prioridade_apoiador: "alta" | "media" | "baixa"
       status_historico: "concluido" | "pendente" | "em_andamento"
     }
@@ -1141,6 +1257,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["gestor", "assessor", "coordenador"],
+      cargo_eleicao: ["federal", "estadual"],
       prioridade_apoiador: ["alta", "media", "baixa"],
       status_historico: ["concluido", "pendente", "em_andamento"],
     },
