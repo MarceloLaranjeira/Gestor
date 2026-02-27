@@ -23,6 +23,7 @@ import Calendario from "./pages/Calendario";
 import MovimentoDetalhes from "./pages/MovimentoDetalhes";
 import Permissoes from "./pages/Permissoes";
 import AcessoNegado from "./pages/AcessoNegado";
+import Coordenacoes from "./pages/Coordenacoes";
 import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import TermosUso from "./pages/TermosUso";
 import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
@@ -102,6 +103,7 @@ const AppRoutes = () => (
     <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
     <Route path="/usuarios" element={<PermissionRoute><GerenciarUsuarios /></PermissionRoute>} />
     <Route path="/relatorio-coordenacao" element={<PermissionRoute><RelatorioCoordenacao /></PermissionRoute>} />
+    <Route path="/coordenacoes" element={<PermissionRoute><Coordenacoes /></PermissionRoute>} />
     <Route path="/coordenacao/:id" element={<PermissionRoute><CoordenacaoPage /></PermissionRoute>} />
     {/* Coordenações Estratégicas (dentro de Campanha) */}
     <Route path="/campanha/coord/calhas" element={<PermissionRoute><CoordCalhasMunicipios /></PermissionRoute>} />

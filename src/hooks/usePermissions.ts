@@ -48,7 +48,7 @@ const ROUTE_TO_MODULE: Record<string, string> = {
 };
 
 export function getModuleForRoute(path: string): string | null {
-  if (path.startsWith("/coordenacao")) return "coordenacoes";
+  if (path === "/coordenacoes" || path.startsWith("/coordenacao")) return "coordenacoes";
   if (path.startsWith("/movimentos/")) return "movimentos";
   if (path.startsWith("/campanha")) return "campanha";
   if (path.startsWith("/prontuario")) return "prontuario";
