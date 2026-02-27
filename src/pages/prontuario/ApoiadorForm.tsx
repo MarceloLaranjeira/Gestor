@@ -24,6 +24,7 @@ const ApoiadorForm = () => {
   const isEditing = !!id;
 
   const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState(false);
   const [form, setForm] = useState({
     nome: "", cidade: "", regiao: "", telefone: "", organizacao: "",
     funcao: "", segmento: "", cargo: "", beneficios_relacionados: "",
@@ -51,6 +52,7 @@ const ApoiadorForm = () => {
   }, [id]);
 
   const handleSave = async () => {
+    setTouched(true);
     if (!form.nome.trim()) { toast({ title: "Nome é obrigatório", variant: "destructive" }); return; }
     if (!user?.user_id) return;
     setLoading(true);
@@ -90,8 +92,8 @@ const ApoiadorForm = () => {
           <CardHeader><CardTitle className="text-base">Dados Básicos</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <Label>Nome *</Label>
-              <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" />
+              <Label>Nome <span className="text-destructive">*</span></Label>
+              <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className={cn(touched && !form.nome.trim() && "border-destructive ring-destructive")} />
             </div>
             <div>
               <Label>Cidade</Label>
