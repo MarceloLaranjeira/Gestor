@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Eye, Pencil, Trash2, Star, Users, ArrowUpDown } from "lucide-react";
+import { Plus, Search, Eye, Pencil, Trash2, Star, Users, ArrowUpDown, TrendingUp } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -127,9 +127,14 @@ const ApoiadoresList = () => {
             </h1>
             <p className="text-sm text-muted-foreground">Gestão completa de apoiadores e relações políticas</p>
           </div>
-          <Button onClick={() => navigate("/prontuario/novo")} className="gap-2">
-            <Plus className="w-4 h-4" /> Novo Apoiador
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/prontuario/resumo")} className="gap-2">
+              <TrendingUp className="w-4 h-4" /> Resumo Executivo
+            </Button>
+            <Button onClick={() => navigate("/prontuario/novo")} className="gap-2">
+              <Plus className="w-4 h-4" /> Novo Apoiador
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
