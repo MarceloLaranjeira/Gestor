@@ -3,13 +3,14 @@ import { Link, useLocation } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Map, Users, UserCheck, CalendarCheck, BarChart3, Globe,
+  LayoutDashboard, Map, Users, UserCheck, CalendarCheck, BarChart3, Globe, MapPin,
 } from "lucide-react";
 
 const tabs = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/campanha" },
   { icon: Map, label: "Calhas", path: "/campanha/calhas" },
   { icon: Globe, label: "Mapa", path: "/campanha/mapa" },
+  { icon: MapPin, label: "Locais", path: "/campanha/locais" },
   { icon: Users, label: "Coordenadores", path: "/campanha/coordenadores" },
   { icon: UserCheck, label: "Assessores", path: "/campanha/assessores" },
   { icon: CalendarCheck, label: "Visitas", path: "/campanha/visitas" },

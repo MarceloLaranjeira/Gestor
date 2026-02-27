@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Map, Building2, Vote, Church, AlertTriangle, Phone } from "lucide-react";
+import { Map, Building2, Vote, Church, AlertTriangle, Phone, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,18 +39,21 @@ const CampanhaDashboard = () => {
   const [calhas, setCalhas] = useState<Calha[]>([]);
   const [coordenadores, setCoordenadores] = useState<Coordenador[]>([]);
   const [contatos, setContatos] = useState<Contato[]>([]);
+  const [totalLocais, setTotalLocais] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
-      const [c, co, ct] = await Promise.all([
+      const [c, co, ct, lo] = await Promise.all([
         supabase.from("campanha_calhas").select("*").order("potencial_votos", { ascending: false }),
         supabase.from("campanha_coordenadores").select("*"),
         supabase.from("campanha_contatos").select("*").order("data_contato", { ascending: false }).limit(5),
+        supabase.from("campanha_locais").select("id", { count: "exact", head: true }),
       ]);
       setCalhas((c.data as Calha[]) || []);
       setCoordenadores((co.data as Coordenador[]) || []);
       setContatos((ct.data as Contato[]) || []);
+      setTotalLocais(lo.count || 0);
       setLoading(false);
     };
     fetch();
@@ -74,12 +77,13 @@ const CampanhaDashboard = () => {
     { title: "Municípios", value: totalMunicipios, icon: <Building2 className="w-5 h-5 text-[hsl(var(--primary))]" />, path: "/campanha/calhas" },
     { title: "Votos Válidos", value: totalVotos.toLocaleString("pt-BR"), icon: <Vote className="w-5 h-5 text-[hsl(var(--primary))]" />, path: "/campanha/relatorios" },
     { title: "% Cristãos (média)", value: `${avgCristaos}%`, icon: <Church className="w-5 h-5 text-[hsl(var(--primary))]" />, path: "/campanha/relatorios" },
+    { title: "Locais Mapeados", value: totalLocais, icon: <MapPin className="w-5 h-5 text-[hsl(var(--primary))]" />, path: "/campanha/locais" },
   ];
 
   return (
     <CampanhaLayout title="Dashboard Campanha">
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {stats.map((s) => (
           <Card
             key={s.title}

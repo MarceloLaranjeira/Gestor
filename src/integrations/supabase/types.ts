@@ -226,6 +226,66 @@ export type Database = {
           },
         ]
       }
+      campanha_locais: {
+        Row: {
+          calha_id: string | null
+          created_at: string
+          descricao: string
+          endereco: string
+          id: string
+          latitude: number
+          longitude: number
+          nome: string
+          tipo: string
+          updated_at: string
+          user_id: string
+          visita_id: string | null
+        }
+        Insert: {
+          calha_id?: string | null
+          created_at?: string
+          descricao?: string
+          endereco?: string
+          id?: string
+          latitude: number
+          longitude: number
+          nome: string
+          tipo?: string
+          updated_at?: string
+          user_id: string
+          visita_id?: string | null
+        }
+        Update: {
+          calha_id?: string | null
+          created_at?: string
+          descricao?: string
+          endereco?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          nome?: string
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+          visita_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanha_locais_calha_id_fkey"
+            columns: ["calha_id"]
+            isOneToOne: false
+            referencedRelation: "campanha_calhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campanha_locais_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "campanha_visitas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campanha_visitas: {
         Row: {
           calha_id: string | null
