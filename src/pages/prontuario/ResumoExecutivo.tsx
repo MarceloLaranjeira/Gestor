@@ -42,9 +42,13 @@ const ResumoExecutivo = () => {
     fetch();
   }, []);
 
-  const regioes = useMemo(() => [...new Set(apoiadores.map((a) => a.regiao).filter(Boolean))], [apoiadores]);
-  const segmentos = useMemo(() => [...new Set(apoiadores.map((a) => a.segmento).filter(Boolean))], [apoiadores]);
-  const tipos = useMemo(() => [...new Set(historicos.map((h) => h.tipo).filter(Boolean))], [historicos]);
+  const regioesFixas = ["Norte", "Sul", "Leste", "Oeste", "Capital", "Interior", "Metropolitana"];
+  const segmentosFixos = ["Evangélico", "Empresarial", "Sindical", "Comunitário", "Político", "Acadêmico", "Saúde", "Educação", "Segurança", "Agronegócio"];
+  const tiposFixos = ["Reunião", "Visita", "Ligação", "Evento", "Benefício", "Promessa", "Entrega", "Emenda", "Indicação", "Outro"];
+
+  const regioes = useMemo(() => [...new Set([...regioesFixas, ...apoiadores.map((a) => a.regiao).filter(Boolean)])], [apoiadores]);
+  const segmentos = useMemo(() => [...new Set([...segmentosFixos, ...apoiadores.map((a) => a.segmento).filter(Boolean)])], [apoiadores]);
+  const tipos = useMemo(() => [...new Set([...tiposFixos, ...historicos.map((h) => h.tipo).filter(Boolean)])], [historicos]);
 
   const totalAlta = apoiadores.filter((a) => a.prioridade === "alta").length;
   const totalMedia = apoiadores.filter((a) => a.prioridade === "media").length;
