@@ -1156,19 +1156,20 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Fetch system data (mandato + campanha + prontuário)
-    const [coordsRes, secoesRes, tarefasRes, demandasRes, eventosRes, pessoasRes, calhasRes, coordCampRes, assessCampRes, visitasRes, locaisRes, apoiadoresRes] = await Promise.all([
+    const [coordsRes, secoesRes, tarefasRes, demandasRes, eventosRes, pessoasRes, calhasRes, coordCampRes, assessCampRes, visitasRes, locaisRes, apoiadoresRes, municipiosRes] = await Promise.all([
       supabase.from("coordenacoes").select("nome, descricao, slug"),
       supabase.from("secoes").select("titulo, coordenacao_id"),
       supabase.from("tarefas").select("titulo, status, responsavel, canal, data_inicio, data_fim, secao_id, motivo"),
       supabase.from("demandas").select("titulo, descricao, status, prioridade, responsavel, solicitante, categoria, data_prazo").order("created_at", { ascending: false }).limit(100),
       supabase.from("eventos").select("titulo, data, hora, local, tipo, participantes").order("data", { ascending: false }).limit(50),
       supabase.from("pessoas").select("nome, tipo, bairro, cidade, tags").limit(200),
-      supabase.from("campanha_calhas").select("id, nome, regiao, municipios, votos_validos, potencial_votos, percentual_cristaos"),
+      supabase.from("campanha_calhas").select("id, nome, regiao, municipios, votos_validos, potencial_votos, percentual_cristaos, latitude, longitude"),
       supabase.from("campanha_coordenadores").select("id, nome, telefone, email, status, calha_id, ultimo_contato"),
       supabase.from("campanha_assessores").select("id, nome, funcao, telefone, email, coordenador_id"),
       supabase.from("campanha_visitas").select("id, data_visita, objetivo, status, observacoes, calha_id, coordenador_id").order("data_visita", { ascending: false }).limit(50),
       supabase.from("campanha_locais").select("id, nome, endereco, tipo, latitude, longitude, calha_id").limit(100),
       supabase.from("apoiadores").select("id, nome, cidade, regiao, segmento, organizacao, cargo, grau_influencia, prioridade, telefone").order("grau_influencia", { ascending: false }).limit(100),
+      supabase.from("campanha_municipios").select("id, nome, calha_id, votos_validos, percentual_cristaos, apoiadores_estimados"),
     ]);
 
     const coords = coordsRes.data || [];
@@ -1183,6 +1184,7 @@ serve(async (req) => {
     const visitas = visitasRes.data || [];
     const locais = locaisRes.data || [];
     const apoiadores = apoiadoresRes.data || [];
+    const municipiosCamp = municipiosRes.data || [];
 
     const totalTarefas = tarefas.length;
     const tarefasConcluidas = tarefas.filter(t => t.status).length;
@@ -1257,6 +1259,13 @@ Cidades atendidas: ${[...new Set(pessoas.map(p => p.cidade).filter(Boolean))].jo
 ### CALHAS ELEITORAIS (${calhas.length}):
 ${calhas.map(c => `• ${c.nome} — ${c.regiao || "sem região"} — ${c.municipios} municípios — Votos válidos: ${c.votos_validos} — Potencial: ${c.potencial_votos} — Cristãos: ${c.percentual_cristaos}%`).join("\n") || "Nenhuma calha cadastrada"}
 **Potencial total de votos: ${totalPotencial.toLocaleString("pt-BR")}**
+
+### MUNICÍPIOS POR CALHA (${municipiosCamp.length} cadastrados):
+${calhas.map(c => {
+  const muns = municipiosCamp.filter((m: any) => m.calha_id === c.id);
+  if (muns.length === 0) return null;
+  return `📍 ${c.nome} (${c.regiao}):\n${muns.map((m: any) => `   - ${m.nome}: ${m.votos_validos} votos válidos, ${m.percentual_cristaos}% cristãos, ~${m.apoiadores_estimados} apoiadores est.`).join("\n")}`;
+}).filter(Boolean).join("\n") || "Nenhum município detalhado"}
 
 ### COORDENADORES DE CAMPANHA (${coordCamp.length} — ${coordAtivos} ativos):
 ${coordCamp.map(c => `• ${c.nome} — ${c.status} — Tel: ${c.telefone || "não informado"} — Último contato: ${c.ultimo_contato || "nunca"}`).join("\n") || "Nenhum coordenador cadastrado"}
