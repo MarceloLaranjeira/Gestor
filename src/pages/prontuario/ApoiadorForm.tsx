@@ -99,7 +99,15 @@ const ApoiadorForm = () => {
             </div>
             <div>
               <Label>Região</Label>
-              <Input value={form.regiao} onChange={(e) => set("regiao", e.target.value)} placeholder="Ex: Norte, Sul, Capital" />
+              <Select value={form.regiao || "none"} onValueChange={(v) => set("regiao", v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Selecionar região" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhuma</SelectItem>
+                  {["Norte", "Sul", "Leste", "Oeste", "Capital", "Interior", "Metropolitana"].map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Telefone</Label>
@@ -128,7 +136,18 @@ const ApoiadorForm = () => {
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><Label>Organização</Label><Input value={form.organizacao} onChange={(e) => set("organizacao", e.target.value)} placeholder="Organização que representa" /></div>
             <div><Label>Função</Label><Input value={form.funcao} onChange={(e) => set("funcao", e.target.value)} placeholder="Função na organização" /></div>
-            <div><Label>Segmento</Label><Input value={form.segmento} onChange={(e) => set("segmento", e.target.value)} placeholder="Ex: Evangélico, Empresarial, Sindical" /></div>
+            <div>
+              <Label>Segmento</Label>
+              <Select value={form.segmento || "none"} onValueChange={(v) => set("segmento", v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Selecionar segmento" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {["Evangélico", "Empresarial", "Sindical", "Comunitário", "Político", "Acadêmico", "Saúde", "Educação", "Segurança", "Agronegócio"].map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div><Label>Cargo</Label><Input value={form.cargo} onChange={(e) => set("cargo", e.target.value)} placeholder="Cargo político ou institucional" /></div>
           </CardContent>
         </Card>
