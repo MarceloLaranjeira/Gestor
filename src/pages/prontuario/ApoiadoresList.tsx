@@ -71,8 +71,11 @@ const ApoiadoresList = () => {
 
   useEffect(() => { fetchApoiadores(); }, []);
 
-  const regioes = useMemo(() => [...new Set(apoiadores.map((a) => a.regiao).filter(Boolean))], [apoiadores]);
-  const segmentos = useMemo(() => [...new Set(apoiadores.map((a) => a.segmento).filter(Boolean))], [apoiadores]);
+  const regioesFixas = ["Norte", "Sul", "Leste", "Oeste", "Capital", "Interior", "Metropolitana"];
+  const segmentosFixos = ["Evangélico", "Empresarial", "Sindical", "Comunitário", "Político", "Acadêmico", "Saúde", "Educação", "Segurança", "Agronegócio"];
+
+  const regioes = useMemo(() => [...new Set([...regioesFixas, ...apoiadores.map((a) => a.regiao).filter(Boolean)])], [apoiadores]);
+  const segmentos = useMemo(() => [...new Set([...segmentosFixos, ...apoiadores.map((a) => a.segmento).filter(Boolean)])], [apoiadores]);
 
   const filtered = useMemo(() => {
     let list = apoiadores;
