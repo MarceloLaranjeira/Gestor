@@ -152,6 +152,27 @@ const NotificationPanel = () => {
       });
     });
 
+    // Tarefas com prazo próximo (próximos 3 dias)
+    const { data: tarefasProximas } = await supabase
+      .from("tarefas")
+      .select("id, titulo, data_fim, status, responsavel, secao_id")
+      .gte("data_fim", today)
+      .lte("data_fim", threeDaysFromNow)
+      .eq("status", false)
+      .not("data_fim", "is", null);
+
+    tarefasProximas?.forEach((t) => {
+      results.push({
+        id: `tarefa-proxima-${t.id}`,
+        sourceId: t.secao_id,
+        type: "prazo_proximo",
+        title: t.titulo,
+        description: `Tarefa vence em ${new Date(t.data_fim + "T00:00:00").toLocaleDateString("pt-BR")}${t.responsavel ? ` • ${t.responsavel}` : ""}`,
+        date: t.data_fim!,
+        source: "tarefa",
+      });
+    });
+
     results.sort((a, b) => {
       const typeOrder = { atrasada: 0, prazo_proximo: 1, pendente_antiga: 2 };
       if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type];
