@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Map, Building2, Vote, Church, AlertTriangle, Phone } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -34,6 +35,7 @@ interface Contato {
 }
 
 const CampanhaDashboard = () => {
+  const navigate = useNavigate();
   const [calhas, setCalhas] = useState<Calha[]>([]);
   const [coordenadores, setCoordenadores] = useState<Coordenador[]>([]);
   const [contatos, setContatos] = useState<Contato[]>([]);
@@ -68,10 +70,10 @@ const CampanhaDashboard = () => {
   const coordMap = Object.fromEntries(coordenadores.map((c) => [c.id, c.nome]));
 
   const stats = [
-    { title: "Total de Calhas", value: calhas.length, icon: <Map className="w-5 h-5 text-[hsl(var(--primary))]" /> },
-    { title: "Municípios", value: totalMunicipios, icon: <Building2 className="w-5 h-5 text-[hsl(var(--primary))]" /> },
-    { title: "Votos Válidos", value: totalVotos.toLocaleString("pt-BR"), icon: <Vote className="w-5 h-5 text-[hsl(var(--primary))]" /> },
-    { title: "% Cristãos (média)", value: `${avgCristaos}%`, icon: <Church className="w-5 h-5 text-[hsl(var(--primary))]" /> },
+    { title: "Total de Calhas", value: calhas.length, icon: <Map className="w-5 h-5 text-[hsl(var(--primary))]" />, path: "/campanha/calhas" },
+    { title: "Municípios", value: totalMunicipios, icon: <Building2 className="w-5 h-5 text-[hsl(var(--primary))]" />, path: "/campanha/calhas" },
+    { title: "Votos Válidos", value: totalVotos.toLocaleString("pt-BR"), icon: <Vote className="w-5 h-5 text-[hsl(var(--primary))]" />, path: "/campanha/relatorios" },
+    { title: "% Cristãos (média)", value: `${avgCristaos}%`, icon: <Church className="w-5 h-5 text-[hsl(var(--primary))]" />, path: "/campanha/relatorios" },
   ];
 
   return (
@@ -79,7 +81,11 @@ const CampanhaDashboard = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map((s) => (
-          <Card key={s.title} className="border-l-4 border-l-primary">
+          <Card
+            key={s.title}
+            className="border-l-4 border-l-primary cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all duration-200"
+            onClick={() => navigate(s.path)}
+          >
             <CardContent className="p-4 flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{s.title}</p>

@@ -26,6 +26,7 @@ interface NavItem { icon: any; label: string; path: string; module?: string }
 
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", module: "dashboard" },
+  { icon: Flag, label: "Modo Campanha", path: "/campanha", module: "campanha" },
   { icon: Bot, label: "Assessor IA", path: "/agente-ia", module: "agente-ia" },
   { icon: Users, label: "Pessoas", path: "/pessoas", module: "pessoas" },
   { icon: ClipboardList, label: "Demandas", path: "/demandas", module: "demandas" },
@@ -33,7 +34,6 @@ const navItems: NavItem[] = [
   { icon: CalendarSync, label: "Calendário", path: "/calendario", module: "calendario" },
   { icon: Wallet, label: "Financeiro", path: "/financas", module: "financas" },
   { icon: MessageSquare, label: "Movimentos", path: "/movimentos", module: "movimentos" },
-  { icon: Flag, label: "Modo Campanha", path: "/campanha", module: "campanha" },
 ];
 
 const bottomItems: NavItem[] = [
