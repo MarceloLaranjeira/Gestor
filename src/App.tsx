@@ -38,6 +38,12 @@ import CampanhaRelatorios from "./pages/campanha/CampanhaRelatorios";
 import CampanhaMapa from "./pages/campanha/CampanhaMapa";
 import CampanhaLocais from "./pages/campanha/CampanhaLocais";
 
+// Prontuário Parlamentar
+import ApoiadoresList from "./pages/prontuario/ApoiadoresList";
+import ApoiadorForm from "./pages/prontuario/ApoiadorForm";
+import ApoiadorDetalhes from "./pages/prontuario/ApoiadorDetalhes";
+import ResumoExecutivo from "./pages/prontuario/ResumoExecutivo";
+
 const queryClient = new QueryClient();
 
 const LoadingScreen = () => (
@@ -105,6 +111,12 @@ const AppRoutes = () => (
     <Route path="/campanha/assessores" element={<PermissionRoute><CampanhaAssessores /></PermissionRoute>} />
     <Route path="/campanha/visitas" element={<PermissionRoute><CampanhaVisitas /></PermissionRoute>} />
     <Route path="/campanha/relatorios" element={<PermissionRoute><CampanhaRelatorios /></PermissionRoute>} />
+    {/* Prontuário Parlamentar */}
+    <Route path="/prontuario" element={<PermissionRoute><ApoiadoresList /></PermissionRoute>} />
+    <Route path="/prontuario/novo" element={<PermissionRoute><ApoiadorForm /></PermissionRoute>} />
+    <Route path="/prontuario/resumo" element={<PermissionRoute><ResumoExecutivo /></PermissionRoute>} />
+    <Route path="/prontuario/:id" element={<PermissionRoute><ApoiadorDetalhes /></PermissionRoute>} />
+    <Route path="/prontuario/:id/editar" element={<PermissionRoute><ApoiadorForm /></PermissionRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

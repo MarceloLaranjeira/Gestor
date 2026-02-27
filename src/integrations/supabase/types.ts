@@ -61,6 +61,69 @@ export type Database = {
           },
         ]
       }
+      apoiadores: {
+        Row: {
+          beneficios_relacionados: string
+          cargo: string
+          cidade: string
+          created_at: string
+          data_nascimento: string | null
+          funcao: string
+          grau_influencia: number
+          id: string
+          nome: string
+          organizacao: string
+          origem_contato: string
+          prioridade: Database["public"]["Enums"]["prioridade_apoiador"]
+          regiao: string
+          resumo: string
+          segmento: string
+          telefone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          beneficios_relacionados?: string
+          cargo?: string
+          cidade?: string
+          created_at?: string
+          data_nascimento?: string | null
+          funcao?: string
+          grau_influencia?: number
+          id?: string
+          nome: string
+          organizacao?: string
+          origem_contato?: string
+          prioridade?: Database["public"]["Enums"]["prioridade_apoiador"]
+          regiao?: string
+          resumo?: string
+          segmento?: string
+          telefone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          beneficios_relacionados?: string
+          cargo?: string
+          cidade?: string
+          created_at?: string
+          data_nascimento?: string | null
+          funcao?: string
+          grau_influencia?: number
+          id?: string
+          nome?: string
+          organizacao?: string
+          origem_contato?: string
+          prioridade?: Database["public"]["Enums"]["prioridade_apoiador"]
+          regiao?: string
+          resumo?: string
+          segmento?: string
+          telefone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       campanha_assessores: {
         Row: {
           coordenador_id: string | null
@@ -487,6 +550,53 @@ export type Database = {
         }
         Relationships: []
       }
+      historico_apoiadores: {
+        Row: {
+          apoiador_id: string
+          created_at: string
+          data: string
+          data_prevista: string | null
+          descricao: string
+          id: string
+          responsavel: string
+          status: Database["public"]["Enums"]["status_historico"]
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          apoiador_id: string
+          created_at?: string
+          data?: string
+          data_prevista?: string | null
+          descricao?: string
+          id?: string
+          responsavel?: string
+          status?: Database["public"]["Enums"]["status_historico"]
+          tipo?: string
+          user_id: string
+        }
+        Update: {
+          apoiador_id?: string
+          created_at?: string
+          data?: string
+          data_prevista?: string | null
+          descricao?: string
+          id?: string
+          responsavel?: string
+          status?: Database["public"]["Enums"]["status_historico"]
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_apoiadores_apoiador_id_fkey"
+            columns: ["apoiador_id"]
+            isOneToOne: false
+            referencedRelation: "apoiadores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       movimentos: {
         Row: {
           cor: string
@@ -803,6 +913,8 @@ export type Database = {
     }
     Enums: {
       app_role: "gestor" | "assessor" | "coordenador"
+      prioridade_apoiador: "alta" | "media" | "baixa"
+      status_historico: "concluido" | "pendente" | "em_andamento"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -931,6 +1043,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["gestor", "assessor", "coordenador"],
+      prioridade_apoiador: ["alta", "media", "baixa"],
+      status_historico: ["concluido", "pendente", "em_andamento"],
     },
   },
 } as const

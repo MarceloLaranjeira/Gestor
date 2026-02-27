@@ -6,7 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard, Users, ClipboardList, Calendar, CalendarSync, BarChart3, FileText, Settings,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare, Church,
-  Megaphone, Database, Building2, UsersRound, Bot, Wallet, KeyRound, Flag,
+  Megaphone, Database, Building2, UsersRound, Bot, Wallet, KeyRound, Flag, BookUser,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -33,6 +33,7 @@ const navItems: NavItem[] = [
   { icon: Calendar, label: "Eventos", path: "/eventos", module: "eventos" },
   { icon: CalendarSync, label: "Calendário", path: "/calendario", module: "calendario" },
   { icon: Wallet, label: "Financeiro", path: "/financas", module: "financas" },
+  { icon: BookUser, label: "Prontuário", path: "/prontuario", module: "prontuario" },
   { icon: MessageSquare, label: "Movimentos", path: "/movimentos", module: "movimentos" },
 ];
 
