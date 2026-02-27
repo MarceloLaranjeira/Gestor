@@ -535,61 +535,133 @@ const crudTools = [
   {
     type: "function",
     function: {
-      name: "criar_local",
-      description: "Cria um novo local mapeado no modo campanha",
-      parameters: {
-        type: "object",
-        properties: {
-          nome: { type: "string" }, endereco: { type: "string" },
-          latitude: { type: "number" }, longitude: { type: "number" },
-          tipo: { type: "string", enum: ["igreja", "comite", "ponto_de_apoio", "escola", "associacao", "outro"] },
-          descricao: { type: "string" }, calha_id: { type: "string" },
-        },
-        required: ["nome", "latitude", "longitude"],
-        additionalProperties: false,
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "editar_local",
-      description: "Edita um local mapeado no modo campanha",
-      parameters: {
-        type: "object",
-        properties: {
-          busca_nome: { type: "string" }, id: { type: "string" },
-          nome: { type: "string" }, endereco: { type: "string" },
-          latitude: { type: "number" }, longitude: { type: "number" },
-          tipo: { type: "string" }, descricao: { type: "string" }, calha_id: { type: "string" },
-        },
-        required: [],
-        additionalProperties: false,
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "excluir_local",
-      description: "Exclui um local mapeado pelo nome ou ID",
-      parameters: {
-        type: "object",
-        properties: { busca_nome: { type: "string" }, id: { type: "string" } },
-        required: [],
-        additionalProperties: false,
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
       name: "listar_locais",
       description: "Lista locais mapeados do modo campanha",
       parameters: {
         type: "object",
         properties: {
           tipo: { type: "string" }, limite: { type: "number" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  // ══════════════════════════════════════════════
+  // ── PRONTUÁRIO PARLAMENTAR — APOIADORES ──
+  // ══════════════════════════════════════════════
+  {
+    type: "function",
+    function: {
+      name: "criar_apoiador",
+      description: "Cadastra um novo apoiador no Prontuário Parlamentar",
+      parameters: {
+        type: "object",
+        properties: {
+          nome: { type: "string", description: "Nome completo do apoiador" },
+          cidade: { type: "string" }, regiao: { type: "string" },
+          telefone: { type: "string" }, organizacao: { type: "string", description: "Organização que representa" },
+          funcao: { type: "string" }, segmento: { type: "string", description: "Ex: Evangélico, Empresarial, Sindical" },
+          cargo: { type: "string" }, beneficios_relacionados: { type: "string", description: "O que já foi destinado/feito" },
+          resumo: { type: "string", description: "Visão geral da relação" },
+          grau_influencia: { type: "number", description: "1 a 5" },
+          prioridade: { type: "string", enum: ["alta", "media", "baixa"] },
+          origem_contato: { type: "string" },
+        },
+        required: ["nome"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "editar_apoiador",
+      description: "Edita um apoiador existente no Prontuário Parlamentar",
+      parameters: {
+        type: "object",
+        properties: {
+          busca_nome: { type: "string", description: "Nome (ou parte) do apoiador" },
+          id: { type: "string", description: "ID UUID do apoiador" },
+          nome: { type: "string" }, cidade: { type: "string" }, regiao: { type: "string" },
+          telefone: { type: "string" }, organizacao: { type: "string" },
+          funcao: { type: "string" }, segmento: { type: "string" },
+          cargo: { type: "string" }, beneficios_relacionados: { type: "string" },
+          resumo: { type: "string" }, grau_influencia: { type: "number" },
+          prioridade: { type: "string", enum: ["alta", "media", "baixa"] },
+          origem_contato: { type: "string" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "excluir_apoiador",
+      description: "Exclui um apoiador do Prontuário Parlamentar",
+      parameters: {
+        type: "object",
+        properties: {
+          busca_nome: { type: "string" }, id: { type: "string" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "listar_apoiadores",
+      description: "Lista apoiadores do Prontuário Parlamentar com filtros",
+      parameters: {
+        type: "object",
+        properties: {
+          regiao: { type: "string" }, segmento: { type: "string" },
+          prioridade: { type: "string", enum: ["alta", "media", "baixa"] },
+          grau_influencia: { type: "number" },
+          busca_nome: { type: "string" }, limite: { type: "number" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  // ── PRONTUÁRIO — HISTÓRICO DE APOIADORES ──
+  {
+    type: "function",
+    function: {
+      name: "adicionar_historico_apoiador",
+      description: "Adiciona um registro ao histórico de um apoiador (reunião, visita, benefício, etc.)",
+      parameters: {
+        type: "object",
+        properties: {
+          apoiador_nome: { type: "string", description: "Nome (ou parte) do apoiador" },
+          apoiador_id: { type: "string", description: "ID do apoiador" },
+          tipo: { type: "string", description: "Tipo: Reunião, Visita, Ligação, Evento, Benefício, Promessa, Entrega" },
+          descricao: { type: "string", description: "Descrição da ação" },
+          responsavel: { type: "string", description: "Assessor ou parlamentar responsável" },
+          status: { type: "string", enum: ["concluido", "pendente", "em_andamento"] },
+          data_prevista: { type: "string", description: "Data prevista para ações futuras (ISO)" },
+        },
+        required: ["tipo", "descricao"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "listar_historico_apoiador",
+      description: "Lista o histórico de ações de um apoiador",
+      parameters: {
+        type: "object",
+        properties: {
+          apoiador_nome: { type: "string" }, apoiador_id: { type: "string" },
+          status: { type: "string", enum: ["concluido", "pendente", "em_andamento"] },
+          limite: { type: "number" },
         },
         required: [],
         additionalProperties: false,
@@ -960,6 +1032,88 @@ async function executeTool(supabase: any, userId: string, name: string, args: an
         return `📌 **${data.length} local(is):**\n${lines.join("\n")}`;
       }
 
+      // ══════════════════════════════════════════════
+      // ── PRONTUÁRIO PARLAMENTAR — APOIADORES ──
+      // ══════════════════════════════════════════════
+      case "criar_apoiador": {
+        const { data, error } = await supabase.from("apoiadores").insert({
+          nome: args.nome, cidade: args.cidade || "", regiao: args.regiao || "",
+          telefone: args.telefone || "", organizacao: args.organizacao || "",
+          funcao: args.funcao || "", segmento: args.segmento || "",
+          cargo: args.cargo || "", beneficios_relacionados: args.beneficios_relacionados || "",
+          resumo: args.resumo || "", grau_influencia: args.grau_influencia || 3,
+          prioridade: args.prioridade || "media", origem_contato: args.origem_contato || "",
+          user_id: userId,
+        }).select().single();
+        if (error) return `❌ Erro ao cadastrar apoiador: ${error.message}`;
+        return `✅ Apoiador "${data.nome}" cadastrado no Prontuário! Influência: ${data.grau_influencia}/5 | Prioridade: ${data.prioridade} | Segmento: ${data.segmento || "não definido"} (ID: ${data.id})`;
+      }
+      case "editar_apoiador": {
+        const targetId = await findByNameOrId(supabase, "apoiadores", "nome", args.busca_nome, args.id);
+        if (!targetId) return "❌ Apoiador não encontrado. Forneça o nome ou ID.";
+        const updates: any = {};
+        for (const key of ["nome", "cidade", "regiao", "telefone", "organizacao", "funcao", "segmento", "cargo", "beneficios_relacionados", "resumo", "grau_influencia", "prioridade", "origem_contato"]) {
+          if (args[key] !== undefined) updates[key] = args[key];
+        }
+        const { data, error } = await supabase.from("apoiadores").update(updates).eq("id", targetId).select().single();
+        if (error) return `❌ Erro ao editar apoiador: ${error.message}`;
+        return `✅ Apoiador "${data.nome}" atualizado no Prontuário!`;
+      }
+      case "excluir_apoiador": {
+        const targetId = await findByNameOrId(supabase, "apoiadores", "nome", args.busca_nome, args.id);
+        if (!targetId) return "❌ Apoiador não encontrado.";
+        const { error } = await supabase.from("apoiadores").delete().eq("id", targetId);
+        if (error) return `❌ Erro ao excluir apoiador: ${error.message}`;
+        return `✅ Apoiador excluído do Prontuário!`;
+      }
+      case "listar_apoiadores": {
+        let query = supabase.from("apoiadores").select("id, nome, cidade, regiao, segmento, organizacao, cargo, grau_influencia, prioridade, telefone").order("grau_influencia", { ascending: false });
+        if (args.regiao) query = query.ilike("regiao", `%${args.regiao}%`);
+        if (args.segmento) query = query.ilike("segmento", `%${args.segmento}%`);
+        if (args.prioridade) query = query.eq("prioridade", args.prioridade);
+        if (args.grau_influencia) query = query.eq("grau_influencia", args.grau_influencia);
+        if (args.busca_nome) query = query.ilike("nome", `%${args.busca_nome}%`);
+        query = query.limit(args.limite || 50);
+        const { data, error } = await query;
+        if (error) return `❌ Erro: ${error.message}`;
+        if (!data?.length) return "📋 Nenhum apoiador encontrado no Prontuário.";
+        const lines = data.map((a: any) => `• ${a.nome} — ${a.segmento || "sem segmento"} — ${a.organizacao || ""} — ${a.cargo || ""} — Influência: ${"⭐".repeat(a.grau_influencia)} — Prioridade: ${a.prioridade?.toUpperCase()} — ${a.cidade || ""} ${a.regiao || ""} (ID: ${a.id})`);
+        return `📋 **${data.length} apoiador(es) no Prontuário:**\n${lines.join("\n")}`;
+      }
+
+      // ── HISTÓRICO DE APOIADORES ──
+      case "adicionar_historico_apoiador": {
+        let apoiadorId = args.apoiador_id;
+        if (!apoiadorId && args.apoiador_nome) {
+          apoiadorId = await findByNameOrId(supabase, "apoiadores", "nome", args.apoiador_nome);
+        }
+        if (!apoiadorId) return "❌ Apoiador não encontrado. Forneça o nome ou ID.";
+        const { data, error } = await supabase.from("historico_apoiadores").insert({
+          apoiador_id: apoiadorId, tipo: args.tipo || "",
+          descricao: args.descricao || "", responsavel: args.responsavel || "",
+          status: args.status || "pendente",
+          data_prevista: args.data_prevista || null,
+          user_id: userId,
+        }).select().single();
+        if (error) return `❌ Erro ao adicionar histórico: ${error.message}`;
+        return `✅ Histórico adicionado ao apoiador! Tipo: ${data.tipo} | Status: ${data.status} (ID: ${data.id})`;
+      }
+      case "listar_historico_apoiador": {
+        let apoiadorId = args.apoiador_id;
+        if (!apoiadorId && args.apoiador_nome) {
+          apoiadorId = await findByNameOrId(supabase, "apoiadores", "nome", args.apoiador_nome);
+        }
+        if (!apoiadorId) return "❌ Apoiador não encontrado.";
+        let query = supabase.from("historico_apoiadores").select("id, tipo, descricao, responsavel, status, data, data_prevista").eq("apoiador_id", apoiadorId).order("data", { ascending: false });
+        if (args.status) query = query.eq("status", args.status);
+        query = query.limit(args.limite || 30);
+        const { data, error } = await query;
+        if (error) return `❌ Erro: ${error.message}`;
+        if (!data?.length) return "📜 Nenhum registro no histórico deste apoiador.";
+        const lines = data.map((h: any) => `• ${new Date(h.data).toLocaleDateString("pt-BR")} — [${h.status?.toUpperCase()}] ${h.tipo} — ${h.descricao?.substring(0, 80) || ""} — Resp: ${h.responsavel || "não definido"}`);
+        return `📜 **${data.length} registro(s) no histórico:**\n${lines.join("\n")}`;
+      }
+
       default:
         return `❌ Ferramenta "${name}" não reconhecida.`;
     }
@@ -1001,8 +1155,8 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Fetch system data (mandato + campanha)
-    const [coordsRes, secoesRes, tarefasRes, demandasRes, eventosRes, pessoasRes, calhasRes, coordCampRes, assessCampRes, visitasRes, locaisRes] = await Promise.all([
+    // Fetch system data (mandato + campanha + prontuário)
+    const [coordsRes, secoesRes, tarefasRes, demandasRes, eventosRes, pessoasRes, calhasRes, coordCampRes, assessCampRes, visitasRes, locaisRes, apoiadoresRes] = await Promise.all([
       supabase.from("coordenacoes").select("nome, descricao, slug"),
       supabase.from("secoes").select("titulo, coordenacao_id"),
       supabase.from("tarefas").select("titulo, status, responsavel, canal, data_inicio, data_fim, secao_id, motivo"),
@@ -1014,6 +1168,7 @@ serve(async (req) => {
       supabase.from("campanha_assessores").select("id, nome, funcao, telefone, email, coordenador_id"),
       supabase.from("campanha_visitas").select("id, data_visita, objetivo, status, observacoes, calha_id, coordenador_id").order("data_visita", { ascending: false }).limit(50),
       supabase.from("campanha_locais").select("id, nome, endereco, tipo, latitude, longitude, calha_id").limit(100),
+      supabase.from("apoiadores").select("id, nome, cidade, regiao, segmento, organizacao, cargo, grau_influencia, prioridade, telefone").order("grau_influencia", { ascending: false }).limit(100),
     ]);
 
     const coords = coordsRes.data || [];
@@ -1027,6 +1182,7 @@ serve(async (req) => {
     const assessCamp = assessCampRes.data || [];
     const visitas = visitasRes.data || [];
     const locais = locaisRes.data || [];
+    const apoiadores = apoiadoresRes.data || [];
 
     const totalTarefas = tarefas.length;
     const tarefasConcluidas = tarefas.filter(t => t.status).length;
@@ -1052,6 +1208,10 @@ serve(async (req) => {
     const coordAtivos = coordCamp.filter(c => c.status === "ativo").length;
     const visitasPlanejadas = visitas.filter(v => v.status === "planejada").length;
     const visitasRealizadas = visitas.filter(v => v.status === "realizada").length;
+
+    // Prontuário stats
+    const apoiadoresAlta = apoiadores.filter((a: any) => a.prioridade === "alta").length;
+    const apoiadoresChave = apoiadores.filter((a: any) => a.prioridade === "alta" && a.grau_influencia >= 4);
 
     const systemPrompt = `Você é HORUS 🦅 — o Assessor de Inteligência Digital do Deputado Estadual Comandante Dan. Você é o responsável absoluto por tudo dentro do sistema: gestão do mandato E modo campanha.
 
@@ -1110,24 +1270,34 @@ ${visitas.slice(0, 15).map(v => `• ${v.data_visita} — [${v.status?.toUpperCa
 ### LOCAIS MAPEADOS (${locais.length}):
 ${locais.slice(0, 20).map(l => `• ${l.nome} — ${l.tipo} — ${l.endereco || "sem endereço"}`).join("\n") || "Nenhum local mapeado"}
 
+## ══════════════════════════════════════════════
+## PRONTUÁRIO PARLAMENTAR — APOIADORES
+## ══════════════════════════════════════════════
+
+### APOIADORES (${apoiadores.length} total — ${apoiadoresAlta} prioridade alta — ${apoiadoresChave.length} apoiadores-chave):
+${apoiadores.slice(0, 30).map((a: any) => `• ${a.nome} — ${a.segmento || "sem segmento"} — ${a.organizacao || ""} — ${a.cargo || ""} — Influência: ${a.grau_influencia}/5 — Prioridade: ${a.prioridade?.toUpperCase()} — ${a.cidade || ""} ${a.regiao || ""} (ID: ${a.id})`).join("\n") || "Nenhum apoiador cadastrado"}
+
 ## SUAS CAPACIDADES (PODERES TOTAIS)
-1. **Análise de dados**: Interprete TODOS os dados do mandato e da campanha
+1. **Análise de dados**: Interprete TODOS os dados do mandato, campanha e prontuário
 2. **Relatórios**: Crie relatórios executivos, setoriais e temáticos
 3. **CRUD COMPLETO**: Você pode CRIAR, EDITAR e EXCLUIR:
    - Demandas, eventos e pessoas (mandato)
    - Calhas, coordenadores, assessores, visitas e locais (campanha)
+   - Apoiadores e histórico de apoiadores (prontuário parlamentar)
 4. **Insights políticos**: Sugira estratégias baseadas nos dados
 5. **Gestão de demandas**: Priorize, categorize e resolva demandas
 6. **Análise de documentos**: Analise PDFs e imagens enviados
 7. **Gestão de campanha**: Crie e gerencie toda a estrutura de campanha
+8. **Prontuário Parlamentar**: Gerencie apoiadores, registre histórico de ações feitas e planejadas
 
 ## DIRETRIZES PARA CRUD
 - Quando o usuário pedir para criar, editar ou excluir dados, USE AS FERRAMENTAS disponíveis
 - Sempre confirme a ação realizada mostrando os dados alterados
 - Para edições, busque o registro pelo título/nome antes de editar
-- Seja proativo: se o usuário mencionar algo que pode ser uma demanda/evento/pessoa/visita, sugira criar
+- Seja proativo: se o usuário mencionar algo que pode ser uma demanda/evento/pessoa/visita/apoiador, sugira criar
 - Ao criar demandas, defina prioridade e status adequados automaticamente
 - Para campanha: vincule calhas, coordenadores e locais quando possível
+- Para prontuário: ao cadastrar apoiador, sugira grau de influência e prioridade adequados
 
 ## ESTILO DE COMUNICAÇÃO
 - Assertividade: ${assertiveness !== undefined ? Math.round(assertiveness * 100) : 50}%
