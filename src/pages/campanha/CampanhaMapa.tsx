@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, MapPin, Layers } from "lucide-react";
+import { Search, Loader2, MapPin, Layers, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 interface Calha {
@@ -50,6 +50,39 @@ const tipoIcon: Record<string, string> = {
   outro: "📌",
 };
 
+const TIPOS = [
+  { value: "ponto_de_apoio", label: "Ponto de Apoio" },
+  { value: "igreja", label: "Igreja" },
+  { value: "comite", label: "Comitê" },
+  { value: "evento", label: "Local de Evento" },
+  { value: "lideranca", label: "Liderança" },
+  { value: "outro", label: "Outro" },
+];
+
+const OVERLAY_LAYERS = [
+  {
+    id: "population",
+    label: "Densidade Populacional",
+    url: "https://tiles.arcgis.com/tiles/nGt4QxSblgDfeJn9/arcgis/rest/services/World_Population_Density/MapServer/tile/{z}/{y}/{x}",
+    attribution: "&copy; Esri",
+    opacity: 0.5,
+  },
+  {
+    id: "terrain",
+    label: "Relevo / Topografia",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}",
+    attribution: "&copy; Esri",
+    opacity: 0.4,
+  },
+  {
+    id: "roads",
+    label: "Estradas e Transporte",
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}",
+    attribution: "&copy; Esri",
+    opacity: 0.7,
+  },
+];
+
 const CampanhaMapa = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
@@ -60,11 +93,19 @@ const CampanhaMapa = () => {
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSatellite, setShowSatellite] = useState(true);
+  const [activeLayers, setActiveLayers] = useState<string[]>([]);
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const labelsLayerRef = useRef<L.TileLayer | null>(null);
   const markersRef = useRef<L.LayerGroup | null>(null);
+  const overlayLayersRef = useRef<Record<string, L.TileLayer>>({});
+  const saveLocalRef = useRef<(nome: string, tipo: string, descricao: string, lat: number, lng: number) => Promise<void>>();
+
+  const refreshLocais = async () => {
+    const { data } = await supabase.from("campanha_locais").select("*").order("created_at", { ascending: false });
+    setLocais((data as Local[]) || []);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -79,41 +120,9 @@ const CampanhaMapa = () => {
     load();
   }, []);
 
-  // Initialize map
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-
-    mapRef.current = L.map(containerRef.current).setView([-3.1, -60.0], 6);
-    markersRef.current = L.layerGroup().addTo(mapRef.current);
-
-    // Satellite tiles
-    tileLayerRef.current = L.tileLayer(
-      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      { attribution: "&copy; Esri, Maxar, Earthstar Geographics", maxZoom: 18 }
-    ).addTo(mapRef.current);
-
-    labelsLayerRef.current = L.tileLayer(
-      "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-      { maxZoom: 18 }
-    ).addTo(mapRef.current);
-
-    // Click to add local
-    mapRef.current.on("click", (e: L.LeafletMouseEvent) => {
-      const { lat, lng } = e.latlng;
-      const nome = prompt("Nome do local:");
-      if (!nome) return;
-      saveLocal(nome, lat, lng);
-    });
-
-    return () => {
-      mapRef.current?.remove();
-      mapRef.current = null;
-    };
-  }, []);
-
-  const saveLocal = async (nome: string, lat: number, lng: number) => {
+  // Keep save function ref updated with latest user
+  const saveLocalFn = useCallback(async (nome: string, tipo: string, descricao: string, lat: number, lng: number) => {
     if (!user) return;
-    // Reverse geocode
     let endereco = "";
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
@@ -126,7 +135,8 @@ const CampanhaMapa = () => {
       endereco,
       latitude: lat,
       longitude: lng,
-      tipo: "outro",
+      tipo,
+      descricao,
       user_id: user.user_id,
     });
     if (error) {
@@ -134,9 +144,119 @@ const CampanhaMapa = () => {
       return;
     }
     toast.success("Local adicionado ao mapa!");
-    // Refresh
-    const { data } = await supabase.from("campanha_locais").select("*").order("created_at", { ascending: false });
-    setLocais((data as Local[]) || []);
+    refreshLocais();
+  }, [user]);
+
+  useEffect(() => {
+    saveLocalRef.current = saveLocalFn;
+  }, [saveLocalFn]);
+
+  // Build popup form HTML
+  const buildPopupForm = (lat: number, lng: number) => {
+    const container = document.createElement("div");
+    container.style.minWidth = "260px";
+    container.innerHTML = `
+      <div style="font-weight:bold;font-size:14px;margin-bottom:8px;color:#1e40af">📍 Novo Local</div>
+      <p style="font-size:11px;color:#666;margin:0 0 8px">Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}</p>
+      <div style="margin-bottom:6px">
+        <label style="font-size:11px;font-weight:600;display:block;margin-bottom:2px">Nome *</label>
+        <input id="popup-nome" type="text" placeholder="Nome do local" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px;box-sizing:border-box" />
+      </div>
+      <div style="margin-bottom:6px">
+        <label style="font-size:11px;font-weight:600;display:block;margin-bottom:2px">Tipo</label>
+        <select id="popup-tipo" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px;box-sizing:border-box;background:#fff">
+          ${TIPOS.map((t) => `<option value="${t.value}">${t.label}</option>`).join("")}
+        </select>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;font-weight:600;display:block;margin-bottom:2px">Descrição</label>
+        <textarea id="popup-descricao" rows="2" placeholder="Descrição (opcional)" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:12px;box-sizing:border-box;resize:vertical"></textarea>
+      </div>
+      <button id="popup-salvar" style="width:100%;padding:8px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">
+        Salvar Local
+      </button>
+    `;
+
+    // Attach event after DOM insert
+    setTimeout(() => {
+      const btn = container.querySelector("#popup-salvar") as HTMLButtonElement;
+      if (btn) {
+        btn.addEventListener("click", () => {
+          const nome = (container.querySelector("#popup-nome") as HTMLInputElement)?.value?.trim();
+          const tipo = (container.querySelector("#popup-tipo") as HTMLSelectElement)?.value;
+          const descricao = (container.querySelector("#popup-descricao") as HTMLTextAreaElement)?.value?.trim();
+          if (!nome) {
+            toast.error("Nome é obrigatório");
+            return;
+          }
+          btn.disabled = true;
+          btn.textContent = "Salvando...";
+          saveLocalRef.current?.(nome, tipo || "outro", descricao || "", lat, lng).then(() => {
+            mapRef.current?.closePopup();
+          });
+        });
+      }
+    }, 50);
+
+    return container;
+  };
+
+  // Initialize map
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+
+    mapRef.current = L.map(containerRef.current).setView([-3.1, -60.0], 6);
+    markersRef.current = L.layerGroup().addTo(mapRef.current);
+
+    tileLayerRef.current = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { attribution: "&copy; Esri, Maxar, Earthstar Geographics", maxZoom: 18 }
+    ).addTo(mapRef.current);
+
+    labelsLayerRef.current = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom: 18 }
+    ).addTo(mapRef.current);
+
+    // Click to add local with popup form
+    mapRef.current.on("click", (e: L.LeafletMouseEvent) => {
+      const { lat, lng } = e.latlng;
+      const content = buildPopupForm(lat, lng);
+      L.popup({ maxWidth: 300, closeOnClick: false })
+        .setLatLng([lat, lng])
+        .setContent(content)
+        .openOn(mapRef.current!);
+    });
+
+    return () => {
+      mapRef.current?.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  // Toggle overlay layers
+  const toggleOverlay = (layerId: string) => {
+    if (!mapRef.current) return;
+    const layer = OVERLAY_LAYERS.find((l) => l.id === layerId);
+    if (!layer) return;
+
+    if (activeLayers.includes(layerId)) {
+      // Remove
+      if (overlayLayersRef.current[layerId]) {
+        mapRef.current.removeLayer(overlayLayersRef.current[layerId]);
+        delete overlayLayersRef.current[layerId];
+      }
+      setActiveLayers((prev) => prev.filter((id) => id !== layerId));
+    } else {
+      // Add
+      const tl = L.tileLayer(layer.url, {
+        attribution: layer.attribution,
+        maxZoom: 18,
+        opacity: layer.opacity,
+      }).addTo(mapRef.current);
+      overlayLayersRef.current[layerId] = tl;
+      setActiveLayers((prev) => [...prev, layerId]);
+    }
   };
 
   // Toggle satellite/street
@@ -232,7 +352,7 @@ const CampanhaMapa = () => {
       const marker = L.marker([Number(l.latitude), Number(l.longitude)], { icon });
       marker.bindPopup(`
         <div style="min-width:140px">
-          <p style="font-weight:bold;font-size:13px;margin:0 0 4px">${l.nome}</p>
+          <p style="font-weight:bold;font-size:13px;margin:0 0 4px">${tipoIcon[l.tipo] || "📌"} ${l.nome}</p>
           <p style="margin:2px 0;font-size:11px">${l.endereco || "—"}</p>
           ${l.descricao ? `<p style="margin:2px 0;font-size:11px;color:#666">${l.descricao}</p>` : ""}
         </div>
@@ -255,12 +375,10 @@ const CampanhaMapa = () => {
     if (!mapRef.current || loading) return;
     const lat = searchParams.get("lat");
     const lng = searchParams.get("lng");
-    const nome = searchParams.get("nome");
     if (lat && lng) {
       const latNum = Number(lat);
       const lngNum = Number(lng);
       mapRef.current.setView([latNum, lngNum], 18);
-      // Find matching local marker and open its popup
       markersRef.current?.eachLayer((layer: any) => {
         const ll = layer.getLatLng?.();
         if (ll && Math.abs(ll.lat - latNum) < 0.0001 && Math.abs(ll.lng - lngNum) < 0.0001) {
@@ -322,7 +440,7 @@ const CampanhaMapa = () => {
               <div ref={containerRef} className="h-[500px] lg:h-[600px] rounded-lg" />
             </CardContent>
           </Card>
-          <p className="text-xs text-muted-foreground">💡 Clique no mapa para adicionar um local rapidamente</p>
+          <p className="text-xs text-muted-foreground">💡 Clique em qualquer ponto do mapa para adicionar um novo local com formulário completo</p>
         </div>
 
         <div className="space-y-4">
@@ -335,6 +453,33 @@ const CampanhaMapa = () => {
               <p className="text-xs text-muted-foreground">
                 Locais mapeados: <span className="font-semibold text-foreground">{locais.length}</span>
               </p>
+            </CardContent>
+          </Card>
+
+          {/* Data Layers */}
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <p className="text-sm font-semibold">Camadas de Dados</p>
+              <p className="text-xs text-muted-foreground">Ative camadas para análise estratégica</p>
+              <div className="space-y-2">
+                {OVERLAY_LAYERS.map((layer) => {
+                  const isActive = activeLayers.includes(layer.id);
+                  return (
+                    <button
+                      key={layer.id}
+                      onClick={() => toggleOverlay(layer.id)}
+                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-colors border ${
+                        isActive
+                          ? "bg-primary/10 border-primary/30 text-primary"
+                          : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/60"
+                      }`}
+                    >
+                      {isActive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                      {layer.label}
+                    </button>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
 
