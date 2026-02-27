@@ -214,6 +214,7 @@ export type Database = {
           data_contato: string
           id: string
           observacoes: string
+          resumo: string
           tipo: string
           user_id: string
         }
@@ -223,6 +224,7 @@ export type Database = {
           data_contato?: string
           id?: string
           observacoes?: string
+          resumo?: string
           tipo?: string
           user_id: string
         }
@@ -232,6 +234,7 @@ export type Database = {
           data_contato?: string
           id?: string
           observacoes?: string
+          resumo?: string
           tipo?: string
           user_id?: string
         }
@@ -345,6 +348,47 @@ export type Database = {
             columns: ["visita_id"]
             isOneToOne: false
             referencedRelation: "campanha_visitas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campanha_municipios: {
+        Row: {
+          apoiadores_estimados: number
+          calha_id: string | null
+          created_at: string
+          id: string
+          nome: string
+          percentual_cristaos: number
+          updated_at: string
+          votos_validos: number
+        }
+        Insert: {
+          apoiadores_estimados?: number
+          calha_id?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          percentual_cristaos?: number
+          updated_at?: string
+          votos_validos?: number
+        }
+        Update: {
+          apoiadores_estimados?: number
+          calha_id?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          percentual_cristaos?: number
+          updated_at?: string
+          votos_validos?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanha_municipios_calha_id_fkey"
+            columns: ["calha_id"]
+            isOneToOne: false
+            referencedRelation: "campanha_calhas"
             referencedColumns: ["id"]
           },
         ]
@@ -846,6 +890,60 @@ export type Database = {
             columns: ["secao_id"]
             isOneToOne: false
             referencedRelation: "secoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tarefas_coordenacao: {
+        Row: {
+          assessor_id: string | null
+          coordenador_id: string | null
+          created_at: string
+          data_limite: string | null
+          descricao: string
+          id: string
+          status: string
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assessor_id?: string | null
+          coordenador_id?: string | null
+          created_at?: string
+          data_limite?: string | null
+          descricao?: string
+          id?: string
+          status?: string
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assessor_id?: string | null
+          coordenador_id?: string | null
+          created_at?: string
+          data_limite?: string | null
+          descricao?: string
+          id?: string
+          status?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tarefas_coordenacao_assessor_id_fkey"
+            columns: ["assessor_id"]
+            isOneToOne: false
+            referencedRelation: "campanha_assessores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tarefas_coordenacao_coordenador_id_fkey"
+            columns: ["coordenador_id"]
+            isOneToOne: false
+            referencedRelation: "campanha_coordenadores"
             referencedColumns: ["id"]
           },
         ]

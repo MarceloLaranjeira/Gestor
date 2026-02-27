@@ -38,6 +38,13 @@ import CampanhaRelatorios from "./pages/campanha/CampanhaRelatorios";
 import CampanhaMapa from "./pages/campanha/CampanhaMapa";
 import CampanhaLocais from "./pages/campanha/CampanhaLocais";
 
+// Coordenações (Módulo Estratégico)
+import CoordCalhasMunicipios from "./pages/coord/CoordCalhasMunicipios";
+import CoordCoordenadores from "./pages/coord/CoordCoordenadores";
+import CoordAssessores from "./pages/coord/CoordAssessores";
+import CoordMonitorContatos from "./pages/coord/CoordMonitorContatos";
+import CoordPlanejamentoVisitas from "./pages/coord/CoordPlanejamentoVisitas";
+
 // Prontuário Parlamentar
 import ApoiadoresList from "./pages/prontuario/ApoiadoresList";
 import ApoiadorForm from "./pages/prontuario/ApoiadorForm";
@@ -96,6 +103,12 @@ const AppRoutes = () => (
     <Route path="/usuarios" element={<PermissionRoute><GerenciarUsuarios /></PermissionRoute>} />
     <Route path="/relatorio-coordenacao" element={<PermissionRoute><RelatorioCoordenacao /></PermissionRoute>} />
     <Route path="/coordenacao/:id" element={<PermissionRoute><CoordenacaoPage /></PermissionRoute>} />
+    {/* Coordenações Estratégicas */}
+    <Route path="/coord/calhas-municipios" element={<PermissionRoute><CoordCalhasMunicipios /></PermissionRoute>} />
+    <Route path="/coord/coordenadores" element={<PermissionRoute><CoordCoordenadores /></PermissionRoute>} />
+    <Route path="/coord/assessores" element={<PermissionRoute><CoordAssessores /></PermissionRoute>} />
+    <Route path="/coord/monitor" element={<PermissionRoute><CoordMonitorContatos /></PermissionRoute>} />
+    <Route path="/coord/planejamento" element={<PermissionRoute><CoordPlanejamentoVisitas /></PermissionRoute>} />
     <Route path="/financas" element={<PermissionRoute><Financas /></PermissionRoute>} />
     <Route path="/permissoes" element={<ProtectedRoute><Permissoes /></ProtectedRoute>} />
     <Route path="/acesso-negado" element={<ProtectedRoute><AcessoNegado /></ProtectedRoute>} />
