@@ -48,6 +48,11 @@ import CoordPlanejamentoVisitas from "./pages/coord/CoordPlanejamentoVisitas";
 
 // Prontuário Parlamentar
 import ApoiadoresList from "./pages/prontuario/ApoiadoresList";
+
+// Logbook de Calhas
+import LogbookCalhas from "./pages/logbook/LogbookCalhas";
+import LogbookDetalhes from "./pages/logbook/LogbookDetalhes";
+import LogbookMunicipioForm from "./pages/logbook/LogbookMunicipioForm";
 import ApoiadorForm from "./pages/prontuario/ApoiadorForm";
 import ApoiadorDetalhes from "./pages/prontuario/ApoiadorDetalhes";
 import ResumoExecutivo from "./pages/prontuario/ResumoExecutivo";
@@ -132,6 +137,10 @@ const AppRoutes = () => (
     <Route path="/prontuario/resumo" element={<PermissionRoute><ResumoExecutivo /></PermissionRoute>} />
     <Route path="/prontuario/:id" element={<PermissionRoute><ApoiadorDetalhes /></PermissionRoute>} />
     <Route path="/prontuario/:id/editar" element={<PermissionRoute><ApoiadorForm /></PermissionRoute>} />
+    {/* Logbook de Calhas */}
+    <Route path="/logbook" element={<PermissionRoute><LogbookCalhas /></PermissionRoute>} />
+    <Route path="/logbook/:id" element={<PermissionRoute><LogbookDetalhes /></PermissionRoute>} />
+    <Route path="/logbook/:calhaId/municipio/:munId" element={<PermissionRoute><LogbookMunicipioForm /></PermissionRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
