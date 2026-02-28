@@ -641,6 +641,89 @@ export type Database = {
           },
         ]
       }
+      integracao_agente_config: {
+        Row: {
+          api_token: string
+          api_url: string
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+          user_id: string
+          webhook_secret: string
+        }
+        Insert: {
+          api_token?: string
+          api_url?: string
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+          user_id: string
+          webhook_secret?: string
+        }
+        Update: {
+          api_token?: string
+          api_url?: string
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+          user_id?: string
+          webhook_secret?: string
+        }
+        Relationships: []
+      }
+      integracao_agente_mensagens: {
+        Row: {
+          config_id: string
+          contato_externo: string
+          conteudo: Json
+          created_at: string
+          direcao: string
+          erro: string | null
+          id: string
+          plataforma: string
+          status: string
+          tipo: string
+        }
+        Insert: {
+          config_id: string
+          contato_externo?: string
+          conteudo?: Json
+          created_at?: string
+          direcao?: string
+          erro?: string | null
+          id?: string
+          plataforma?: string
+          status?: string
+          tipo?: string
+        }
+        Update: {
+          config_id?: string
+          contato_externo?: string
+          conteudo?: Json
+          created_at?: string
+          direcao?: string
+          erro?: string | null
+          id?: string
+          plataforma?: string
+          status?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integracao_agente_mensagens_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "integracao_agente_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       logbook_calhas: {
         Row: {
           created_at: string

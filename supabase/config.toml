@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.import-excel]
 verify_jwt = false
+
+[functions.integracao-enviar]
+verify_jwt = false
+
+[functions.integracao-webhook]
+verify_jwt = false

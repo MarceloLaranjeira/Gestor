@@ -6,7 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard, Users, ClipboardList, Calendar, CalendarSync, BarChart3, FileText, Settings,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare, Church,
-  Megaphone, Database, Building2, UsersRound, Bot, Wallet, KeyRound, Flag, BookUser, BookOpen,
+  Megaphone, Database, Building2, UsersRound, Bot, Wallet, KeyRound, Flag, BookUser, BookOpen, Plug,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -37,6 +37,7 @@ const navItems: NavItem[] = [
   { icon: BookUser, label: "Prontuário", path: "/prontuario", module: "prontuario" },
   { icon: BookOpen, label: "Logbook", path: "/logbook", module: "logbook" },
   { icon: MessageSquare, label: "Movimentos", path: "/movimentos", module: "movimentos" },
+  { icon: Plug, label: "Integração", path: "/integracao", module: "integracao" },
 ];
 
 const bottomItems: NavItem[] = [
