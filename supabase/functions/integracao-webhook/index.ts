@@ -138,6 +138,39 @@ Deno.serve(async (req) => {
       acaoResultado = "movimento_financeiro_criado";
     }
 
+    if (body.acao === "criar_pessoa_e_apoiador" && body.dados) {
+      const { dados } = body;
+      const { error: pessoaError } = await adminClient.from("pessoas").insert({
+        nome: dados.nome || "Contato via integração",
+        telefone: dados.telefone || "",
+        email: dados.email || "",
+        cidade: dados.cidade || "Manaus",
+        tipo: dados.tipo || "Apoiador",
+        tags: dados.tags || ["whatsapp"],
+        user_id: config.user_id,
+      });
+      const { error: apoiadorError } = await adminClient.from("apoiadores").insert({
+        nome: dados.nome || "Apoiador via integração",
+        telefone: dados.telefone || "",
+        cidade: dados.cidade || "",
+        regiao: dados.regiao || "",
+        segmento: dados.segmento || "",
+        cargo: dados.cargo || "",
+        organizacao: dados.organizacao || "",
+        funcao: dados.funcao || "",
+        origem_contato: dados.origem_contato || "whatsapp",
+        resumo: dados.resumo || "",
+        prioridade: dados.prioridade || "media",
+        grau_influencia: dados.grau_influencia || 3,
+        beneficios_relacionados: dados.beneficios_relacionados || "",
+        user_id: config.user_id,
+      });
+      if (pessoaError || apoiadorError) {
+        console.error("Erros ao criar pessoa+apoiador:", pessoaError, apoiadorError);
+      }
+      acaoResultado = "pessoa_e_apoiador_criados";
+    }
+
     return new Response(JSON.stringify({
       success: true,
       message_id: msg?.id,
