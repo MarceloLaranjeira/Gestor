@@ -668,6 +668,59 @@ const crudTools = [
       },
     },
   },
+  // ══════════════════════════════════════════════
+  // ── INTEGRAÇÃO COM AGENTE EXTERNO (WhatsApp/Instagram) ──
+  // ══════════════════════════════════════════════
+  {
+    type: "function",
+    function: {
+      name: "enviar_mensagem_whatsapp",
+      description: "Envia uma mensagem para um contato via WhatsApp/Instagram através da plataforma de IA externa integrada. Use quando o usuário pedir para enviar mensagem, notificação ou comunicação por WhatsApp ou Instagram.",
+      parameters: {
+        type: "object",
+        properties: {
+          contato: { type: "string", description: "Número do contato ou identificador (ex: +5592999999999)" },
+          mensagem: { type: "string", description: "Texto da mensagem a ser enviada" },
+          plataforma: { type: "string", enum: ["whatsapp", "instagram"], description: "Plataforma de envio" },
+        },
+        required: ["contato", "mensagem"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "enviar_dados_agente_externo",
+      description: "Envia dados estruturados para o agente externo de IA (WhatsApp/Instagram). Use para sincronizar informações como listas de contatos, demandas, eventos, etc.",
+      parameters: {
+        type: "object",
+        properties: {
+          tipo_dados: { type: "string", description: "Tipo dos dados: contatos, demandas, eventos, apoiadores, relatorio" },
+          dados: { type: "object", description: "Objeto com os dados a enviar" },
+          endpoint: { type: "string", description: "Endpoint específico da API (opcional, default /sync)" },
+        },
+        required: ["tipo_dados", "dados"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "consultar_agente_externo",
+      description: "Consulta o agente externo para obter informações como mensagens recebidas, status de conversas, métricas de engajamento, etc.",
+      parameters: {
+        type: "object",
+        properties: {
+          consulta: { type: "string", description: "Tipo da consulta: mensagens_recentes, status_conversas, metricas, contatos_ativos" },
+          filtros: { type: "object", description: "Filtros opcionais (data, plataforma, contato)" },
+        },
+        required: ["consulta"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ─── Generic search helper ───
@@ -1114,6 +1167,98 @@ async function executeTool(supabase: any, userId: string, name: string, args: an
         return `📜 **${data.length} registro(s) no histórico:**\n${lines.join("\n")}`;
       }
 
+      // ══════════════════════════════════════════════
+      // ── INTEGRAÇÃO COM AGENTE EXTERNO (WhatsApp/Instagram) ──
+      // ══════════════════════════════════════════════
+      case "enviar_mensagem_whatsapp": {
+        // Buscar config ativa
+        const { data: configs } = await supabase.from("integracao_agente_config").select("*").eq("ativo", true).limit(1);
+        if (!configs?.length) return "❌ Nenhuma integração ativa. Configure a integração em /integracao primeiro.";
+        const config = configs[0];
+        if (!config.api_url) return "❌ URL da API externa não configurada. Acesse /integracao para configurar.";
+
+        try {
+          const res = await fetch(`${config.api_url}/messages`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.api_token}` },
+            body: JSON.stringify({
+              to: args.contato,
+              text: args.mensagem,
+              platform: args.plataforma || "whatsapp",
+            }),
+          });
+          const responseData = await res.json().catch(() => ({}));
+
+          // Registrar no log
+          await supabase.from("integracao_agente_mensagens").insert({
+            config_id: config.id, direcao: "enviada", tipo: "texto",
+            conteudo: { to: args.contato, text: args.mensagem, platform: args.plataforma || "whatsapp" },
+            status: res.ok ? "enviada" : "erro", plataforma: args.plataforma || "whatsapp",
+            contato_externo: args.contato, erro: res.ok ? null : JSON.stringify(responseData),
+          });
+
+          if (!res.ok) return `❌ Falha ao enviar mensagem para ${args.contato}: ${JSON.stringify(responseData)}`;
+          return `✅ Mensagem enviada via ${args.plataforma || "whatsapp"} para ${args.contato}!\n📝 "${args.mensagem.substring(0, 100)}${args.mensagem.length > 100 ? "..." : ""}"`;
+        } catch (e: any) {
+          return `❌ Erro de conexão com a plataforma externa: ${e.message}. Verifique a URL em /integracao.`;
+        }
+      }
+
+      case "enviar_dados_agente_externo": {
+        const { data: configs } = await supabase.from("integracao_agente_config").select("*").eq("ativo", true).limit(1);
+        if (!configs?.length) return "❌ Nenhuma integração ativa. Configure em /integracao.";
+        const config = configs[0];
+
+        try {
+          const endpoint = args.endpoint || "/sync";
+          const res = await fetch(`${config.api_url}${endpoint}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${config.api_token}` },
+            body: JSON.stringify({ tipo: args.tipo_dados, dados: args.dados, timestamp: new Date().toISOString() }),
+          });
+          const responseData = await res.json().catch(() => ({}));
+
+          await supabase.from("integracao_agente_mensagens").insert({
+            config_id: config.id, direcao: "enviada", tipo: args.tipo_dados,
+            conteudo: { tipo: args.tipo_dados, dados: args.dados },
+            status: res.ok ? "enviada" : "erro", plataforma: "api",
+            erro: res.ok ? null : JSON.stringify(responseData),
+          });
+
+          if (!res.ok) return `❌ Falha ao sincronizar dados: ${JSON.stringify(responseData)}`;
+          return `✅ Dados de "${args.tipo_dados}" enviados com sucesso para o agente externo! ${JSON.stringify(responseData).substring(0, 200)}`;
+        } catch (e: any) {
+          return `❌ Erro de conexão: ${e.message}`;
+        }
+      }
+
+      case "consultar_agente_externo": {
+        const { data: configs } = await supabase.from("integracao_agente_config").select("*").eq("ativo", true).limit(1);
+        if (!configs?.length) return "❌ Nenhuma integração ativa. Configure em /integracao.";
+        const config = configs[0];
+
+        try {
+          const params = new URLSearchParams({ consulta: args.consulta, ...(args.filtros || {}) });
+          const res = await fetch(`${config.api_url}/query?${params.toString()}`, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${config.api_token}` },
+          });
+          const responseData = await res.json().catch(() => ({}));
+
+          await supabase.from("integracao_agente_mensagens").insert({
+            config_id: config.id, direcao: "enviada", tipo: "consulta",
+            conteudo: { consulta: args.consulta, filtros: args.filtros },
+            status: res.ok ? "enviada" : "erro", plataforma: "api",
+            erro: res.ok ? null : JSON.stringify(responseData),
+          });
+
+          if (!res.ok) return `❌ Falha na consulta: ${JSON.stringify(responseData)}`;
+          return `📊 Resultado da consulta "${args.consulta}":\n${JSON.stringify(responseData, null, 2).substring(0, 1000)}`;
+        } catch (e: any) {
+          return `❌ Erro de conexão: ${e.message}`;
+        }
+      }
+
       default:
         return `❌ Ferramenta "${name}" não reconhecida.`;
     }
@@ -1298,6 +1443,11 @@ ${apoiadores.slice(0, 30).map((a: any) => `• ${a.nome} — ${a.segmento || "se
 6. **Análise de documentos**: Analise PDFs e imagens enviados
 7. **Gestão de campanha**: Crie e gerencie toda a estrutura de campanha
 8. **Prontuário Parlamentar**: Gerencie apoiadores, registre histórico de ações feitas e planejadas
+9. **📱 INTEGRAÇÃO WhatsApp/Instagram**: Você pode enviar mensagens e dados pela plataforma externa integrada:
+   - Use \`enviar_mensagem_whatsapp\` para enviar mensagens de texto para contatos via WhatsApp ou Instagram
+   - Use \`enviar_dados_agente_externo\` para sincronizar dados (contatos, demandas, eventos) com o agente externo
+   - Use \`consultar_agente_externo\` para buscar mensagens recebidas, métricas e status de conversas
+   - A integração precisa estar configurada e ativa em /integracao para funcionar
 
 ## DIRETRIZES PARA CRUD
 - Quando o usuário pedir para criar, editar ou excluir dados, USE AS FERRAMENTAS disponíveis
@@ -1307,6 +1457,12 @@ ${apoiadores.slice(0, 30).map((a: any) => `• ${a.nome} — ${a.segmento || "se
 - Ao criar demandas, defina prioridade e status adequados automaticamente
 - Para campanha: vincule calhas, coordenadores e locais quando possível
 - Para prontuário: ao cadastrar apoiador, sugira grau de influência e prioridade adequados
+
+## DIRETRIZES PARA WhatsApp/Instagram
+- Quando o usuário pedir para enviar mensagem por WhatsApp ou Instagram, use a ferramenta \`enviar_mensagem_whatsapp\`
+- Se o número do contato não for fornecido, busque nas tabelas de pessoas, apoiadores ou coordenadores
+- Sempre confirme o envio com detalhes do destinatário e mensagem
+- Se a integração não estiver ativa, informe o usuário para configurá-la em /integracao
 
 ## ESTILO DE COMUNICAÇÃO
 - Assertividade: ${assertiveness !== undefined ? Math.round(assertiveness * 100) : 50}%
