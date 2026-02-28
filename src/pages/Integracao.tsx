@@ -153,8 +153,11 @@ const Integracao = () => {
           plataforma: "teste",
         },
       });
-      if (res.error) throw res.error;
-      toast({ title: res.data?.success ? "Conexão OK!" : "Falha na conexão", description: JSON.stringify(res.data?.data || {}).slice(0, 200) });
+      if (res.error) {
+        toast({ title: "Erro no teste", description: res.error.message || "Erro desconhecido", variant: "destructive" });
+      } else {
+        toast({ title: res.data?.success ? "Conexão OK!" : "Falha na conexão", description: JSON.stringify(res.data?.data || res.data || {}).slice(0, 200) });
+      }
     } catch (e: any) {
       toast({ title: "Erro no teste", description: e.message, variant: "destructive" });
     }
