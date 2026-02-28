@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${config.api_token}`,
+        "apikey": config.api_token,
       },
       body: JSON.stringify(body),
     });
