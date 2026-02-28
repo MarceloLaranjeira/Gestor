@@ -45,7 +45,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Integração desativada" }), { status: 400, headers: corsHeaders });
     }
 
-    const targetUrl = `${config.api_url}${endpoint || ""}`;
+    // Remove trailing slashes and common base paths for proper URL construction
+    const baseUrl = config.api_url.replace(/\/+$/, "").replace(/\/manager$/, "");
+    const targetUrl = `${baseUrl}${endpoint || ""}`;
 
     // Registrar mensagem como pendente
     const { data: msg, error: msgError } = await supabase
