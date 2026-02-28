@@ -63,15 +63,19 @@ Deno.serve(async (req) => {
       .single();
 
     // Fazer request para API externa
-    const externalRes = await fetch(targetUrl, {
-      method: method || "POST",
+    const requestMethod = (method || "POST").toUpperCase();
+    const fetchOptions: RequestInit = {
+      method: requestMethod,
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${config.api_token}`,
         "apikey": config.api_token,
       },
-      body: JSON.stringify(body),
-    });
+    };
+    if (requestMethod !== "GET" && body) {
+      fetchOptions.body = JSON.stringify(body);
+    }
+    const externalRes = await fetch(targetUrl, fetchOptions);
 
     const responseData = await externalRes.json().catch(() => ({}));
 

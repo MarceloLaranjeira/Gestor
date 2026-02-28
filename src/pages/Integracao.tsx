@@ -147,9 +147,9 @@ const Integracao = () => {
       const res = await supabase.functions.invoke("integracao-enviar", {
         body: {
           config_id: config.id,
-          endpoint: "/ping",
-          method: "POST",
-          body: { test: true, timestamp: new Date().toISOString() },
+          endpoint: "",
+          method: "GET",
+          body: null,
           plataforma: "teste",
         },
       });
