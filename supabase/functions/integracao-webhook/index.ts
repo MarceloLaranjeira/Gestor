@@ -123,6 +123,21 @@ Deno.serve(async (req) => {
       acaoResultado = "apoiador_criado";
     }
 
+    if (body.acao === "criar_movimento_financeiro" && body.dados) {
+      const { dados } = body;
+      const tipo = dados.tipo === "despesa" ? "despesa" : "receita";
+      await adminClient.from("movimentos_financeiros").insert({
+        descricao: dados.descricao || `${tipo === "receita" ? "Receita" : "Despesa"} via integração`,
+        valor: Number(dados.valor) || 0,
+        tipo,
+        categoria: dados.categoria || "",
+        data: dados.data || new Date().toISOString().split("T")[0],
+        observacao: dados.observacao || "Registrado via integração externa",
+        user_id: config.user_id,
+      });
+      acaoResultado = "movimento_financeiro_criado";
+    }
+
     return new Response(JSON.stringify({
       success: true,
       message_id: msg?.id,

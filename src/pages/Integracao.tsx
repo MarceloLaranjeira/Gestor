@@ -249,7 +249,7 @@ const Integracao = () => {
                           contato: "+5592999999999",
                           dados: { nome: "João Silva", telefone: "+5592999999999", cidade: "Manaus", tipo: "Apoiador" },
                         }, null, 2)}</pre>
-                        <p className="mt-2">Ações suportadas: <code>criar_pessoa</code>, <code>criar_demanda</code>, <code>criar_evento</code>, <code>criar_apoiador</code></p>
+                        <p className="mt-2">Ações suportadas: <code>criar_pessoa</code>, <code>criar_demanda</code>, <code>criar_evento</code>, <code>criar_apoiador</code>, <code>criar_movimento_financeiro</code></p>
                       </div>
                     </>
                   ) : (
