@@ -9,9 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Send, Webhook, Copy, Eye, EyeOff, RefreshCw, Plug, MessageSquare, ArrowDownLeft, ArrowUpRight, AlertCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Send, Webhook, Copy, Eye, EyeOff, RefreshCw, Plug, MessageSquare, ArrowDownLeft, ArrowUpRight, AlertCircle, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import IntegracaoMetrics from "@/components/integracao/IntegracaoMetrics";
 
 interface Config {
   id: string;
@@ -171,130 +173,145 @@ const Integracao = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Config */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2"><Send className="w-4 h-4 text-primary" /> Configuração da API</CardTitle>
-              <CardDescription>Configure a URL e token da sua plataforma de IA externa</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Nome da Integração</Label>
-                <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Ex: Agente WhatsApp" />
-              </div>
-              <div className="space-y-2">
-                <Label>URL da API</Label>
-                <Input value={form.api_url} onChange={(e) => setForm({ ...form, api_url: e.target.value })} placeholder="https://api.minha-plataforma.com" />
-              </div>
-              <div className="space-y-2">
-                <Label>Token de Autenticação</Label>
-                <div className="relative">
-                  <Input
-                    type={showToken ? "text" : "password"}
-                    value={form.api_token}
-                    onChange={(e) => setForm({ ...form, api_token: e.target.value })}
-                    placeholder="Bearer token ou API key"
-                    className="pr-9"
-                  />
-                  <button onClick={() => setShowToken(!showToken)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
-                    {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={saveConfig} disabled={saving} className="flex-1">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Salvar
-                </Button>
-                {config && (
-                  <Button variant="outline" onClick={testConnection} disabled={testing || !config.ativo}>
-                    {testing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />} Testar
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="config" className="w-full">
+          <TabsList>
+            <TabsTrigger value="config"><Plug className="w-3.5 h-3.5 mr-1.5" /> Configuração</TabsTrigger>
+            <TabsTrigger value="metrics"><BarChart3 className="w-3.5 h-3.5 mr-1.5" /> Métricas</TabsTrigger>
+            <TabsTrigger value="log"><MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Log</TabsTrigger>
+          </TabsList>
 
-          {/* Webhook */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2"><Webhook className="w-4 h-4 text-primary" /> Webhook (Receber Dados)</CardTitle>
-              <CardDescription>Configure este URL na sua plataforma externa para enviar dados ao sistema</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {config ? (
-                <>
+          <TabsContent value="config">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Config */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2"><Send className="w-4 h-4 text-primary" /> Configuração da API</CardTitle>
+                  <CardDescription>Configure a URL e token da sua plataforma de IA externa</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>URL do Webhook</Label>
-                    <div className="flex gap-2">
-                      <Input value={webhookUrl} readOnly className="text-xs font-mono" />
-                      <Button size="icon" variant="outline" onClick={copyWebhook}><Copy className="w-4 h-4" /></Button>
+                    <Label>Nome da Integração</Label>
+                    <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Ex: Agente WhatsApp" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>URL da API</Label>
+                    <Input value={form.api_url} onChange={(e) => setForm({ ...form, api_url: e.target.value })} placeholder="https://api.minha-plataforma.com" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Token de Autenticação</Label>
+                    <div className="relative">
+                      <Input
+                        type={showToken ? "text" : "password"}
+                        value={form.api_token}
+                        onChange={(e) => setForm({ ...form, api_token: e.target.value })}
+                        placeholder="Bearer token ou API key"
+                        className="pr-9"
+                      />
+                      <button onClick={() => setShowToken(!showToken)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
+                        {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
-                  <div className="rounded-lg bg-muted/50 p-4 space-y-2 text-xs text-muted-foreground">
-                    <p className="font-semibold text-foreground text-sm">Formato de envio (JSON):</p>
-                    <pre className="bg-background rounded p-3 overflow-x-auto text-[11px]">{JSON.stringify({
-                      acao: "criar_pessoa",
-                      plataforma: "whatsapp",
-                      contato: "+5592999999999",
-                      dados: { nome: "João Silva", telefone: "+5592999999999", cidade: "Manaus", tipo: "Apoiador" },
-                    }, null, 2)}</pre>
-                    <p className="mt-2">Ações suportadas: <code>criar_pessoa</code>, <code>criar_demanda</code></p>
+                  <div className="flex gap-2">
+                    <Button onClick={saveConfig} disabled={saving} className="flex-1">
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Salvar
+                    </Button>
+                    {config && (
+                      <Button variant="outline" onClick={testConnection} disabled={testing || !config.ativo}>
+                        {testing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />} Testar
+                      </Button>
+                    )}
                   </div>
-                </>
-              ) : (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <AlertCircle className="w-4 h-4" /> Salve a configuração primeiro para gerar a URL do webhook
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                </CardContent>
+              </Card>
 
-        {/* Log de Mensagens */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2"><MessageSquare className="w-4 h-4 text-primary" /> Log de Mensagens</CardTitle>
-                <CardDescription>Histórico de dados enviados e recebidos</CardDescription>
-              </div>
-              <Button size="sm" variant="outline" onClick={fetchMensagens}><RefreshCw className="w-3.5 h-3.5 mr-1" /> Atualizar</Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {mensagens.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Nenhuma mensagem registrada ainda</p>
-            ) : (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {mensagens.map((msg) => (
-                  <div key={msg.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
-                    <div className={`p-1.5 rounded-full ${msg.direcao === "enviada" ? "bg-blue-500/10 text-blue-500" : "bg-green-500/10 text-green-500"}`}>
-                      {msg.direcao === "enviada" ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownLeft className="w-3.5 h-3.5" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium">{msg.direcao === "enviada" ? "Enviada" : "Recebida"}</span>
-                        {msg.plataforma && <Badge variant="outline" className="text-[10px]">{msg.plataforma}</Badge>}
-                        <Badge variant={msg.status === "erro" ? "destructive" : msg.status === "enviada" || msg.status === "processada" ? "default" : "secondary"} className="text-[10px]">
-                          {msg.status}
-                        </Badge>
-                        <span className="text-[10px] text-muted-foreground ml-auto">
-                          {format(new Date(msg.created_at), "dd/MM HH:mm", { locale: ptBR })}
-                        </span>
+              {/* Webhook */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2"><Webhook className="w-4 h-4 text-primary" /> Webhook (Receber Dados)</CardTitle>
+                  <CardDescription>Configure este URL na sua plataforma externa para enviar dados ao sistema</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {config ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label>URL do Webhook</Label>
+                        <div className="flex gap-2">
+                          <Input value={webhookUrl} readOnly className="text-xs font-mono" />
+                          <Button size="icon" variant="outline" onClick={copyWebhook}><Copy className="w-4 h-4" /></Button>
+                        </div>
                       </div>
-                      {msg.contato_externo && <p className="text-[11px] text-muted-foreground">Contato: {msg.contato_externo}</p>}
-                      <pre className="text-[10px] text-muted-foreground bg-muted/50 rounded p-2 mt-1 overflow-x-auto max-h-20">
-                        {JSON.stringify(msg.conteudo, null, 2)}
-                      </pre>
-                      {msg.erro && <p className="text-[10px] text-destructive mt-1">Erro: {msg.erro}</p>}
+                      <div className="rounded-lg bg-muted/50 p-4 space-y-2 text-xs text-muted-foreground">
+                        <p className="font-semibold text-foreground text-sm">Formato de envio (JSON):</p>
+                        <pre className="bg-background rounded p-3 overflow-x-auto text-[11px]">{JSON.stringify({
+                          acao: "criar_pessoa",
+                          plataforma: "whatsapp",
+                          contato: "+5592999999999",
+                          dados: { nome: "João Silva", telefone: "+5592999999999", cidade: "Manaus", tipo: "Apoiador" },
+                        }, null, 2)}</pre>
+                        <p className="mt-2">Ações suportadas: <code>criar_pessoa</code>, <code>criar_demanda</code></p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <AlertCircle className="w-4 h-4" /> Salve a configuração primeiro para gerar a URL do webhook
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="metrics">
+            <IntegracaoMetrics mensagens={mensagens} />
+          </TabsContent>
+
+          <TabsContent value="log">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2"><MessageSquare className="w-4 h-4 text-primary" /> Log de Mensagens</CardTitle>
+                    <CardDescription>Histórico de dados enviados e recebidos</CardDescription>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  <Button size="sm" variant="outline" onClick={fetchMensagens}><RefreshCw className="w-3.5 h-3.5 mr-1" /> Atualizar</Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {mensagens.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">Nenhuma mensagem registrada ainda</p>
+                ) : (
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {mensagens.map((msg) => (
+                      <div key={msg.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
+                        <div className={`p-1.5 rounded-full ${msg.direcao === "enviada" ? "bg-primary/10 text-primary" : "bg-green-500/10 text-green-500"}`}>
+                          {msg.direcao === "enviada" ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownLeft className="w-3.5 h-3.5" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-medium">{msg.direcao === "enviada" ? "Enviada" : "Recebida"}</span>
+                            {msg.plataforma && <Badge variant="outline" className="text-[10px]">{msg.plataforma}</Badge>}
+                            <Badge variant={msg.status === "erro" ? "destructive" : msg.status === "enviada" || msg.status === "processada" ? "default" : "secondary"} className="text-[10px]">
+                              {msg.status}
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground ml-auto">
+                              {format(new Date(msg.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                            </span>
+                          </div>
+                          {msg.contato_externo && <p className="text-[11px] text-muted-foreground">Contato: {msg.contato_externo}</p>}
+                          <pre className="text-[10px] text-muted-foreground bg-muted/50 rounded p-2 mt-1 overflow-x-auto max-h-20">
+                            {JSON.stringify(msg.conteudo, null, 2)}
+                          </pre>
+                          {msg.erro && <p className="text-[10px] text-destructive mt-1">Erro: {msg.erro}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
