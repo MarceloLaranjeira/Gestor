@@ -646,6 +646,7 @@ export type Database = {
           api_token: string
           api_url: string
           ativo: boolean
+          auth_header_type: string
           created_at: string
           id: string
           nome: string
@@ -657,6 +658,7 @@ export type Database = {
           api_token?: string
           api_url?: string
           ativo?: boolean
+          auth_header_type?: string
           created_at?: string
           id?: string
           nome?: string
@@ -668,6 +670,7 @@ export type Database = {
           api_token?: string
           api_url?: string
           ativo?: boolean
+          auth_header_type?: string
           created_at?: string
           id?: string
           nome?: string

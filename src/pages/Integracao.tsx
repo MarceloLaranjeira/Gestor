@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Send, Webhook, Copy, Eye, EyeOff, RefreshCw, Plug, MessageSquare, ArrowDownLeft, ArrowUpRight, AlertCircle, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -22,6 +23,7 @@ interface Config {
   nome: string;
   api_url: string;
   api_token: string;
+  auth_header_type: string;
   webhook_secret: string;
   ativo: boolean;
   created_at: string;
@@ -61,7 +63,7 @@ const Integracao = () => {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [showToken, setShowToken] = useState(false);
-  const [form, setForm] = useState({ nome: "Agente WhatsApp/Instagram", api_url: "", api_token: "" });
+  const [form, setForm] = useState({ nome: "Agente WhatsApp/Instagram", api_url: "", api_token: "", auth_header_type: "apikey" });
 
   const webhookUrl = config
     ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/integracao-webhook?secret=${config.webhook_secret}`
@@ -87,7 +89,7 @@ const Integracao = () => {
     const { data } = await supabase.from("integracao_agente_config").select("*").limit(1).single();
     if (data) {
       setConfig(data as Config);
-      setForm({ nome: data.nome, api_url: data.api_url, api_token: data.api_token });
+      setForm({ nome: data.nome, api_url: data.api_url, api_token: data.api_token, auth_header_type: data.auth_header_type || "apikey" });
     }
     setLoading(false);
   };
@@ -111,6 +113,7 @@ const Integracao = () => {
           nome: form.nome,
           api_url: form.api_url,
           api_token: form.api_token,
+          auth_header_type: form.auth_header_type,
         }).eq("id", config.id);
         setConfig({ ...config, ...form });
       } else {
@@ -119,6 +122,7 @@ const Integracao = () => {
           nome: form.nome,
           api_url: form.api_url,
           api_token: form.api_token,
+          auth_header_type: form.auth_header_type,
           ativo: false,
         }).select().single();
         if (data) setConfig(data as Config);
@@ -228,6 +232,20 @@ const Integracao = () => {
                         {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tipo de Header de Autenticação</Label>
+                    <Select value={form.auth_header_type} onValueChange={(v) => setForm({ ...form, auth_header_type: v })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="apikey">apikey</SelectItem>
+                        <SelectItem value="bearer">Authorization: Bearer</SelectItem>
+                        <SelectItem value="x-api-key">x-api-key</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground">Define como o token é enviado para a API externa</p>
                   </div>
                   <div className="flex gap-2">
                     <Button onClick={saveConfig} disabled={saving} className="flex-1">
