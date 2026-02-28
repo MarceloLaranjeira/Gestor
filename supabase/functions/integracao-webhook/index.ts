@@ -59,7 +59,9 @@ Deno.serve(async (req) => {
       .select()
       .single();
 
-    // Processar dados recebidos - criar pessoa/apoiador se aplicável
+    // Processar ações automáticas
+    let acaoResultado = "nenhuma_acao";
+
     if (body.acao === "criar_pessoa" && body.dados) {
       const { dados } = body;
       await adminClient.from("pessoas").insert({
@@ -71,6 +73,7 @@ Deno.serve(async (req) => {
         tags: dados.tags || ["whatsapp"],
         user_id: config.user_id,
       });
+      acaoResultado = "pessoa_criada";
     }
 
     if (body.acao === "criar_demanda" && body.dados) {
@@ -82,11 +85,48 @@ Deno.serve(async (req) => {
         prioridade: dados.prioridade || "media",
         user_id: config.user_id,
       });
+      acaoResultado = "demanda_criada";
+    }
+
+    if (body.acao === "criar_evento" && body.dados) {
+      const { dados } = body;
+      await adminClient.from("eventos").insert({
+        titulo: dados.titulo || "Evento via integração",
+        descricao: dados.descricao || "",
+        data: dados.data || new Date().toISOString().split("T")[0],
+        hora: dados.hora || "08:00",
+        local: dados.local || "",
+        tipo: dados.tipo || "Externo",
+        participantes: dados.participantes || 0,
+        user_id: config.user_id,
+      });
+      acaoResultado = "evento_criado";
+    }
+
+    if (body.acao === "criar_apoiador" && body.dados) {
+      const { dados } = body;
+      await adminClient.from("apoiadores").insert({
+        nome: dados.nome || "Apoiador via integração",
+        telefone: dados.telefone || "",
+        cidade: dados.cidade || "",
+        regiao: dados.regiao || "",
+        segmento: dados.segmento || "",
+        cargo: dados.cargo || "",
+        organizacao: dados.organizacao || "",
+        funcao: dados.funcao || "",
+        origem_contato: dados.origem_contato || "whatsapp",
+        resumo: dados.resumo || "",
+        prioridade: dados.prioridade || "media",
+        grau_influencia: dados.grau_influencia || 3,
+        user_id: config.user_id,
+      });
+      acaoResultado = "apoiador_criado";
     }
 
     return new Response(JSON.stringify({
       success: true,
       message_id: msg?.id,
+      acao: acaoResultado,
       message: "Dados recebidos com sucesso",
     }), {
       status: 200,
