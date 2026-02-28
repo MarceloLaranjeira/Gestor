@@ -62,15 +62,28 @@ Deno.serve(async (req) => {
       .select()
       .single();
 
-    // Fazer request para API externa
+    // Montar headers de autenticação baseado no tipo configurado
+    const authType = config.auth_header_type || "apikey";
+    const externalHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    switch (authType) {
+      case "bearer":
+        externalHeaders["Authorization"] = `Bearer ${config.api_token}`;
+        break;
+      case "apikey":
+        externalHeaders["apikey"] = config.api_token;
+        break;
+      case "x-api-key":
+        externalHeaders["x-api-key"] = config.api_token;
+        break;
+      default:
+        externalHeaders["apikey"] = config.api_token;
+    }
     const requestMethod = (method || "POST").toUpperCase();
     const fetchOptions: RequestInit = {
       method: requestMethod,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${config.api_token}`,
-        "apikey": config.api_token,
-      },
+      headers: externalHeaders,
     };
     if (requestMethod !== "GET" && body) {
       fetchOptions.body = JSON.stringify(body);
