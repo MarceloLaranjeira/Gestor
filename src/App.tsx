@@ -53,6 +53,9 @@ import ApoiadoresList from "./pages/prontuario/ApoiadoresList";
 import LogbookCalhas from "./pages/logbook/LogbookCalhas";
 import LogbookDetalhes from "./pages/logbook/LogbookDetalhes";
 import LogbookMunicipioForm from "./pages/logbook/LogbookMunicipioForm";
+
+// Integração
+import Integracao from "./pages/Integracao";
 import ApoiadorForm from "./pages/prontuario/ApoiadorForm";
 import ApoiadorDetalhes from "./pages/prontuario/ApoiadorDetalhes";
 import ResumoExecutivo from "./pages/prontuario/ResumoExecutivo";
@@ -141,6 +144,8 @@ const AppRoutes = () => (
     <Route path="/logbook" element={<PermissionRoute><LogbookCalhas /></PermissionRoute>} />
     <Route path="/logbook/:id" element={<PermissionRoute><LogbookDetalhes /></PermissionRoute>} />
     <Route path="/logbook/:calhaId/municipio/:munId" element={<PermissionRoute><LogbookMunicipioForm /></PermissionRoute>} />
+    {/* Integração */}
+    <Route path="/integracao" element={<PermissionRoute><Integracao /></PermissionRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
