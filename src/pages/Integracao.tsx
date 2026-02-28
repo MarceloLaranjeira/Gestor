@@ -40,6 +40,19 @@ interface Mensagem {
   created_at: string;
 }
 
+const copyJson = (obj: object) => {
+  navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
+  toast({ title: "JSON copiado!" });
+};
+
+const jsonExamples = {
+  criar_pessoa: { acao: "criar_pessoa", plataforma: "whatsapp", contato: "+5592999999999", dados: { nome: "João Silva", telefone: "+5592999999999", email: "joao@email.com", cidade: "Manaus", tipo: "Apoiador", tags: ["whatsapp", "liderança"] } },
+  criar_demanda: { acao: "criar_demanda", plataforma: "whatsapp", contato: "+5592999999999", dados: { titulo: "Pavimentação Rua X", descricao: "Moradores solicitam asfalto na rua X", solicitante: "Maria Santos", prioridade: "alta" } },
+  criar_evento: { acao: "criar_evento", plataforma: "instagram", contato: "@usuario", dados: { titulo: "Reunião Comunitária", descricao: "Encontro com lideranças do bairro", data: "2026-03-15", hora: "14:00", local: "Centro Comunitário", tipo: "Externo", participantes: 30 } },
+  criar_apoiador: { acao: "criar_apoiador", plataforma: "whatsapp", contato: "+5592988887777", dados: { nome: "Carlos Souza", telefone: "+5592988887777", cidade: "Manaus", regiao: "Zona Norte", segmento: "Religioso", cargo: "Pastor", organizacao: "Igreja Central", origem_contato: "whatsapp", prioridade: "alta", grau_influencia: 4 } },
+  criar_movimento_financeiro: { acao: "criar_movimento_financeiro", plataforma: "sistema", contato: "", dados: { descricao: "Doação campanha", valor: 5000, tipo: "receita", categoria: "Doações", data: "2026-03-01", observacao: "Transferência bancária" } },
+};
+
 const Integracao = () => {
   const { user } = useAuth();
   const [config, setConfig] = useState<Config | null>(null);
@@ -245,36 +258,19 @@ const Integracao = () => {
                       <div className="rounded-lg bg-muted/50 p-4 space-y-3 text-xs text-muted-foreground">
                         <p className="font-semibold text-foreground text-sm">Exemplos por ação (JSON):</p>
                         <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="criar_pessoa" className="border-border/50">
-                            <AccordionTrigger className="text-xs py-2 font-mono hover:no-underline"><code>criar_pessoa</code></AccordionTrigger>
-                            <AccordionContent>
-                              <pre className="bg-background rounded p-3 overflow-x-auto text-[11px]">{JSON.stringify({ acao: "criar_pessoa", plataforma: "whatsapp", contato: "+5592999999999", dados: { nome: "João Silva", telefone: "+5592999999999", email: "joao@email.com", cidade: "Manaus", tipo: "Apoiador", tags: ["whatsapp", "liderança"] } }, null, 2)}</pre>
-                            </AccordionContent>
-                          </AccordionItem>
-                          <AccordionItem value="criar_demanda" className="border-border/50">
-                            <AccordionTrigger className="text-xs py-2 font-mono hover:no-underline"><code>criar_demanda</code></AccordionTrigger>
-                            <AccordionContent>
-                              <pre className="bg-background rounded p-3 overflow-x-auto text-[11px]">{JSON.stringify({ acao: "criar_demanda", plataforma: "whatsapp", contato: "+5592999999999", dados: { titulo: "Pavimentação Rua X", descricao: "Moradores solicitam asfalto na rua X", solicitante: "Maria Santos", prioridade: "alta" } }, null, 2)}</pre>
-                            </AccordionContent>
-                          </AccordionItem>
-                          <AccordionItem value="criar_evento" className="border-border/50">
-                            <AccordionTrigger className="text-xs py-2 font-mono hover:no-underline"><code>criar_evento</code></AccordionTrigger>
-                            <AccordionContent>
-                              <pre className="bg-background rounded p-3 overflow-x-auto text-[11px]">{JSON.stringify({ acao: "criar_evento", plataforma: "instagram", contato: "@usuario", dados: { titulo: "Reunião Comunitária", descricao: "Encontro com lideranças do bairro", data: "2026-03-15", hora: "14:00", local: "Centro Comunitário", tipo: "Externo", participantes: 30 } }, null, 2)}</pre>
-                            </AccordionContent>
-                          </AccordionItem>
-                          <AccordionItem value="criar_apoiador" className="border-border/50">
-                            <AccordionTrigger className="text-xs py-2 font-mono hover:no-underline"><code>criar_apoiador</code></AccordionTrigger>
-                            <AccordionContent>
-                              <pre className="bg-background rounded p-3 overflow-x-auto text-[11px]">{JSON.stringify({ acao: "criar_apoiador", plataforma: "whatsapp", contato: "+5592988887777", dados: { nome: "Carlos Souza", telefone: "+5592988887777", cidade: "Manaus", regiao: "Zona Norte", segmento: "Religioso", cargo: "Pastor", organizacao: "Igreja Central", origem_contato: "whatsapp", prioridade: "alta", grau_influencia: 4 } }, null, 2)}</pre>
-                            </AccordionContent>
-                          </AccordionItem>
-                          <AccordionItem value="criar_movimento_financeiro" className="border-border/50">
-                            <AccordionTrigger className="text-xs py-2 font-mono hover:no-underline"><code>criar_movimento_financeiro</code></AccordionTrigger>
-                            <AccordionContent>
-                              <pre className="bg-background rounded p-3 overflow-x-auto text-[11px]">{JSON.stringify({ acao: "criar_movimento_financeiro", plataforma: "sistema", contato: "", dados: { descricao: "Doação campanha", valor: 5000, tipo: "receita", categoria: "Doações", data: "2026-03-01", observacao: "Transferência bancária" } }, null, 2)}</pre>
-                            </AccordionContent>
-                          </AccordionItem>
+                          {Object.entries(jsonExamples).map(([key, example]) => (
+                            <AccordionItem key={key} value={key} className="border-border/50">
+                              <AccordionTrigger className="text-xs py-2 font-mono hover:no-underline"><code>{key}</code></AccordionTrigger>
+                              <AccordionContent>
+                                <div className="relative">
+                                  <Button size="icon" variant="ghost" className="absolute top-1 right-1 h-6 w-6" onClick={() => copyJson(example)}>
+                                    <Copy className="w-3 h-3" />
+                                  </Button>
+                                  <pre className="bg-background rounded p-3 pr-8 overflow-x-auto text-[11px]">{JSON.stringify(example, null, 2)}</pre>
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
                         </Accordion>
                       </div>
                     </>
