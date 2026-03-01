@@ -42,6 +42,25 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
+    // Support n8n payloads: normalize fields
+    // n8n can send: { from, text, nome, telefone, plataforma, ... }
+    // or Evolution API format: { data: { key: { remoteJid }, message: { conversation } } }
+    const normalizedContato = body.contato || body.from || body.telefone || 
+      body.data?.key?.remoteJid?.replace(/@.*/, "") || "";
+    const normalizedText = body.text || body.message || body.mensagem || 
+      body.data?.message?.conversation || body.data?.message?.extendedTextMessage?.text || "";
+    const normalizedPlataforma = body.plataforma || "whatsapp";
+    const normalizedNome = body.nome || body.name || body.dados?.nome || "";
+
+    // Enrich body with normalized data for downstream processing
+    const enrichedBody = {
+      ...body,
+      text: normalizedText,
+      contato: normalizedContato,
+      nome: normalizedNome,
+      plataforma: normalizedPlataforma,
+    };
+
     // Registrar mensagem recebida
     const { data: msg } = await adminClient
       .from("integracao_agente_mensagens")
@@ -49,10 +68,10 @@ Deno.serve(async (req) => {
         config_id: config.id,
         direcao: "recebida",
         tipo: body.tipo || "texto",
-        conteudo: body,
+        conteudo: enrichedBody,
         status: "processada",
-        plataforma: body.plataforma || "",
-        contato_externo: body.contato || body.from || "",
+        plataforma: normalizedPlataforma,
+        contato_externo: normalizedContato,
       })
       .select()
       .single();
@@ -172,8 +191,8 @@ Deno.serve(async (req) => {
     // ========== AUTO-REPLY VIA IA ==========
     // Only auto-reply for plain messages (no special action) that have text content
     let autoReply: string | null = null;
-    const incomingText = body.text || body.message || body.conteudo?.text || "";
-    const contato = body.contato || body.from || "";
+    const incomingText = normalizedText;
+    const contato = normalizedContato;
     const shouldAutoReply = !body.acao && incomingText.trim() && contato;
 
     if (shouldAutoReply) {
