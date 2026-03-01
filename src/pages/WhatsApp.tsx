@@ -4,18 +4,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/hooks/use-toast";
 import {
-  Loader2, Send, Phone, Image, FileText, Mic, Video, ArrowDownLeft, ArrowUpRight,
-  Search, MessageSquare, Paperclip, Check, CheckCheck, AlertCircle,
+  Loader2, Phone, ArrowDownLeft, ArrowUpRight,
+  Search, MessageSquare, Check, CheckCheck, AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import ChatInputBar from "@/components/whatsapp/ChatInputBar";
 
 interface Config {
   id: string;
@@ -38,33 +37,17 @@ interface Mensagem {
   created_at: string;
 }
 
-type MessageType = "text" | "image" | "document" | "audio" | "video";
-
-const typeConfig: Record<MessageType, { label: string; icon: typeof Send }> = {
-  text: { label: "Texto", icon: Send },
-  image: { label: "Imagem", icon: Image },
-  document: { label: "Documento", icon: FileText },
-  audio: { label: "Áudio", icon: Mic },
-  video: { label: "Vídeo", icon: Video },
-};
-
 const WhatsApp = () => {
   const { user } = useAuth();
   const [config, setConfig] = useState<Config | null>(null);
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
 
   // Send form
   const [instanceName, setInstanceName] = useState("");
   const [numero, setNumero] = useState("");
-  const [tipo, setTipo] = useState<MessageType>("text");
-  const [mensagem, setMensagem] = useState("");
-  const [mediaUrl, setMediaUrl] = useState("");
-  const [caption, setCaption] = useState("");
-  const [fileName, setFileName] = useState("");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -150,59 +133,6 @@ const WhatsApp = () => {
       return <img src={c.media} alt="media" className="max-w-[200px] rounded-lg mt-1" />;
     }
     return null;
-  };
-
-  const canSend = () => {
-    if (!numero || !instanceName || !config?.ativo) return false;
-    if (tipo === "text") return !!mensagem;
-    return !!mediaUrl;
-  };
-
-  const sendMessage = async () => {
-    if (!canSend() || !config) return;
-    setSending(true);
-    try {
-      const cleanNumber = numero.replace(/\D/g, "");
-      const endpoint = tipo === "text"
-        ? `/message/sendText/${instanceName}`
-        : `/message/sendMedia/${instanceName}`;
-      const body = tipo === "text"
-        ? { number: cleanNumber, text: mensagem }
-        : {
-            number: cleanNumber,
-            mediatype: tipo,
-            media: mediaUrl,
-            ...(caption && { caption }),
-            ...(tipo === "document" && fileName && { fileName }),
-          };
-
-      const res = await supabase.functions.invoke("integracao-enviar", {
-        body: { config_id: config.id, endpoint, method: "POST", body, plataforma: "whatsapp", contato_externo: numero },
-      });
-
-      if (res.error) {
-        toast({ title: "Erro ao enviar", description: res.error.message, variant: "destructive" });
-      } else if (res.data?.success) {
-        toast({ title: "Mensagem enviada! ✅" });
-        setMensagem("");
-        setMediaUrl("");
-        setCaption("");
-        setFileName("");
-        setSelectedContact(numero);
-      } else {
-        toast({ title: "Falha no envio", description: JSON.stringify(res.data?.data || {}).slice(0, 200), variant: "destructive" });
-      }
-    } catch (e: any) {
-      toast({ title: "Erro", description: e.message, variant: "destructive" });
-    }
-    setSending(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey && tipo === "text") {
-      e.preventDefault();
-      sendMessage();
-    }
   };
 
   if (loading) {
@@ -384,62 +314,14 @@ const WhatsApp = () => {
                   </div>
                 </ScrollArea>
 
-                {/* Input area */}
-                <div className="border-t bg-card p-3">
-                  <div className="flex items-end gap-2 max-w-3xl mx-auto">
-                    {/* Type selector */}
-                    <Select value={tipo} onValueChange={(v) => setTipo(v as MessageType)}>
-                      <SelectTrigger className="w-10 h-10 p-0 justify-center border-0 bg-transparent">
-                        <Paperclip className="w-5 h-5 text-muted-foreground" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.entries(typeConfig) as [MessageType, { label: string; icon: typeof Send }][]).map(([key, cfg]) => (
-                          <SelectItem key={key} value={key}>
-                            <span className="flex items-center gap-2"><cfg.icon className="w-3.5 h-3.5" /> {cfg.label}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <div className="flex-1 space-y-2">
-                      {tipo !== "text" && (
-                        <div className="flex gap-2">
-                          <Input
-                            value={mediaUrl}
-                            onChange={(e) => setMediaUrl(e.target.value)}
-                            placeholder="URL do arquivo..."
-                            className="h-9 text-sm"
-                          />
-                          {tipo === "document" && (
-                            <Input
-                              value={fileName}
-                              onChange={(e) => setFileName(e.target.value)}
-                              placeholder="nome.pdf"
-                              className="h-9 text-sm w-32"
-                            />
-                          )}
-                        </div>
-                      )}
-                      <Textarea
-                        value={tipo === "text" ? mensagem : caption}
-                        onChange={(e) => tipo === "text" ? setMensagem(e.target.value) : setCaption(e.target.value)}
-                        placeholder={tipo === "text" ? "Digite uma mensagem..." : "Legenda (opcional)..."}
-                        rows={1}
-                        className="min-h-[40px] max-h-[120px] resize-none text-sm"
-                        onKeyDown={handleKeyDown}
-                      />
-                    </div>
-
-                    <Button
-                      size="icon"
-                      className="h-10 w-10 rounded-full shrink-0"
-                      disabled={!canSend() || sending}
-                      onClick={sendMessage}
-                    >
-                      {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                </div>
+                {config && (
+                  <ChatInputBar
+                    config={config}
+                    instanceName={instanceName}
+                    numero={numero}
+                    onSent={() => setSelectedContact(numero)}
+                  />
+                )}
               </>
             )}
           </div>
