@@ -72,7 +72,6 @@ const WhatsApp = () => {
   const [replyingTo, setReplyingTo] = useState<{ id: string; text: string; sender: string } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{ id: string; text: string } | null>(null);
   const [starredMessages, setStarredMessages] = useState<Set<string>>(new Set());
-  const [hoveredMessage, setHoveredMessage] = useState<string | null>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -485,9 +484,7 @@ const WhatsApp = () => {
                               return (
                                 <div
                                   key={msg.id}
-                                  className={cn("flex mb-[2px] group relative", isSent ? "justify-end" : "justify-start")}
-                                  onMouseEnter={() => setHoveredMessage(msg.id)}
-                                  onMouseLeave={() => setHoveredMessage(null)}
+                                  className={cn("flex mb-[2px] group/msg relative", isSent ? "justify-end" : "justify-start")}
                                 >
                                   <div
                                     className={cn(
@@ -510,46 +507,45 @@ const WhatsApp = () => {
                                       }}
                                     />
 
-                                    {/* Message dropdown */}
-                                    {hoveredMessage === msg.id && (
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <button className="absolute top-1 right-1 p-0.5 rounded bg-transparent hover:bg-black/5 z-10">
-                                            <ChevronDown className="w-4 h-4 text-[#8696a0]" />
-                                          </button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align={isSent ? "end" : "start"} className="w-48">
-                                          <DropdownMenuItem onClick={() => setReplyingTo({ id: msg.id, text: msgText, sender: isSent ? "Você" : msg.contato_externo })}>
-                                            <Reply className="w-4 h-4 mr-2" /> Responder
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => copyMessage(msgText)}>
-                                            <Copy className="w-4 h-4 mr-2" /> Copiar
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => toggleStar(msg.id)}>
-                                            <Star className={cn("w-4 h-4 mr-2", isStarred && "fill-yellow-400 text-yellow-400")} />
-                                            {isStarred ? "Desmarcar" : "Marcar com estrela"}
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => {
-                                            navigator.clipboard.writeText(msgText);
-                                            toast({ title: "Mensagem pronta para encaminhar 📨" });
-                                          }}>
-                                            <Forward className="w-4 h-4 mr-2" /> Encaminhar
-                                          </DropdownMenuItem>
-                                          {isSent && (
-                                            <>
-                                              <DropdownMenuSeparator />
-                                              <DropdownMenuItem onClick={() => setEditingMessage({ id: msg.id, text: msgText })}>
-                                                <Pencil className="w-4 h-4 mr-2" /> Editar
-                                              </DropdownMenuItem>
-                                            </>
-                                          )}
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem className="text-destructive" onClick={() => setDeleteDialog({ id: msg.id, text: msgText })}>
-                                            <Trash2 className="w-4 h-4 mr-2" /> Apagar
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                    )}
+                                    {/* Message dropdown - always rendered, visible on hover via CSS */}
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button className="absolute top-1 right-1 p-0.5 rounded bg-transparent hover:bg-black/5 z-10 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                                          <ChevronDown className="w-4 h-4 text-[#8696a0]" />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align={isSent ? "end" : "start"} className="w-48">
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setReplyingTo({ id: msg.id, text: msgText, sender: isSent ? "Você" : msg.contato_externo }); }}>
+                                          <Reply className="w-4 h-4 mr-2" /> Responder
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); copyMessage(msgText); }}>
+                                          <Copy className="w-4 h-4 mr-2" /> Copiar
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toggleStar(msg.id); }}>
+                                          <Star className={cn("w-4 h-4 mr-2", isStarred && "fill-yellow-400 text-yellow-400")} />
+                                          {isStarred ? "Desmarcar" : "Marcar com estrela"}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(msgText);
+                                          toast({ title: "Mensagem pronta para encaminhar 📨" });
+                                        }}>
+                                          <Forward className="w-4 h-4 mr-2" /> Encaminhar
+                                        </DropdownMenuItem>
+                                        {isSent && (
+                                          <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditingMessage({ id: msg.id, text: msgText }); }}>
+                                              <Pencil className="w-4 h-4 mr-2" /> Editar
+                                            </DropdownMenuItem>
+                                          </>
+                                        )}
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteDialog({ id: msg.id, text: msgText }); }}>
+                                          <Trash2 className="w-4 h-4 mr-2" /> Apagar
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
 
                                     {/* Reply preview */}
                                     {msg.conteudo?.quotedMsgId && (
