@@ -76,6 +76,30 @@ const WhatsApp = () => {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const notifAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [unreadByContact, setUnreadByContact] = useState<Map<string, number>>(new Map());
+
+  // Create notification sound on mount
+  useEffect(() => {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const createBeep = () => {
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.frequency.value = 800;
+      oscillator.type = "sine";
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.3);
+    };
+    (window as any).__waBeep = createBeep;
+    // Request notification permission
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
 
   useEffect(() => { fetchConfig(); }, []);
 
@@ -89,7 +113,32 @@ const WhatsApp = () => {
         filter: `config_id=eq.${config.id}`,
       }, (payload) => {
         if (payload.eventType === "INSERT") {
-          setMensagens((prev) => [payload.new as Mensagem, ...prev]);
+          const newMsg = payload.new as Mensagem;
+          setMensagens((prev) => [newMsg, ...prev]);
+          // Notification for incoming messages
+          if (newMsg.direcao === "recebida") {
+            // Play sound
+            try { (window as any).__waBeep?.(); } catch {}
+            // Update unread badge
+            setUnreadByContact((prev) => {
+              const next = new Map(prev);
+              const contact = newMsg.contato_externo || "desconhecido";
+              if (contact !== selectedContact) {
+                next.set(contact, (next.get(contact) || 0) + 1);
+              }
+              return next;
+            });
+            // Browser notification
+            if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+              const text = newMsg.conteudo?.text || newMsg.conteudo?.message || "Nova mensagem";
+              const contact = newMsg.contato_externo || "Contato";
+              new Notification(`💬 ${contact}`, { body: text.slice(0, 100), icon: "/favicon.png", tag: "wa-msg" });
+            }
+            // Toast notification
+            const contactName = newMsg.contato_externo || "Contato";
+            const preview = newMsg.conteudo?.text || newMsg.conteudo?.message || "Nova mensagem";
+            toast({ title: `💬 ${contactName}`, description: preview.slice(0, 80) });
+          }
         } else if (payload.eventType === "UPDATE") {
           setMensagens((prev) => prev.map((m) => m.id === (payload.new as Mensagem).id ? payload.new as Mensagem : m));
         } else if (payload.eventType === "DELETE") {
@@ -98,7 +147,7 @@ const WhatsApp = () => {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [config?.id]);
+  }, [config?.id, selectedContact]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -334,7 +383,13 @@ const WhatsApp = () => {
               {contacts.map((c) => (
                 <button
                   key={c.contato}
-                  onClick={() => { setSelectedContact(c.contato); setNumero(c.contato); setShowChatSearch(false); setChatSearch(""); }}
+                  onClick={() => {
+                    setSelectedContact(c.contato);
+                    setNumero(c.contato);
+                    setShowChatSearch(false);
+                    setChatSearch("");
+                    setUnreadByContact((prev) => { const next = new Map(prev); next.delete(c.contato); return next; });
+                  }}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-[#f5f6f6] transition-colors",
                     selectedContact === c.contato && "bg-[#f0f2f5]"
@@ -359,10 +414,10 @@ const WhatsApp = () => {
                         {c.lastMsg.conteudo?.auto_reply && "🤖 "}
                         {getPreview(c.lastMsg)}
                       </p>
-                      {c.unread > 0 && selectedContact !== c.contato && (
-                        <span className="flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[11px] font-bold text-white px-1"
+                      {(unreadByContact.get(c.contato) || 0) > 0 && selectedContact !== c.contato && (
+                        <span className="flex items-center justify-center min-w-[20px] h-[20px] rounded-full text-[11px] font-bold text-white px-1 animate-pulse"
                           style={{ backgroundColor: "#25d366" }}>
-                          {c.unread}
+                          {unreadByContact.get(c.contato)}
                         </span>
                       )}
                     </div>
