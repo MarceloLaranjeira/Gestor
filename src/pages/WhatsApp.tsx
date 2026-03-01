@@ -284,6 +284,9 @@ const WhatsApp = () => {
                               ? "bg-primary text-primary-foreground rounded-br-md"
                               : "bg-card border rounded-bl-md"
                           )}>
+                            {msg.conteudo?.auto_reply && (
+                              <span className="text-[10px] font-medium opacity-70 block mb-0.5">🤖 Resposta automática</span>
+                            )}
                             {getMediaPreview(msg)}
                             <p className="text-sm whitespace-pre-wrap break-words">{getPreview(msg)}</p>
                             {msg.erro && (
