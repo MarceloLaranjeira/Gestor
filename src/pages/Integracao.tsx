@@ -12,12 +12,10 @@ import { toast } from "@/hooks/use-toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Send, Webhook, Copy, Eye, EyeOff, RefreshCw, Plug, MessageSquare, ArrowDownLeft, ArrowUpRight, AlertCircle, BarChart3, Phone, BookOpen } from "lucide-react";
+import { Loader2, Send, Webhook, Copy, Eye, EyeOff, RefreshCw, Plug, MessageSquare, ArrowDownLeft, ArrowUpRight, AlertCircle, BarChart3, BookOpen } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import IntegracaoMetrics from "@/components/integracao/IntegracaoMetrics";
-import WhatsAppTestSender from "@/components/integracao/WhatsAppTestSender";
-import WhatsAppMessageHistory from "@/components/integracao/WhatsAppMessageHistory";
 import IntegracaoDocs from "@/components/integracao/IntegracaoDocs";
 
 interface Config {
@@ -200,7 +198,6 @@ const Integracao = () => {
         <Tabs defaultValue="config" className="w-full">
           <TabsList>
             <TabsTrigger value="config"><Plug className="w-3.5 h-3.5 mr-1.5" /> Configuração</TabsTrigger>
-            <TabsTrigger value="whatsapp"><Phone className="w-3.5 h-3.5 mr-1.5" /> WhatsApp</TabsTrigger>
             <TabsTrigger value="docs"><BookOpen className="w-3.5 h-3.5 mr-1.5" /> Docs</TabsTrigger>
             <TabsTrigger value="metrics"><BarChart3 className="w-3.5 h-3.5 mr-1.5" /> Métricas</TabsTrigger>
             <TabsTrigger value="log"><MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Log</TabsTrigger>
@@ -308,21 +305,6 @@ const Integracao = () => {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-
-          <TabsContent value="whatsapp">
-            {config ? (
-              <div className="space-y-6">
-                <WhatsAppTestSender configId={config.id} ativo={config.ativo} />
-                <WhatsAppMessageHistory mensagens={mensagens} />
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="py-8">
-                  <p className="text-sm text-muted-foreground text-center">Salve a configuração primeiro.</p>
-                </CardContent>
-              </Card>
-            )}
           </TabsContent>
 
           <TabsContent value="docs">
