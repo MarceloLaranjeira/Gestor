@@ -19,13 +19,14 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, Search, MessageSquare, Check, CheckCheck, AlertCircle,
   MoreVertical, Info, Trash2, Pencil, Copy, Reply, Star, Forward,
-  ChevronDown, ArrowDown, X,
+  ChevronDown, ArrowDown, X, ImagePlus, Upload,
 } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import ChatInputBar from "@/components/whatsapp/ChatInputBar";
 import ContactInfoPanel from "@/components/whatsapp/ContactInfoPanel";
+import StarredMessagesPanel from "@/components/whatsapp/StarredMessagesPanel";
 
 interface Config {
   id: string;
@@ -73,7 +74,10 @@ const WhatsApp = () => {
   const [deleteDialog, setDeleteDialog] = useState<{ id: string; text: string } | null>(null);
   const [starredMessages, setStarredMessages] = useState<Set<string>>(new Set());
   const [showScrollDown, setShowScrollDown] = useState(false);
-
+  const [showStarredPanel, setShowStarredPanel] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const dragCountRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const notifAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -297,6 +301,83 @@ const WhatsApp = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCountRef.current++;
+    if (e.dataTransfer.types.includes("Files")) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCountRef.current--;
+    if (dragCountRef.current === 0) setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCountRef.current = 0;
+
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
+    if (files.length === 0) {
+      toast({ title: "Apenas imagens são suportadas", variant: "destructive" });
+      return;
+    }
+    if (!selectedContact || !config || !instanceName) {
+      toast({ title: "Selecione um contato e instância primeiro", variant: "destructive" });
+      return;
+    }
+
+    setUploadingImage(true);
+    for (const file of files) {
+      try {
+        const fileName = `whatsapp-img/${Date.now()}-${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("agent-uploads")
+          .upload(fileName, file, { contentType: file.type });
+
+        if (uploadError) {
+          toast({ title: "Erro no upload", description: uploadError.message, variant: "destructive" });
+          continue;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from("agent-uploads")
+          .getPublicUrl(fileName);
+
+        // Send image via integration
+        const cleanNumber = selectedContact.replace(/\D/g, "");
+        const res = await supabase.functions.invoke("integracao-enviar", {
+          body: {
+            config_id: config.id,
+            endpoint: `/message/sendMedia/${instanceName}`,
+            method: "POST",
+            body: { number: cleanNumber, mediatype: "image", media: urlData.publicUrl },
+            plataforma: "whatsapp",
+            contato_externo: selectedContact,
+          },
+        });
+
+        if (res.data?.success) {
+          toast({ title: `📷 Imagem enviada!` });
+        } else {
+          toast({ title: "Falha ao enviar imagem", variant: "destructive" });
+        }
+      } catch (err: any) {
+        toast({ title: "Erro", description: err.message, variant: "destructive" });
+      }
+    }
+    setUploadingImage(false);
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -487,6 +568,9 @@ const WhatsApp = () => {
                         <DropdownMenuItem onClick={() => setShowChatSearch(true)}>
                           <Search className="w-4 h-4 mr-2" /> Pesquisar na conversa
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowStarredPanel(!showStarredPanel)}>
+                          <Star className="w-4 h-4 mr-2" /> Mensagens com estrela
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setSelectedContact(null)}>
                           Fechar conversa
@@ -516,7 +600,31 @@ const WhatsApp = () => {
 
                 <div className="flex flex-1 overflow-hidden">
                   {/* Messages */}
-                  <div className="flex-1 flex flex-col relative">
+                  <div
+                    className="flex-1 flex flex-col relative"
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                  >
+                    {/* Drag overlay */}
+                    {isDragging && (
+                      <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-lg">
+                        <div className="flex flex-col items-center gap-3 p-8 rounded-2xl bg-white/90 shadow-xl">
+                          <Upload className="w-12 h-12" style={{ color: "#00a884" }} />
+                          <p className="text-lg font-medium text-[#111b21]">Solte a imagem aqui</p>
+                          <p className="text-sm text-[#667781]">A imagem será enviada para {selectedContact}</p>
+                        </div>
+                      </div>
+                    )}
+                    {uploadingImage && (
+                      <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+                        <div className="flex items-center gap-3 p-6 rounded-2xl bg-white/90 shadow-xl">
+                          <Loader2 className="w-6 h-6 animate-spin" style={{ color: "#00a884" }} />
+                          <span className="text-sm font-medium">Enviando imagem...</span>
+                        </div>
+                      </div>
+                    )}
                     <ScrollArea className="flex-1" ref={scrollContainerRef}>
                       {/* WhatsApp-style background pattern */}
                       <div className="px-[7%] py-4 space-y-0.5 min-h-full"
@@ -667,6 +775,20 @@ const WhatsApp = () => {
 
                   {/* Info Panel */}
                   {showInfo && <ContactInfoPanel contato={selectedContact} onClose={() => setShowInfo(false)} />}
+                  {/* Starred Panel */}
+                  {showStarredPanel && (
+                    <StarredMessagesPanel
+                      messages={mensagens}
+                      starredIds={starredMessages}
+                      onClose={() => setShowStarredPanel(false)}
+                      onNavigate={(contact, _msgId) => {
+                        setSelectedContact(contact);
+                        setNumero(contact);
+                        setShowStarredPanel(false);
+                      }}
+                      onUnstar={toggleStar}
+                    />
+                  )}
                 </div>
 
                 <ChatInputBar
