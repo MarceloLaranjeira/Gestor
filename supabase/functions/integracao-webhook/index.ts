@@ -16,7 +16,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Autenticar via webhook_secret no header ou query param
     const url = new URL(req.url);
     const secret = req.headers.get("x-webhook-secret") || url.searchParams.get("secret");
 
@@ -27,7 +26,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Buscar config pelo webhook_secret
     const { data: config, error: configError } = await adminClient
       .from("integracao_agente_config")
       .select("*")
@@ -45,7 +43,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
 
     // Registrar mensagem recebida
-    const { data: msg, error: msgError } = await adminClient
+    const { data: msg } = await adminClient
       .from("integracao_agente_mensagens")
       .insert({
         config_id: config.id,
@@ -171,10 +169,130 @@ Deno.serve(async (req) => {
       acaoResultado = "pessoa_e_apoiador_criados";
     }
 
+    // ========== AUTO-REPLY VIA IA ==========
+    // Only auto-reply for plain messages (no special action) that have text content
+    let autoReply: string | null = null;
+    const incomingText = body.text || body.message || body.conteudo?.text || "";
+    const contato = body.contato || body.from || "";
+    const shouldAutoReply = !body.acao && incomingText.trim() && contato;
+
+    if (shouldAutoReply) {
+      try {
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        if (LOVABLE_API_KEY) {
+          // Fetch recent conversation history for context (last 10 messages)
+          const { data: recentMsgs } = await adminClient
+            .from("integracao_agente_mensagens")
+            .select("direcao, conteudo, created_at")
+            .eq("config_id", config.id)
+            .eq("contato_externo", contato)
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+          const historyMessages = (recentMsgs || []).reverse().map((m: any) => ({
+            role: m.direcao === "recebida" ? "user" : "assistant",
+            content: m.conteudo?.text || m.conteudo?.message || JSON.stringify(m.conteudo).slice(0, 200),
+          }));
+
+          const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-3-flash-preview",
+              messages: [
+                {
+                  role: "system",
+                  content: `Você é um assistente parlamentar virtual cordial e eficiente. Responda de forma breve e objetiva (máximo 3 frases). Você representa o gabinete de um parlamentar. Seja educado, prestativo e profissional. Se a pessoa fizer uma solicitação ou demanda, confirme que será encaminhada. Responda sempre em português brasileiro.`,
+                },
+                ...historyMessages,
+                { role: "user", content: incomingText },
+              ],
+            }),
+          });
+
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            autoReply = aiData.choices?.[0]?.message?.content || null;
+          } else {
+            console.error("AI auto-reply error:", aiResponse.status, await aiResponse.text());
+          }
+        }
+      } catch (aiErr) {
+        console.error("AI auto-reply exception:", aiErr);
+      }
+
+      // Send auto-reply back via external API and save to DB
+      if (autoReply && config.api_url && config.api_token) {
+        try {
+          const baseUrl = config.api_url.replace(/\/+$/, "").replace(/\/manager$/, "");
+          // Try to determine instance name from the incoming body or use default
+          const instance = body.instance || body.instanceName || "default";
+          const replyEndpoint = `${baseUrl}/message/sendText/${instance}`;
+
+          const authType = config.auth_header_type || "apikey";
+          const externalHeaders: Record<string, string> = { "Content-Type": "application/json" };
+          switch (authType) {
+            case "bearer":
+              externalHeaders["Authorization"] = `Bearer ${config.api_token}`;
+              break;
+            case "apikey":
+              externalHeaders["apikey"] = config.api_token;
+              break;
+            case "x-api-key":
+              externalHeaders["x-api-key"] = config.api_token;
+              break;
+            default:
+              externalHeaders["apikey"] = config.api_token;
+          }
+
+          const sendResult = await fetch(replyEndpoint, {
+            method: "POST",
+            headers: externalHeaders,
+            body: JSON.stringify({
+              number: contato.replace(/\D/g, ""),
+              text: autoReply,
+            }),
+          });
+
+          const sendStatus = sendResult.ok ? "enviada" : "erro";
+          const sendError = sendResult.ok ? null : await sendResult.text().catch(() => "Erro desconhecido");
+
+          // Save reply message to DB
+          await adminClient.from("integracao_agente_mensagens").insert({
+            config_id: config.id,
+            direcao: "enviada",
+            tipo: "texto",
+            conteudo: { text: autoReply, auto_reply: true },
+            status: sendStatus,
+            plataforma: body.plataforma || "whatsapp",
+            contato_externo: contato,
+            erro: sendError,
+          });
+        } catch (sendErr) {
+          console.error("Auto-reply send error:", sendErr);
+          // Still save the reply even if sending failed
+          await adminClient.from("integracao_agente_mensagens").insert({
+            config_id: config.id,
+            direcao: "enviada",
+            tipo: "texto",
+            conteudo: { text: autoReply, auto_reply: true },
+            status: "erro",
+            plataforma: body.plataforma || "whatsapp",
+            contato_externo: contato,
+            erro: String(sendErr),
+          });
+        }
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       message_id: msg?.id,
       acao: acaoResultado,
+      auto_reply: autoReply ? true : false,
       message: "Dados recebidos com sucesso",
     }), {
       status: 200,
