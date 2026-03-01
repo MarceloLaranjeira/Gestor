@@ -38,6 +38,7 @@ const navItems: NavItem[] = [
   { icon: BookOpen, label: "Logbook", path: "/logbook", module: "logbook" },
   { icon: MessageSquare, label: "Movimentos", path: "/movimentos", module: "movimentos" },
   { icon: Plug, label: "Integração", path: "/integracao", module: "integracao" },
+  { icon: MessageSquare, label: "WhatsApp", path: "/whatsapp", module: "integracao" },
 ];
 
 const bottomItems: NavItem[] = [
