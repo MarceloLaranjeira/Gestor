@@ -248,7 +248,7 @@ Deno.serve(async (req) => {
         try {
           const baseUrl = config.api_url.replace(/\/+$/, "").replace(/\/manager$/, "");
           // Try to determine instance name from the incoming body or use default
-          const instance = body.instance || body.instanceName || "default";
+          const instance = body.instance || body.instanceName || config.nome || "default";
           const replyEndpoint = `${baseUrl}/message/sendText/${instance}`;
 
           const authType = config.auth_header_type || "apikey";

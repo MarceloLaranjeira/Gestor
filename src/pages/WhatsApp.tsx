@@ -736,7 +736,16 @@ const WhatsApp = () => {
                                       <span className="text-[11px] text-[#667781] italic mr-1">editada</span>
                                     )}
                                     {msg.erro && (
-                                      <p className="text-[11px] text-destructive mt-1">❌ {msg.erro}</p>
+                                      <p className="text-[11px] text-destructive mt-1 truncate max-w-[250px]" title={msg.erro}>
+                                        ❌ {(() => {
+                                          try {
+                                            const parsed = JSON.parse(msg.erro);
+                                            return parsed.response?.message || parsed.error || parsed.message || "Erro ao enviar";
+                                          } catch {
+                                            return msg.erro.length > 60 ? msg.erro.slice(0, 60) + "…" : msg.erro;
+                                          }
+                                        })()}
+                                      </p>
                                     )}
                                     <span className={cn(
                                       "float-right text-[11px] -mb-[5px] ml-[4px] mt-[3px] flex items-center gap-[3px]",
