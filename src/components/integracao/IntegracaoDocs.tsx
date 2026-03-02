@@ -125,6 +125,24 @@ const actions: DocAction[] = [
     },
   },
   {
+    key: "criar_coordenador",
+    label: "Criar Coordenador de Campanha",
+    description: "Cadastra um novo coordenador de campanha no sistema",
+    direction: "receber" as const,
+    payload: {
+      acao: "criar_coordenador",
+      plataforma: "whatsapp",
+      contato: "+5592999999999",
+      dados: {
+        nome: "Pedro Oliveira",
+        telefone: "+5592966665555",
+        email: "pedro@email.com",
+        status: "ativo",
+        calha_id: "<calha_id_opcional>",
+      },
+    },
+  },
+  {
     key: "criar_movimento_financeiro",
     label: "Criar Movimento Financeiro",
     description: "Registra receita ou despesa no módulo financeiro",
