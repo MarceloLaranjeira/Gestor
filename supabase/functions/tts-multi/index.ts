@@ -161,33 +161,75 @@ serve(async (req) => {
       });
     }
 
-    const { text, provider, voiceId, stability, speed, googleApiKey, openaiApiKey, googleVoiceName } = await req.json();
+    const body = await req.json();
+    const { text, provider, voiceId, stability, speed, googleApiKey, openaiApiKey, googleVoiceName } = body;
 
-    if (!text) {
+    // Validate text input
+    if (!text || typeof text !== "string") {
       return new Response(JSON.stringify({ error: "text é obrigatório" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    if (text.length > 5000) {
+      return new Response(JSON.stringify({ error: "Texto excede o limite de 5000 caracteres" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate provider
+    const validProviders = ["elevenlabs", "google", "openai"];
+    const selectedProvider = typeof provider === "string" && validProviders.includes(provider) ? provider : "elevenlabs";
+
+    // Validate numeric inputs
+    const safeStability = typeof stability === "number" && stability >= 0 && stability <= 1 ? stability : 0.5;
+    const safeSpeed = typeof speed === "number" && speed >= 0.25 && speed <= 4.0 ? speed : 1.0;
+
+    // Validate API key formats
+    const validateApiKey = (key: unknown, maxLen = 256): string | null => {
+      if (!key || typeof key !== "string") return null;
+      if (key.length > maxLen || key.length < 10) return null;
+      // Only allow alphanumeric, hyphens, underscores, dots
+      if (!/^[a-zA-Z0-9\-_\.]+$/.test(key)) return null;
+      return key;
+    };
 
     let audioBuffer: ArrayBuffer;
 
-    switch (provider) {
-      case "google":
-        if (!googleApiKey) throw new Error("Chave de API do Google não fornecida");
-        audioBuffer = await generateWithGoogle(text, googleApiKey, speed, googleVoiceName || "Kore");
+    switch (selectedProvider) {
+      case "google": {
+        const validKey = validateApiKey(googleApiKey);
+        if (!validKey) {
+          return new Response(JSON.stringify({ error: "Chave de API do Google inválida ou não fornecida" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const safeName = typeof googleVoiceName === "string" && /^[a-zA-Z0-9_-]+$/.test(googleVoiceName) ? googleVoiceName : "Kore";
+        audioBuffer = await generateWithGoogle(text, validKey, safeSpeed, safeName);
         break;
-      case "openai":
-        if (!openaiApiKey) throw new Error("Chave de API da OpenAI não fornecida");
-        audioBuffer = await generateWithOpenAI(text, openaiApiKey, speed);
+      }
+      case "openai": {
+        const validKey = validateApiKey(openaiApiKey);
+        if (!validKey || !validKey.startsWith("sk-")) {
+          return new Response(JSON.stringify({ error: "Chave de API da OpenAI inválida ou não fornecida" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        audioBuffer = await generateWithOpenAI(text, validKey, safeSpeed);
         break;
+      }
       case "elevenlabs":
-      default:
-        audioBuffer = await generateWithElevenLabs(text, voiceId || "nPczCjzI2devNBz1zQrb", stability, speed);
+      default: {
+        const safeVoiceId = typeof voiceId === "string" && /^[a-zA-Z0-9]+$/.test(voiceId) ? voiceId : "nPczCjzI2devNBz1zQrb";
+        audioBuffer = await generateWithElevenLabs(text, safeVoiceId, safeStability, safeSpeed);
+      }
         break;
     }
 
-    const contentType = provider === "google" ? "audio/wav" : "audio/mpeg";
+    const contentType = selectedProvider === "google" ? "audio/wav" : "audio/mpeg";
     return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
