@@ -61,6 +61,33 @@ export type Database = {
           },
         ]
       }
+      agent_conversations: {
+        Row: {
+          agent_id: string
+          conversation_data: Json | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          conversation_data?: Json | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          conversation_data?: Json | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       apoiadores: {
         Row: {
           beneficios_relacionados: string
