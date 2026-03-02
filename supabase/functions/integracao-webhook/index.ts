@@ -167,6 +167,18 @@ Deno.serve(async (req) => {
       acaoResultado = "coordenador_criado";
     }
 
+    if (body.acao === "criar_assessor" && body.dados) {
+      const { dados } = body;
+      await adminClient.from("campanha_assessores").insert({
+        nome: dados.nome || "Assessor via integração",
+        telefone: dados.telefone || "",
+        email: dados.email || "",
+        funcao: dados.funcao || "",
+        coordenador_id: dados.coordenador_id || null,
+      });
+      acaoResultado = "assessor_criado";
+    }
+
     if (body.acao === "criar_pessoa_e_apoiador" && body.dados) {
       const { dados } = body;
       const { error: pessoaError } = await adminClient.from("pessoas").insert({
