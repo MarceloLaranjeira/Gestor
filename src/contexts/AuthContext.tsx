@@ -62,11 +62,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let isMounted = true;
+    let initialLoadDone = false;
 
-    // Listener for ONGOING auth changes — no await inside callback to avoid deadlock
+    // INITIAL load — executa primeiro
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        if (session?.user) {
+          const profile = await fetchUserProfile(session.user.id);
+          if (isMounted) setUser(profile);
+        }
+      } finally {
+        if (isMounted) {
+          initialLoadDone = true;
+          setLoading(false);
+        }
+      }
+    };
+
+    // Listener ignora eventos até initialLoad terminar
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (!isMounted) return;
+        if (!isMounted || !initialLoadDone) return;
         if (session?.user) {
           setTimeout(() => {
             fetchUserProfile(session.user.id).then((profile) => {
@@ -78,20 +96,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     );
-
-    // INITIAL load — controls loading state
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!isMounted) return;
-        if (session?.user) {
-          const profile = await fetchUserProfile(session.user.id);
-          if (isMounted) setUser(profile);
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
 
     initializeAuth();
 

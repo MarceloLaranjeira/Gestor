@@ -29,7 +29,6 @@ type Msg = {
 const AGENT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agente-ia`;
 const IMPORT_EXCEL_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-excel`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts-multi`;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const QUICK_PROMPTS = [
   { icon: BarChart3, label: "Relatório de Demandas", prompt: "Gere um relatório executivo completo sobre o status atual de todas as demandas do gabinete, incluindo análise por categoria, prioridade e responsável. Destaque os pontos críticos." },

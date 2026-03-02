@@ -20,10 +20,17 @@ const SidebarContext = createContext<SidebarContextType>({
 export const useSidebarState = () => useContext(SidebarContext);
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsedState] = useState(() => {
+    try { return localStorage.getItem("sidebar-collapsed") === "true"; } catch { return false; }
+  });
   const [mobileOpen, setMobileOpen] = useState(false);
   const isMobile = useIsMobile();
   const currentWidth = isMobile ? 0 : collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
+
+  const setCollapsed = (v: boolean) => {
+    setCollapsedState(v);
+    try { localStorage.setItem("sidebar-collapsed", String(v)); } catch {}
+  };
 
   return (
     <SidebarContext.Provider value={{ collapsed, setCollapsed, mobileOpen, setMobileOpen }}>

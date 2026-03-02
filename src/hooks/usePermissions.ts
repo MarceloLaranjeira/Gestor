@@ -65,13 +65,16 @@ export function usePermissions() {
   const [loading, setLoading] = useState(true);
 
   const fetchPermissions = async () => {
-    const { data } = await supabase
-      .from("role_permissions")
-      .select("role, module, enabled")
-      .order("role")
-      .order("module");
-    setPermissions((data as RolePermission[]) || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("role_permissions")
+        .select("role, module, enabled")
+        .order("role")
+        .order("module");
+      if (!error) setPermissions((data as RolePermission[]) || []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

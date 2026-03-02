@@ -27,9 +27,6 @@ const formatDate = (date: Date): string => {
   return `${day}/${month}/${year}`;
 };
 
-const today = new Date();
-const todayFormatted = formatDate(today);
-
 const container = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08 } },
@@ -107,6 +104,8 @@ const tipoColors: Record<string, string> = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const today = new Date();
+  const todayFormatted = formatDate(today);
   const [loading, setLoading] = useState(true);
   const [coordProgress, setCoordProgress] = useState<CoordProgress[]>([]);
   const [tarefas, setTarefas] = useState<TarefaRow[]>([]);
@@ -119,9 +118,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const todayStr = new Date().toISOString().split("T")[0];
+      try {
+        const todayStr = new Date().toISOString().split("T")[0];
 
-      const [coordsRes, secoesRes, tarefasRes, profilesRes, pessoasRes, demandasRes, eventosRes] = await Promise.all([
+        const [coordsRes, secoesRes, tarefasRes, profilesRes, pessoasRes, demandasRes, eventosRes] = await Promise.all([
         supabase.from("coordenacoes").select("id, slug, nome"),
         supabase.from("secoes").select("id, coordenacao_id, titulo"),
         supabase.from("tarefas").select("id, titulo, status, responsavel, canal, data_inicio, data_fim, created_at, secao_id"),
@@ -169,8 +169,12 @@ const Dashboard = () => {
         };
       });
 
-      setCoordProgress(progress);
-      setLoading(false);
+        setCoordProgress(progress);
+        setLoading(false);
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+        setLoading(false);
+      }
     };
     fetchAll();
   }, []);
@@ -194,7 +198,7 @@ const Dashboard = () => {
   // Status pie data
   const statusData = useMemo(() => [
     { name: "Concluídas", value: totalDone, color: "hsl(142, 70%, 40%)" },
-    { name: "Pendentes", value: totalPending - overdue.length, color: "hsl(205, 70%, 45%)" },
+    { name: "Pendentes", value: Math.max(0, totalPending - overdue.length), color: "hsl(205, 70%, 45%)" },
     { name: "Atrasadas", value: overdue.length, color: "hsl(0, 72%, 51%)" },
   ], [totalDone, totalPending, overdue.length]);
 
@@ -205,12 +209,13 @@ const Dashboard = () => {
 
     return coords.map((c) => {
       const ct = tarefas.filter((t) => secaoToCoord[t.secao_id] === c.id);
+      const concluidas = ct.filter((t) => t.status).length;
       return {
         nome: c.nome.replace("Coordenação ", "").substring(0, 15),
-        total: ct.length,
-        concluidas: ct.filter((t) => t.status).length,
+        concluidas,
+        pendentes: ct.length - concluidas,
       };
-    }).filter((d) => d.total > 0);
+    }).filter((d) => d.concluidas + d.pendentes > 0);
   }, [coords, secoes, tarefas]);
 
   // Recent tasks (last 5)
@@ -295,8 +300,8 @@ const Dashboard = () => {
                 <XAxis dataKey="nome" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
                 <Tooltip contentStyle={chartTooltipStyle} />
-                <Bar dataKey="concluidas" stackId="a" fill="hsl(142, 70%, 40%)" name="Concluídas" />
-                <Bar dataKey="total" stackId="b" fill="hsl(var(--primary))" name="Total" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="concluidas" stackId="stack" fill="hsl(142, 70%, 40%)" name="Concluídas" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="pendentes" stackId="stack" fill="hsl(var(--primary))" name="Pendentes" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

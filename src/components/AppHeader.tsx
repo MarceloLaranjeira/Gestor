@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, Menu, X, LayoutDashboard, Users, ClipboardList, Calendar, BarChart3, FileText, Settings, MessageSquare, Bot, Wallet, KeyRound, Church, Megaphone, Database, Shield, Building2, UsersRound } from "lucide-react";
+import { Search, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import NotificationPanel from "@/components/NotificationPanel";
