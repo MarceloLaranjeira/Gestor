@@ -143,6 +143,24 @@ const actions: DocAction[] = [
     },
   },
   {
+    key: "criar_assessor",
+    label: "Criar Assessor de Campanha",
+    description: "Cadastra um novo assessor vinculado a um coordenador de campanha",
+    direction: "receber" as const,
+    payload: {
+      acao: "criar_assessor",
+      plataforma: "whatsapp",
+      contato: "+5592999999999",
+      dados: {
+        nome: "Maria Assessora",
+        telefone: "+5592955554444",
+        email: "maria@email.com",
+        funcao: "Articulação",
+        coordenador_id: "<coordenador_id_opcional>",
+      },
+    },
+  },
+  {
     key: "criar_movimento_financeiro",
     label: "Criar Movimento Financeiro",
     description: "Registra receita ou despesa no módulo financeiro",
