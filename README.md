@@ -1,73 +1,110 @@
-# Welcome to your Lovable project
+# Gestão de Gabinete DAN
 
-## Project info
+Aplicação web para operação de gabinete parlamentar, com autenticação, controle de permissões, gestão de pessoas/demandas/eventos, módulos estratégicos de campanha, prontuário parlamentar, integrações (incluindo WhatsApp) e funções serverless no Supabase.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Visão geral
 
-## How can I edit this code?
+O projeto é uma SPA em React + TypeScript com roteamento por módulo e proteção por autenticação/permissão. O backend é baseado em Supabase (Postgres, Auth e Edge Functions).
 
-There are several ways of editing your application.
+Principais áreas funcionais:
 
-**Use Lovable**
+- **Operação do gabinete**: dashboard, pessoas, demandas, eventos, calendário, movimentos, relatórios e finanças.
+- **Administração**: configurações, gerenciamento de usuários, permissões e coordenações.
+- **Campanha**: dashboard, calhas, coordenadores, assessores, visitas, relatórios, mapa e locais.
+- **Coordenação estratégica**: monitoramento, planejamento de visitas e gestão por calhas/municípios.
+- **Prontuário parlamentar**: cadastro, edição, detalhes e resumo executivo de apoiadores.
+- **Logbook de calhas**: visão por calha, detalhes e formulários por município.
+- **Integrações**: endpoints/fluxos de integração e módulo WhatsApp.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Stack técnica
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend**: React 18, TypeScript, Vite
+- **UI**: Tailwind CSS + shadcn/ui + Radix
+- **Estado e dados**: TanStack Query, React Hook Form, Zod
+- **Roteamento**: React Router
+- **Backend/infra**: Supabase (Auth, Database, Edge Functions)
+- **Testes**: Vitest + Testing Library
 
-**Use your preferred IDE**
+## Estrutura do projeto
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```text
+.
+├── src/
+│   ├── components/        # Componentes reutilizáveis e UI
+│   ├── contexts/          # Contextos globais (ex.: autenticação)
+│   ├── hooks/             # Hooks de domínio (ex.: permissões)
+│   ├── integrations/      # Integrações cliente (ex.: Supabase)
+│   ├── pages/             # Páginas/rotas da aplicação
+│   └── test/              # Testes
+├── supabase/
+│   ├── functions/         # Edge Functions
+│   ├── migrations/        # Migrações SQL
+│   └── config.toml        # Config local do Supabase
+├── public/                # Assets estáticos
+└── README.md
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Pré-requisitos
 
-Follow these steps:
+- Node.js 18+
+- npm 9+
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Configuração de ambiente
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+O projeto usa variáveis em `.env` para conexão com o Supabase. Exemplo de chaves esperadas:
 
-# Step 3: Install the necessary dependencies.
-npm i
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_SUPABASE_PROJECT_ID`
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+> Se você estiver em outro ambiente (staging/prod), ajuste os valores antes de executar.
+
+## Como rodar localmente
+
+```bash
+# 1) Instalar dependências
+npm install
+
+# 2) Subir ambiente de desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+A aplicação abre em `http://localhost:5173` por padrão.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Scripts disponíveis
 
-**Use GitHub Codespaces**
+- `npm run dev` — inicia o servidor de desenvolvimento (Vite)
+- `npm run build` — gera build de produção
+- `npm run build:dev` — gera build em modo de desenvolvimento
+- `npm run preview` — serve localmente a build gerada
+- `npm run lint` — executa ESLint no projeto
+- `npm run test` — executa testes (Vitest)
+- `npm run test:watch` — executa testes em modo watch
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Módulos e rotas (resumo)
 
-## What technologies are used for this project?
+As rotas são centralizadas em `src/App.tsx` e incluem:
 
-This project is built with:
+- **Autenticação e acesso**: `/login`, `/acesso-negado`
+- **Gabinete**: `/`, `/pessoas`, `/demandas`, `/eventos`, `/calendario`, `/movimentos`, `/relatorios`, `/financas`
+- **Administração**: `/configuracoes`, `/usuarios`, `/permissoes`, `/coordenacoes`, `/coordenacao/:id`
+- **Campanha**: `/campanha` e subrotas (`calhas`, `coordenadores`, `assessores`, `visitas`, `relatorios`, `mapa`, `locais`)
+- **Coordenação estratégica**: `/campanha/coord/*`
+- **Prontuário**: `/prontuario` e subrotas
+- **Logbook**: `/logbook` e subrotas
+- **Integração**: `/integracao`, `/whatsapp`, callback Google Calendar
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Supabase (backend)
 
-## How can I deploy this project?
+A pasta `supabase/functions` contém funções para operações de IA, WhatsApp, importação, calendário e administração de usuários. As migrações em `supabase/migrations` representam a evolução do banco ao longo do projeto.
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Se você for trabalhar também no backend local:
 
-## Can I connect a custom domain to my Lovable project?
+1. Instale e autentique a CLI do Supabase.
+2. Inicie o stack local quando necessário (`supabase start`).
+3. Aplique/acompanhe migrações conforme seu fluxo de time.
 
-Yes, you can!
+## Observações
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- O lint atual do repositório possui pendências históricas em múltiplos arquivos.
+- Os testes existentes estão configurados via Vitest e podem ser executados isoladamente com `npm run test`.
