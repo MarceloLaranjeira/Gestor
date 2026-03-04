@@ -1,8 +1,10 @@
 import { useState } from "react";
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import logoDan from "@/assets/logo-dan.png";
 import { useSidebarState } from "./AppLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
+import type { LucideProps } from "lucide-react";
 import {
   LayoutDashboard, Users, ClipboardList, Calendar, CalendarSync, BarChart3, FileText, Settings,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare, Church,
@@ -23,7 +25,7 @@ const coordenacaoItems = [
   { icon: ClipboardList, label: "Plenária", path: "/coordenacao/plenaria" },
 ];
 
-interface NavItem { icon: any; label: string; path: string; module?: string }
+interface NavItem { icon: React.ComponentType<LucideProps>; label: string; path: string; module?: string }
 
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", module: "dashboard" },
@@ -80,11 +82,11 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
         to={item.path}
         onClick={onNavigate}
         className={cn(
-          "flex items-center gap-3 rounded-lg text-sm transition-all duration-200 cursor-pointer",
+          "flex items-center gap-3 rounded-lg text-sm transition-all duration-200 cursor-pointer relative",
           small ? "px-3 py-2 pl-10" : "px-3 py-2.5",
           isActive
-            ? "bg-sidebar-accent text-sidebar-primary font-semibold"
-            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            ? "bg-sidebar-accent text-sidebar-primary font-semibold nav-active-indicator"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
         )}
       >
         <Icon className={cn("shrink-0", small ? "w-4 h-4" : "w-5 h-5")} />
@@ -156,18 +158,23 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
 
       {/* User */}
       <div className="border-t border-sidebar-border p-3">
-        {showLabels && user && (
-          <div className="mb-2 px-2">
-            <p className="text-xs font-semibold text-sidebar-foreground truncate">{user.name}</p>
-            <p className="text-[10px] text-sidebar-foreground/50">{user.role}</p>
+        {showLabels && user ? (
+          <div className="flex items-center gap-2.5 mb-2 px-2 py-1.5 rounded-lg bg-sidebar-accent/30">
+            <div className="w-7 h-7 rounded-full bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center shrink-0">
+              <span className="text-xs font-bold text-sidebar-primary">{user.name?.charAt(0) || "U"}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</p>
+              <p className="text-[10px] text-sidebar-foreground/50 truncate">{user.role}</p>
+            </div>
           </div>
-        )}
+        ) : null}
         <button
           onClick={(e) => { e.stopPropagation(); logout(); }}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors cursor-pointer"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/60 hover:bg-destructive/20 hover:text-destructive transition-colors cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          {showLabels && <span>Sair</span>}
+          {showLabels && <span className="text-xs">Sair</span>}
         </button>
       </div>
     </div>

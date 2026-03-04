@@ -10,9 +10,10 @@ interface StatCardProps {
   trend?: { value: number; positive: boolean };
   className?: string;
   href?: string;
+  accentColor?: string;
 }
 
-const StatCard = ({ title, value, subtitle, icon, trend, className, href }: StatCardProps) => {
+const StatCard = ({ title, value, subtitle, icon, trend, className, href, accentColor }: StatCardProps) => {
   const navigate = useNavigate();
 
   return (
@@ -22,23 +23,26 @@ const StatCard = ({ title, value, subtitle, icon, trend, className, href }: Stat
       onClick={() => href && navigate(href)}
       onKeyDown={(e) => e.key === "Enter" && href && navigate(href)}
       className={cn(
-        "glass-card rounded-xl p-5 animate-fade-in transition-all duration-200",
-        href && "cursor-pointer hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
+        "glass-card rounded-xl p-5 animate-fade-in transition-all duration-200 relative overflow-hidden",
+        href && "cursor-pointer hover:shadow-card-hover hover:scale-[1.02] active:scale-[0.99]",
         className
       )}
     >
+      {accentColor && (
+        <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-xl" style={{ background: accentColor }} />
+      )}
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
-          <p className="mt-2 text-3xl font-bold font-display text-foreground">{value}</p>
-          {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">{title}</p>
+          <p className="mt-2 text-3xl font-bold font-display text-foreground leading-none">{value}</p>
+          {subtitle && <p className="mt-1.5 text-xs text-muted-foreground">{subtitle}</p>}
           {trend && (
             <p className={cn("mt-2 text-xs font-medium", trend.positive ? "text-success" : "text-destructive")}>
               {trend.positive ? "↑" : "↓"} {Math.abs(trend.value)}% vs mês anterior
             </p>
           )}
         </div>
-        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+        <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 ml-3">
           {icon}
         </div>
       </div>

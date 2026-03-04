@@ -122,52 +122,52 @@ const Dashboard = () => {
         const todayStr = new Date().toISOString().split("T")[0];
 
         const [coordsRes, secoesRes, tarefasRes, profilesRes, pessoasRes, demandasRes, eventosRes] = await Promise.all([
-        supabase.from("coordenacoes").select("id, slug, nome"),
-        supabase.from("secoes").select("id, coordenacao_id, titulo"),
-        supabase.from("tarefas").select("id, titulo, status, responsavel, canal, data_inicio, data_fim, created_at, secao_id"),
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("pessoas").select("id", { count: "exact", head: true }),
-        supabase.from("demandas").select("status"),
-        supabase.from("eventos").select("id, titulo, data, hora, local, tipo").gte("data", todayStr).order("data").order("hora").limit(4),
-      ]);
+          supabase.from("coordenacoes").select("id, slug, nome"),
+          supabase.from("secoes").select("id, coordenacao_id, titulo"),
+          supabase.from("tarefas").select("id, titulo, status, responsavel, canal, data_inicio, data_fim, created_at, secao_id"),
+          supabase.from("profiles").select("id", { count: "exact", head: true }),
+          supabase.from("pessoas").select("id", { count: "exact", head: true }),
+          supabase.from("demandas").select("status"),
+          supabase.from("eventos").select("id, titulo, data, hora, local, tipo").gte("data", todayStr).order("data").order("hora").limit(4),
+        ]);
 
-      const coordsData = coordsRes.data || [];
-      const secoesData = secoesRes.data || [];
-      const tarefasData = tarefasRes.data || [];
+        const coordsData = coordsRes.data || [];
+        const secoesData = secoesRes.data || [];
+        const tarefasData = tarefasRes.data || [];
 
-      setCoords(coordsData);
-      setSecoes(secoesData);
-      setTarefas(tarefasData);
-      setTotalUsers(profilesRes.count || 0);
-      setTotalPessoas(pessoasRes.count || 0);
+        setCoords(coordsData);
+        setSecoes(secoesData);
+        setTarefas(tarefasData);
+        setTotalUsers(profilesRes.count || 0);
+        setTotalPessoas(pessoasRes.count || 0);
 
-      // Demandas stats
-      const demandas = demandasRes.data || [];
-      setDemandaStats({
-        total: demandas.length,
-        pendente: demandas.filter((d) => d.status === "pendente").length,
-        andamento: demandas.filter((d) => d.status === "andamento").length,
-        concluida: demandas.filter((d) => d.status === "concluida").length,
-        atrasada: demandas.filter((d) => d.status === "atrasada").length,
-      });
+        // Demandas stats
+        const demandas = demandasRes.data || [];
+        setDemandaStats({
+          total: demandas.length,
+          pendente: demandas.filter((d) => d.status === "pendente").length,
+          andamento: demandas.filter((d) => d.status === "andamento").length,
+          concluida: demandas.filter((d) => d.status === "concluida").length,
+          atrasada: demandas.filter((d) => d.status === "atrasada").length,
+        });
 
-      // Próximos eventos
-      setProximosEventos((eventosRes.data as ProximoEvento[]) || []);
+        // Próximos eventos
+        setProximosEventos((eventosRes.data as ProximoEvento[]) || []);
 
-      // Coord progress
-      const secaoToCoord: Record<string, string> = {};
-      secoesData.forEach((s) => { secaoToCoord[s.id] = s.coordenacao_id; });
+        // Coord progress
+        const secaoToCoord: Record<string, string> = {};
+        secoesData.forEach((s) => { secaoToCoord[s.id] = s.coordenacao_id; });
 
-      const progress = coordsData.map((c) => {
-        const coordTarefas = tarefasData.filter((t) => secaoToCoord[t.secao_id] === c.id);
-        const total = coordTarefas.length;
-        const done = coordTarefas.filter((t) => t.status).length;
-        return {
-          slug: c.slug, nome: c.nome, total, done,
-          pending: total - done,
-          percent: total > 0 ? Math.round((done / total) * 100) : 0,
-        };
-      });
+        const progress = coordsData.map((c) => {
+          const coordTarefas = tarefasData.filter((t) => secaoToCoord[t.secao_id] === c.id);
+          const total = coordTarefas.length;
+          const done = coordTarefas.filter((t) => t.status).length;
+          return {
+            slug: c.slug, nome: c.nome, total, done,
+            pending: total - done,
+            percent: total > 0 ? Math.round((done / total) * 100) : 0,
+          };
+        });
 
         setCoordProgress(progress);
         setLoading(false);
@@ -270,7 +270,7 @@ const Dashboard = () => {
         <motion.div variants={item} className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold font-display text-foreground">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Visão geral do gabinete — {todayFormatted}</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Visão geral do gabinete — <span className="font-medium">{todayFormatted}</span></p>
           </div>
         </motion.div>
 

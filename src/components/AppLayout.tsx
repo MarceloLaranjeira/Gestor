@@ -41,7 +41,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           style={{ marginLeft: currentWidth }}
         >
           <AppHeader />
-          <main className="p-3 sm:p-6">{children}</main>
+          <main className="p-4 sm:p-6 max-w-[1600px] mx-auto">{children}</main>
         </div>
       </div>
     </SidebarContext.Provider>

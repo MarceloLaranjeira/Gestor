@@ -61,7 +61,15 @@ import ApoiadorForm from "./pages/prontuario/ApoiadorForm";
 import ApoiadorDetalhes from "./pages/prontuario/ApoiadorDetalhes";
 import ResumoExecutivo from "./pages/prontuario/ResumoExecutivo";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 1000 * 60 * 5,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center">

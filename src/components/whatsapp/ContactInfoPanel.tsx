@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import type { LucideProps } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +39,7 @@ const ContactInfoPanel = ({ contato, onClose }: ContactInfoPanelProps) => {
     setLoading(false);
   };
 
-  const InfoRow = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => {
+  const InfoRow = ({ icon: Icon, label, value }: { icon: React.ComponentType<LucideProps>; label: string; value: string }) => {
     if (!value) return null;
     return (
       <div className="flex items-start gap-3 py-2">
