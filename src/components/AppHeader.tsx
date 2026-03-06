@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import NotificationPanel from "@/components/NotificationPanel";
 import { useSidebarState } from "./AppLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface SearchResult {
   type: "pessoa" | "demanda" | "evento" | "pagina" | "tarefa";
@@ -41,6 +42,7 @@ const AppHeader = () => {
   const { setMobileOpen } = useSidebarState();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const { darkMode, toggleDarkMode } = useTheme();
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -190,6 +192,13 @@ const AppHeader = () => {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+        <button
+          onClick={toggleDarkMode}
+          className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+          title={darkMode ? "Modo claro" : "Modo escuro"}
+        >
+          {darkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+        </button>
         <NotificationPanel />
 
         <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-border">
