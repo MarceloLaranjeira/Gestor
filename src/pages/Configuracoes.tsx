@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
 import { useState, useRef } from "react";
-import { User, Shield, Camera, Loader2, Check, Eye, EyeOff } from "lucide-react";
+import { User, Shield, Camera, Loader2, Check, Eye, EyeOff, Palette } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTheme, THEME_PRESETS } from "@/contexts/ThemeContext";
 
 const CARGOS = [
   "Gestor de Gabinete",
@@ -22,6 +23,7 @@ const CARGOS = [
 const Configuracoes = () => {
   const { user, refreshProfile } = useAuth();
   const { toast } = useToast();
+  const { currentTheme, setTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Profile form state
@@ -291,6 +293,44 @@ const Configuracoes = () => {
                 "Alterar Senha"
               )}
             </Button>
+          </div>
+        </div>
+
+        {/* Theme Selector Card */}
+        <div className="glass-card rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Palette className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-semibold text-foreground font-display">Tema de Cores</h2>
+          </div>
+          <p className="text-xs text-muted-foreground">Escolha o tema visual do sistema</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {THEME_PRESETS.map((preset) => {
+              const isActive = currentTheme.id === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  onClick={() => setTheme(preset.id)}
+                  className={`relative rounded-lg border-2 p-3 text-left transition-all duration-200 ${
+                    isActive
+                      ? "border-primary ring-2 ring-primary/30 shadow-md"
+                      : "border-border hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <div className="flex gap-1.5 mb-2">
+                    <div className="w-5 h-5 rounded-full" style={{ backgroundColor: `hsl(${preset.colors.primary})` }} />
+                    <div className="w-5 h-5 rounded-full" style={{ backgroundColor: `hsl(${preset.colors.secondary})` }} />
+                    <div className="w-5 h-5 rounded-full" style={{ backgroundColor: `hsl(${preset.colors.accent})` }} />
+                    <div className="w-5 h-5 rounded-full" style={{ backgroundColor: `hsl(${preset.colors.sidebarBg})` }} />
+                  </div>
+                  <p className="text-xs font-medium text-foreground">{preset.name}</p>
+                  {isActive && (
+                    <div className="absolute top-1.5 right-1.5">
+                      <Check className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
