@@ -119,11 +119,15 @@ export const THEME_PRESETS: ThemePreset[] = [
 interface ThemeContextType {
   currentTheme: ThemePreset;
   setTheme: (id: string) => void;
+  darkMode: boolean;
+  toggleDarkMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   currentTheme: THEME_PRESETS[0],
   setTheme: () => {},
+  darkMode: false,
+  toggleDarkMode: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
@@ -144,6 +148,14 @@ function applyTheme(preset: ThemePreset) {
   root.style.setProperty("--sidebar-ring", c.sidebarRing);
 }
 
+function applyDarkMode(dark: boolean) {
+  if (dark) {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+}
+
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
     try {
@@ -156,9 +168,21 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return THEME_PRESETS[0];
   });
 
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem("app-dark-mode");
+      if (saved !== null) return saved === "true";
+    } catch {}
+    return false;
+  });
+
   useEffect(() => {
     applyTheme(currentTheme);
   }, [currentTheme]);
+
+  useEffect(() => {
+    applyDarkMode(darkMode);
+  }, [darkMode]);
 
   const setTheme = (id: string) => {
     const found = THEME_PRESETS.find((t) => t.id === id);
@@ -168,8 +192,16 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => {
+      const next = !prev;
+      try { localStorage.setItem("app-dark-mode", String(next)); } catch {}
+      return next;
+    });
+  };
+
   return (
-    <ThemeContext.Provider value={{ currentTheme, setTheme }}>
+    <ThemeContext.Provider value={{ currentTheme, setTheme, darkMode, toggleDarkMode }}>
       {children}
     </ThemeContext.Provider>
   );
