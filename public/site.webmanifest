@@ -1,21 +1,32 @@
 {
-  "name": "Gabinete CMD Dan — Gestão Inteligente",
-  "short_name": "Gabinete Dan",
-  "description": "Sistema de gestão inteligente do Gabinete do Deputado Estadual Comandante Dan.",
+  "name": "Gestão Inteligente de Gabinete — Automatikus",
+  "short_name": "Gestão Inteligente",
+  "description": "Plataforma inteligente de gestão parlamentar com IA integrada, desenvolvida pela Automatikus.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a1628",
-  "theme_color": "#0a1628",
+  "orientation": "portrait-primary",
+  "background_color": "#0f0a1e",
+  "theme_color": "#5B21B6",
+  "lang": "pt-BR",
+  "categories": ["government", "productivity", "business"],
   "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
     {
       "src": "/favicon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/favicon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
