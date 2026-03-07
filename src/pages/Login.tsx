@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { LogIn, Eye, EyeOff, UserPlus } from "lucide-react";
+
 import { Checkbox } from "@/components/ui/checkbox";
-import logoDan from "@/assets/logo-dan.png";
+import { Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -86,8 +87,8 @@ const Login = () => {
 
         ctx.beginPath();
         ctx.arc(x, y, s, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(45, 85%, 65%, ${p.opacity * (0.7 + Math.sin(p.pulse) * 0.3)})`;
-        ctx.shadowColor = "hsla(45, 85%, 65%, 0.3)";
+        ctx.fillStyle = `hsla(213, 94%, 75%, ${p.opacity * (0.7 + Math.sin(p.pulse) * 0.3)})`;
+        ctx.shadowColor = "hsla(213, 94%, 62%, 0.4)";
         ctx.shadowBlur = 6;
         ctx.fill();
         ctx.shadowBlur = 0;
@@ -105,10 +106,12 @@ const Login = () => {
       <div className="hidden lg:flex lg:w-1/2 gradient-primary relative overflow-hidden items-center justify-center">
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
         <div className="relative z-10 text-center px-12">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <img src={logoDan} alt="Gabinete CMD Dan" className="w-64 mx-auto mb-8 drop-shadow-lg" />
-            <h2 className="text-2xl font-bold text-accent mb-2 font-display">Gestão Inteligente</h2>
-            <p className="text-sm text-primary-foreground/50 max-w-md">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="flex flex-col items-center">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shadow-2xl shadow-blue-900/60 mb-6">
+              <Building2 className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-3 font-display">Gestão Inteligente</h2>
+            <p className="text-sm text-primary-foreground/55 max-w-sm text-center">
               Sistema integrado de gestão parlamentar — pessoas, demandas, eventos e inteligência institucional.
             </p>
           </motion.div>
@@ -120,8 +123,11 @@ const Login = () => {
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-sm">
           {/* Logo centralizada acima do formulário */}
           <div className="flex flex-col items-center mb-8">
-            <img src={logoDan} alt="Gabinete CMD Dan" className="h-20 w-auto object-contain mb-2" />
-            <span className="text-sm font-bold text-accent font-display">Gestão Inteligente</span>
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg mb-3">
+              <Building2 className="w-7 h-7 text-white" />
+            </div>
+            <span className="text-base font-bold text-foreground font-display">Gestão Inteligente</span>
+            <span className="text-xs text-muted-foreground">Gabinete Digital</span>
           </div>
 
           <h2 className="text-2xl font-bold font-display text-foreground mb-1">

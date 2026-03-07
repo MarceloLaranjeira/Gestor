@@ -142,7 +142,7 @@ const Demandas = () => {
   };
 
   const handleAnalisarIA = (d: Demanda) => {
-    const prompt = `Analise detalhadamente a seguinte demanda do gabinete do Deputado Comandante Dan e forneça insights, sugestões de encaminhamento e próximos passos estratégicos:
+    const prompt = `Analise detalhadamente a seguinte demanda do gabinete parlamentar e forneça insights, sugestões de encaminhamento e próximos passos estratégicos:
 
 **Título:** ${d.titulo}
 **Status:** ${statusConfig[d.status].label}

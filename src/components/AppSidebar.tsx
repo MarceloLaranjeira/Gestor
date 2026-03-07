@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import logoDan from "@/assets/logo-dan.png";
 import { useSidebarState } from "./AppLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard, Users, ClipboardList, Calendar, CalendarSync, BarChart3, FileText, Settings,
-  ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare, Church,
+  ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare,
   Megaphone, Database, Building2, UsersRound, Bot, Wallet, KeyRound, Flag, BookUser, BookOpen, Plug, Phone,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -14,34 +14,43 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 const coordenacaoItems = [
-  { icon: Church, label: "Eclesiástica", path: "/coordenacao/eclesiastica" },
+  { icon: Building2, label: "Eclesiástica", path: "/coordenacao/eclesiastica" },
   { icon: Megaphone, label: "Comunicação", path: "/coordenacao/comunicacao" },
   { icon: Database, label: "Inteligência", path: "/coordenacao/inteligencia" },
-  { icon: Shield, label: "CSPJD", path: "/coordenacao/cspjd" },
-  { icon: Building2, label: "Gabinete", path: "/coordenacao/gabinete" },
-  { icon: UsersRound, label: "Equipe CMT", path: "/coordenacao/equipe" },
+  { icon: Shield, label: "Segurança", path: "/coordenacao/cspjd" },
+  { icon: Layers, label: "Gabinete", path: "/coordenacao/gabinete" },
+  { icon: UsersRound, label: "Equipe Interna", path: "/coordenacao/equipe" },
   { icon: ClipboardList, label: "Plenária", path: "/coordenacao/plenaria" },
 ];
 
 interface NavItem { icon: any; label: string; path: string; module?: string }
 
-const navItems: NavItem[] = [
+const principalItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", module: "dashboard" },
-  { icon: Flag, label: "Modo Campanha", path: "/campanha", module: "campanha" },
   { icon: Bot, label: "Assessor IA", path: "/agente-ia", module: "agente-ia" },
-  { icon: Users, label: "Pessoas", path: "/pessoas", module: "pessoas" },
-  { icon: ClipboardList, label: "Demandas", path: "/demandas", module: "demandas" },
-  { icon: Calendar, label: "Eventos", path: "/eventos", module: "eventos" },
-  { icon: CalendarSync, label: "Calendário", path: "/calendario", module: "calendario" },
-  { icon: Wallet, label: "Financeiro", path: "/financas", module: "financas" },
-  { icon: BookUser, label: "Prontuário", path: "/prontuario", module: "prontuario" },
-  { icon: BookOpen, label: "Logbook", path: "/logbook", module: "logbook" },
-  { icon: MessageSquare, label: "Movimentos", path: "/movimentos", module: "movimentos" },
-  { icon: Plug, label: "Integração", path: "/integracao", module: "integracao" },
-  { icon: Phone, label: "WhatsApp", path: "/whatsapp", module: "integracao" },
 ];
 
-const bottomItems: NavItem[] = [
+const legislativoItems: NavItem[] = [
+  { icon: MessageSquare, label: "Demandas", path: "/demandas", module: "demandas" },
+  { icon: Calendar, label: "Eventos", path: "/eventos", module: "eventos" },
+  { icon: CalendarSync, label: "Calendário", path: "/calendario", module: "calendario" },
+  { icon: ClipboardList, label: "Movimentos", path: "/movimentos", module: "movimentos" },
+];
+
+const gestaoItems: NavItem[] = [
+  { icon: Users, label: "Pessoas", path: "/pessoas", module: "pessoas" },
+  { icon: BookUser, label: "Prontuário", path: "/prontuario", module: "prontuario" },
+  { icon: Wallet, label: "Financeiro", path: "/financas", module: "financas" },
+  { icon: BookOpen, label: "Logbook", path: "/logbook", module: "logbook" },
+];
+
+const operacoesItems: NavItem[] = [
+  { icon: Flag, label: "Modo Campanha", path: "/campanha", module: "campanha" },
+  { icon: Phone, label: "WhatsApp", path: "/whatsapp", module: "integracao" },
+  { icon: Plug, label: "Integração", path: "/integracao", module: "integracao" },
+];
+
+const sistemaItems: NavItem[] = [
   { icon: BarChart3, label: "Relatórios", path: "/relatorios", module: "relatorios" },
   { icon: FileText, label: "Rel. Coordenação", path: "/relatorio-coordenacao", module: "relatorio-coordenacao" },
   { icon: Users, label: "Usuários", path: "/usuarios", module: "usuarios" },
@@ -49,8 +58,17 @@ const bottomItems: NavItem[] = [
   { icon: Settings, label: "Configurações", path: "/configuracoes", module: "configuracoes" },
 ];
 
-export const SIDEBAR_WIDTH = 250;
+export const SIDEBAR_WIDTH = 260;
 export const SIDEBAR_COLLAPSED_WIDTH = 68;
+
+const SectionLabel = ({ label, show }: { label: string; show: boolean }) => {
+  if (!show) return <div className="h-3" />;
+  return (
+    <p className="px-3 pt-4 pb-1 text-[9px] font-bold uppercase tracking-widest text-sidebar-foreground/35 select-none">
+      {label}
+    </p>
+  );
+};
 
 const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const { collapsed } = useSidebarState();
@@ -72,7 +90,9 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const renderLink = (item: NavItem, small = false) => {
     if (!canSee(item)) return null;
     if (item.path === "/permissoes" && !isGestor) return null;
-    const isActive = location.pathname === item.path;
+    const isActive = item.path === "/"
+      ? location.pathname === "/"
+      : location.pathname.startsWith(item.path);
     const Icon = item.icon;
     return (
       <Link
@@ -80,15 +100,18 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
         to={item.path}
         onClick={onNavigate}
         className={cn(
-          "flex items-center gap-3 rounded-lg text-sm transition-all duration-200 cursor-pointer",
+          "flex items-center gap-3 rounded-lg text-sm transition-all duration-200 cursor-pointer group relative",
           small ? "px-3 py-2 pl-10" : "px-3 py-2.5",
           isActive
-            ? "bg-sidebar-accent text-sidebar-primary font-semibold"
-            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            ? "bg-gradient-to-r from-sidebar-primary/20 to-sidebar-primary/5 text-sidebar-primary font-semibold border border-sidebar-primary/20"
+            : "text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
         )}
       >
-        <Icon className={cn("shrink-0", small ? "w-4 h-4" : "w-5 h-5")} />
-        {showLabels && <span className="truncate text-xs">{item.label}</span>}
+        {isActive && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-sidebar-primary rounded-full" />
+        )}
+        <Icon className={cn("shrink-0", small ? "w-4 h-4" : "w-4 h-4", isActive && "text-sidebar-primary")} />
+        {showLabels && <span className="truncate text-xs font-medium">{item.label}</span>}
       </Link>
     );
   };
@@ -97,77 +120,120 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-3 py-4 border-b border-sidebar-border">
-        <img
-          src={logoDan}
-          alt="Gabinete CMD Dan"
-          className={!showLabels ? "w-10 h-10 object-contain shrink-0" : "h-12 w-auto max-w-[160px] object-contain shrink-0"}
-        />
+      {/* Logo / Brand */}
+      <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border/60">
+        {/* Gradient icon mark */}
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/40 shrink-0">
+          <Building2 className="w-5 h-5 text-white" />
+        </div>
         {showLabels && (
           <div className="overflow-hidden">
-            <p className="text-xs font-bold text-accent truncate leading-tight">
+            <p className="text-xs font-bold text-white leading-tight truncate">
               Gestão Inteligente
+            </p>
+            <p className="text-[10px] text-sidebar-foreground/45 leading-tight">
+              Gabinete Digital
             </p>
           </div>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
-        {navItems.map((item) => renderLink(item))}
+      <nav className="flex-1 py-2 px-2 overflow-y-auto scrollbar-thin">
 
+        {/* PRINCIPAL */}
+        <SectionLabel label="Principal" show={showLabels} />
+        <div className="space-y-0.5">
+          {principalItems.map((item) => renderLink(item))}
+        </div>
+
+        {/* LEGISLATIVO */}
+        <SectionLabel label="Atividade" show={showLabels} />
+        <div className="space-y-0.5">
+          {legislativoItems.map((item) => renderLink(item))}
+        </div>
+
+        {/* GESTÃO */}
+        <SectionLabel label="Gestão" show={showLabels} />
+        <div className="space-y-0.5">
+          {gestaoItems.map((item) => renderLink(item))}
+        </div>
+
+        {/* OPERAÇÕES */}
+        <SectionLabel label="Operações" show={showLabels} />
+        <div className="space-y-0.5">
+          {operacoesItems.map((item) => renderLink(item))}
+        </div>
+
+        {/* COORDENAÇÕES */}
         {showCoord && (
-          <div>
-            <Link
-              to="/coordenacoes"
-              onClick={onNavigate}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 w-full cursor-pointer",
-                isCoordActive
-                  ? "bg-sidebar-accent text-sidebar-primary font-semibold"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          <>
+            <SectionLabel label="Coordenações" show={showLabels} />
+            <div className="space-y-0.5">
+              <Link
+                to="/coordenacoes"
+                onClick={onNavigate}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 w-full cursor-pointer relative",
+                  isCoordActive
+                    ? "bg-gradient-to-r from-sidebar-primary/20 to-sidebar-primary/5 text-sidebar-primary font-semibold border border-sidebar-primary/20"
+                    : "text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+                )}
+              >
+                {isCoordActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-sidebar-primary rounded-full" />
+                )}
+                <ClipboardList className="w-4 h-4 shrink-0" />
+                {showLabels && (
+                  <>
+                    <span className="truncate flex-1 text-left text-xs font-medium">Todas as Coordenações</span>
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCoordOpen(!coordOpen); }}
+                      className="p-0.5 rounded hover:bg-sidebar-accent/80"
+                    >
+                      <ChevronDown className={cn("w-3.5 h-3.5 transition-transform text-sidebar-foreground/50", coordOpen && "rotate-180")} />
+                    </button>
+                  </>
+                )}
+              </Link>
+              {coordOpen && showLabels && (
+                <div className="mt-0.5 space-y-0.5">
+                  {coordenacaoItems.map((item) => renderLink(item as NavItem, true))}
+                </div>
               )}
-            >
-              <ClipboardList className="w-5 h-5 shrink-0" />
-              {showLabels && (
-                <>
-                  <span className="truncate flex-1 text-left text-xs">Coordenações</span>
-                  <button
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCoordOpen(!coordOpen); }}
-                    className="p-0.5 rounded hover:bg-sidebar-accent/80"
-                  >
-                    <ChevronDown className={cn("w-4 h-4 transition-transform", coordOpen && "rotate-180")} />
-                  </button>
-                </>
-              )}
-            </Link>
-            {coordOpen && showLabels && (
-              <div className="mt-1 space-y-0.5">
-                {coordenacaoItems.map((item) => renderLink(item as NavItem, true))}
-              </div>
-            )}
-          </div>
+            </div>
+          </>
         )}
 
-        <div className="my-2 border-t border-sidebar-border/50" />
-        {bottomItems.map((item) => renderLink(item))}
+        {/* SISTEMA */}
+        <div className="my-3 border-t border-sidebar-border/40" />
+        <SectionLabel label="Sistema" show={showLabels} />
+        <div className="space-y-0.5">
+          {sistemaItems.map((item) => renderLink(item))}
+        </div>
       </nav>
 
-      {/* User */}
-      <div className="border-t border-sidebar-border p-3">
+      {/* User Footer */}
+      <div className="border-t border-sidebar-border/60 p-3">
         {showLabels && user && (
-          <div className="mb-2 px-2">
-            <p className="text-xs font-semibold text-sidebar-foreground truncate">{user.name}</p>
-            <p className="text-[10px] text-sidebar-foreground/50">{user.role}</p>
+          <div className="mb-2 px-2 flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shrink-0">
+              <span className="text-[11px] font-bold text-white">
+                {user.name?.charAt(0) || "U"}
+              </span>
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-xs font-semibold text-sidebar-foreground truncate leading-tight">{user.name}</p>
+              <p className="text-[10px] text-sidebar-foreground/45 leading-tight">{user.role}</p>
+            </div>
           </div>
         )}
         <button
           onClick={(e) => { e.stopPropagation(); logout(); }}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors cursor-pointer"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-sidebar-foreground/50 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground transition-colors cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          {showLabels && <span>Sair</span>}
+          {showLabels && <span className="text-xs">Sair</span>}
         </button>
       </div>
     </div>

@@ -6,7 +6,7 @@ const TermosUso = () => (
     <div className="space-y-6 text-sm text-foreground/80 leading-relaxed">
       <section>
         <h2 className="text-lg font-semibold text-foreground mb-2">1. Aceitação dos Termos</h2>
-        <p>Ao acessar e utilizar o sistema Gestão Inteligente – Gabinete CMD Dan ("Plataforma"), você concorda integralmente com estes Termos de Uso. Caso não concorde, não utilize a Plataforma.</p>
+        <p>Ao acessar e utilizar o sistema Gestão Inteligente – Gabinete Digital ("Plataforma"), você concorda integralmente com estes Termos de Uso. Caso não concorde, não utilize a Plataforma.</p>
       </section>
 
       <section>
@@ -41,7 +41,7 @@ const TermosUso = () => (
 
       <section>
         <h2 className="text-lg font-semibold text-foreground mb-2">5. Propriedade Intelectual</h2>
-        <p>Todo o conteúdo, código-fonte, design, marcas e logotipos da Plataforma são de propriedade exclusiva do Gabinete CMD Dan ou de seus licenciadores. É proibida a reprodução, distribuição ou modificação sem autorização prévia por escrito.</p>
+        <p>Todo o conteúdo, código-fonte, design, marcas e logotipos da Plataforma são de propriedade exclusiva do Gabinete Digital ou de seus licenciadores. É proibida a reprodução, distribuição ou modificação sem autorização prévia por escrito.</p>
       </section>
 
       <section>

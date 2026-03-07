@@ -71,10 +71,10 @@ export const coordenacoesIniciais: Coordenacao[] = [
           { id: 1, titulo: "Produção de CheckList dos municípios", motivo: "Estratégia de Campanha", responsavel: "Luciana, Marcia, Amanda", canal: "Pessoal", dataInicio: "2026-02-17", dataFim: "2026-02-28", status: false },
           { id: 2, titulo: "Levantamento dos votos por região", motivo: "Estratégia de Campanha", responsavel: "Luciana, Marcia, Amanda", canal: "Pessoal", dataInicio: "2026-02-17", dataFim: "2026-02-28", status: false },
           { id: 3, titulo: "Levantamento dos votos por MUNICÍPIO", motivo: "Estratégia de Campanha", responsavel: "Luciana, Marcia, Amanda", canal: "Pessoal", dataInicio: "2026-02-17", dataFim: "2026-02-28", status: false },
-          { id: 4, titulo: "Customização Sistema App Cmt Dan", motivo: "Estratégia de Campanha", responsavel: "Cel Oliveira, Pr Darlisson", canal: "Pessoal", dataInicio: "2026-02-17", dataFim: "2026-02-28", status: false },
-          { id: 5, titulo: "Reunião para estratégia de utilização Sistema App Cmt Dan", motivo: "Estratégia de Campanha", responsavel: "Cel Oliveira, Pr Darlisson", canal: "Pessoal", dataInicio: "2026-02-19", dataFim: "2026-02-19", status: false },
+          { id: 4, titulo: "Customização do Sistema de Gestão", motivo: "Estratégia de Campanha", responsavel: "Cel Oliveira, Pr Darlisson", canal: "Pessoal", dataInicio: "2026-02-17", dataFim: "2026-02-28", status: false },
+          { id: 5, titulo: "Reunião para estratégia de utilização do Sistema", motivo: "Estratégia de Campanha", responsavel: "Cel Oliveira, Pr Darlisson", canal: "Pessoal", dataInicio: "2026-02-19", dataFim: "2026-02-19", status: false },
           { id: 6, titulo: "Realizar reunião Estratégica com base em pesquisa realizada", motivo: "Propor definição", responsavel: "Eliel, Luciana, Alex", canal: "Pessoal", dataInicio: "2026-02-19", dataFim: "2026-02-19", status: false },
-          { id: 7, titulo: "Atualização do Site Cmt Dan (Site já operante e atualizado)", motivo: "Otimização", responsavel: "Darlisson", canal: "Pessoal", dataInicio: "2026-02-17", dataFim: "2026-02-28", status: false },
+          { id: 7, titulo: "Atualização do Site Institucional (Site já operante e atualizado)", motivo: "Otimização", responsavel: "Darlisson", canal: "Pessoal", dataInicio: "2026-02-17", dataFim: "2026-02-28", status: false },
         ],
       },
     ],
@@ -134,7 +134,7 @@ export const coordenacoesIniciais: Coordenacao[] = [
         tarefas: [
           { id: 1, titulo: "Providenciar 1000 Boletins Informativos", motivo: "Divulgar Mandato", responsavel: "", canal: "Pessoal", dataInicio: "2026-02-18", dataFim: "2026-02-18", status: true },
           { id: 2, titulo: "Contato com Pastores para indicação de Líderes de cada ação", motivo: "Organização Café", responsavel: "", canal: "Pessoal", dataInicio: "2026-02-17", dataFim: "2026-02-19", status: true },
-          { id: 3, titulo: "Providenciar Programação da Reunião", motivo: "Participação do Dep Cmt Dan", responsavel: "", canal: "Whatsapp", dataInicio: "2026-02-18", dataFim: "2026-02-18", status: true },
+          { id: 3, titulo: "Providenciar Programação da Reunião", motivo: "Participação do Deputado", responsavel: "", canal: "Whatsapp", dataInicio: "2026-02-18", dataFim: "2026-02-18", status: true },
           { id: 4, titulo: "Realizar visita técnica na escola CBMAM", motivo: "Visita técnica", responsavel: "", canal: "Pessoal", dataInicio: "2026-02-17", dataFim: "2026-02-19", status: true },
           { id: 5, titulo: "Realizar contato com SEDUC para homologar autorização Escola", motivo: "Visita técnica", responsavel: "", canal: "Pessoal", dataInicio: "2026-02-17", dataFim: "2026-02-19", status: true },
           { id: 6, titulo: "Tramitar documentação referente à segurança das ações (PM, CBMAM, IMMU)", motivo: "Organização da Café", responsavel: "", canal: "Pessoal", dataInicio: "2026-02-17", dataFim: "2026-02-19", status: true },
@@ -154,7 +154,7 @@ export const coordenacoesIniciais: Coordenacao[] = [
   },
   {
     id: "equipe",
-    nome: "Equipe CMT Dan",
+    nome: "Equipe Interna",
     descricao: "Escalados do dia e coordenação da equipe",
     secoes: [
       {

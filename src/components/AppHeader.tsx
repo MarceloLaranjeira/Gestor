@@ -32,9 +32,9 @@ const sidebarPages: { label: string; path: string; keywords: string[] }[] = [
   { label: "Coord. Eclesiástica", path: "/coordenacao/eclesiastica", keywords: ["eclesiástica", "igreja", "coordenação"] },
   { label: "Coord. Comunicação", path: "/coordenacao/comunicacao", keywords: ["comunicação", "mídia", "coordenação"] },
   { label: "Coord. Inteligência de Dados", path: "/coordenacao/inteligencia", keywords: ["inteligência", "dados", "coordenação"] },
-  { label: "Coord. CSPJD", path: "/coordenacao/cspjd", keywords: ["cspjd", "segurança", "coordenação"] },
-  { label: "Coord. Gabinete", path: "/coordenacao/gabinete", keywords: ["gabinete", "coordenação"] },
-  { label: "Coord. Equipe CMT Dan", path: "/coordenacao/equipe", keywords: ["equipe", "cmt", "dan", "coordenação"] },
+  { label: "Coord. Segurança", path: "/coordenacao/cspjd", keywords: ["segurança", "proteção", "coordenação"] },
+  { label: "Coord. Gabinete", path: "/coordenacao/gabinete", keywords: ["gabinete", "coordenação", "interno"] },
+  { label: "Coord. Equipe Interna", path: "/coordenacao/equipe", keywords: ["equipe", "interna", "coordenação"] },
 ];
 
 const AppHeader = () => {
@@ -138,7 +138,7 @@ const AppHeader = () => {
   const displayAvatar = user?.avatar_url;
 
   return (
-    <header className="sticky top-0 z-30 h-14 sm:h-16 bg-card/90 backdrop-blur-md border-b border-border flex items-center justify-between px-3 sm:px-6 gap-2">
+    <header className="sticky top-0 z-30 h-14 sm:h-16 bg-card/95 backdrop-blur-md border-b border-border flex items-center justify-between px-3 sm:px-6 gap-2 shadow-sm">
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {isMobile && (
           <button
