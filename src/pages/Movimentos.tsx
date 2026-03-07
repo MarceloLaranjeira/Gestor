@@ -64,7 +64,7 @@ const Movimentos = () => {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold font-display text-foreground">Movimentos</h1>
-          <p className="text-sm text-muted-foreground">Bandeiras e movimentos do mandato do Comandante Dan</p>
+          <p className="text-sm text-muted-foreground">Bandeiras e movimentos do mandato parlamentar</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

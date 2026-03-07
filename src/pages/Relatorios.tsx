@@ -266,7 +266,7 @@ const Relatorios = () => {
     const tipoLines = pessoasPorTipo.map(p => `  - ${p.tipo}: ${p.total}`).join("\n") || "  Sem dados";
     const coordLines = desempenhoCoordenacoes.map(c => `  - ${c.nome}: ${c.taxa}% (${c.concluidas}/${c.total})`).join("\n") || "  Sem dados";
     const respLines = responsaveis.slice(0, 5).map(r => `  - ${r.nome}: ${r.taxa}% conclusão (${r.total} demandas)`).join("\n") || "  Sem dados";
-    const prompt = `Analise os dados completos de desempenho do mandato do Deputado Comandante Dan:
+    const prompt = `Analise os dados completos de desempenho do mandato parlamentar:
 
 ## 📋 DEMANDAS (Total: ${demandas.length})
 - Pendentes: ${pendentes} | Em andamento: ${andamento} | Concluídas: ${concluidas} (${taxaConclusaoDemandas}%) | Atrasadas: ${atrasadas} (${taxaAtrasadas}%)
@@ -304,7 +304,7 @@ Forneça: 1) Score de desempenho geral (0-100) com justificativa, 2) Principais 
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.text("Relatório de Desempenho — Dep. Comandante Dan", 14, 12);
+      doc.text("Relatório de Desempenho — Gabinete Parlamentar", 14, 12);
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.text(`Gerado em ${now}`, 14, 22);

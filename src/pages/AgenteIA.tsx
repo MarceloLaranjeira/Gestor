@@ -33,7 +33,7 @@ const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts-multi`;
 const QUICK_PROMPTS = [
   { icon: BarChart3, label: "Relatório de Demandas", prompt: "Gere um relatório executivo completo sobre o status atual de todas as demandas do gabinete, incluindo análise por categoria, prioridade e responsável. Destaque os pontos críticos." },
   { icon: FileText, label: "Relatório de Tarefas", prompt: "Crie um relatório detalhado sobre as tarefas de todas as coordenações. Mostre as atrasadas, pendentes e concluídas, e identifique quais coordenações precisam de atenção imediata." },
-  { icon: Lightbulb, label: "Insights Estratégicos", prompt: "Com base nos dados atuais do mandato, quais são os 5 principais insights estratégicos que o Deputado Comandante Dan deve considerar para otimizar a gestão do gabinete? Seja específico e prático." },
+  { icon: Lightbulb, label: "Insights Estratégicos", prompt: "Com base nos dados atuais do mandato, quais são os 5 principais insights estratégicos para otimizar a gestão do gabinete parlamentar? Seja específico e prático." },
   { icon: Sparkles, label: "Pauta da Semana", prompt: "Com base nos eventos próximos, demandas urgentes e tarefas atrasadas, sugira uma pauta de trabalho priorizada para esta semana. Organize por urgência e impacto." },
 ];
 
