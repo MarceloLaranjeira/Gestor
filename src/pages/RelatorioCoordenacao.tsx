@@ -210,7 +210,7 @@ const RelatorioCoordenacao = () => {
         `${s.percentual}%`,
       ]),
       styles: { fontSize: 9 },
-      headStyles: { fillColor: [34, 84, 61] },
+      headStyles: { fillColor: [13, 71, 161] },
     });
 
     // Responsavel table
@@ -223,7 +223,7 @@ const RelatorioCoordenacao = () => {
       head: [["Responsável", "Tarefas"]],
       body: responsavelStats.map((r) => [r.nome, r.total.toString()]),
       styles: { fontSize: 9 },
-      headStyles: { fillColor: [34, 84, 61] },
+      headStyles: { fillColor: [13, 71, 161] },
     });
 
     // Tarefas table
@@ -243,7 +243,7 @@ const RelatorioCoordenacao = () => {
         t.data_fim || "—",
       ]),
       styles: { fontSize: 8 },
-      headStyles: { fillColor: [34, 84, 61] },
+      headStyles: { fillColor: [13, 71, 161] },
     });
 
     doc.save(`relatorio-${selectedCoordNome.toLowerCase().replace(/\s+/g, "-")}.pdf`);
@@ -317,12 +317,12 @@ const RelatorioCoordenacao = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold font-display text-foreground">Relatório por Coordenação</h1>
-            <p className="text-sm text-muted-foreground">Selecione uma coordenação para visualizar o relatório</p>
+            <p className="text-sm text-muted-foreground">Análise detalhada de tarefas, seções e desempenho por coordenação</p>
           </div>
           <div className="flex gap-2">
             <Select value={selectedCoord} onValueChange={setSelectedCoord}>
               <SelectTrigger className="w-full sm:w-72">
-                <SelectValue placeholder="Selecionar coordenação" />
+                <SelectValue placeholder="Selecionar coordenação..." />
               </SelectTrigger>
               <SelectContent>
                 {coordenacoes.map((c) => (
@@ -354,7 +354,8 @@ const RelatorioCoordenacao = () => {
         {!selectedCoord && (
           <div className="glass-card rounded-xl p-12 text-center">
             <FileText className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-muted-foreground">Selecione uma coordenação acima para gerar o relatório.</p>
+            <p className="text-sm font-medium text-foreground mb-1">Nenhuma coordenação selecionada</p>
+            <p className="text-xs text-muted-foreground">Selecione uma coordenação no menu acima para gerar o relatório detalhado.</p>
           </div>
         )}
 
@@ -414,7 +415,7 @@ const RelatorioCoordenacao = () => {
 
             {totalTarefas === 0 ? (
               <div className="glass-card rounded-xl p-8 text-center">
-                <p className="text-muted-foreground">Nenhuma tarefa cadastrada nesta coordenação.</p>
+                <p className="text-sm text-muted-foreground text-center">Nenhuma tarefa cadastrada nesta coordenação ainda.</p>
               </div>
             ) : (
               <>
