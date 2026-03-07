@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { LogIn, Eye, EyeOff, UserPlus } from "lucide-react";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { Building2 } from "lucide-react";
+import AutomatikusLogo from "@/components/AutomatikusLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -107,12 +107,9 @@ const Login = () => {
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
         <div className="relative z-10 text-center px-12">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="flex flex-col items-center">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shadow-2xl shadow-blue-900/60 mb-6">
-              <Building2 className="w-10 h-10 text-white" />
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-3 font-display">Gestão Inteligente</h2>
-            <p className="text-sm text-primary-foreground/55 max-w-sm text-center">
-              Sistema integrado de gestão parlamentar — pessoas, demandas, eventos e inteligência institucional.
+            <AutomatikusLogo variant="full" className="w-72 mb-8 drop-shadow-2xl" />
+            <p className="text-sm text-white/55 max-w-sm text-center">
+              Plataforma inteligente de gestão parlamentar — demandas, eventos, coordenações e IA integrada.
             </p>
           </motion.div>
         </div>
@@ -123,11 +120,9 @@ const Login = () => {
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-sm">
           {/* Logo centralizada acima do formulário */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg mb-3">
-              <Building2 className="w-7 h-7 text-white" />
-            </div>
+            <AutomatikusLogo variant="icon" iconSize={56} className="mb-3" />
             <span className="text-base font-bold text-foreground font-display">Gestão Inteligente</span>
-            <span className="text-xs text-muted-foreground">Gabinete Digital</span>
+            <span className="text-xs text-muted-foreground">Automatikus — Automações Digitais</span>
           </div>
 
           <h2 className="text-2xl font-bold font-display text-foreground mb-1">

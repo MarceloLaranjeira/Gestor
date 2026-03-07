@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import AutomatikusLogo from "./AutomatikusLogo";
 
 const coordenacaoItems = [
   { icon: Building2, label: "Eclesiástica", path: "/coordenacao/eclesiastica" },
@@ -120,21 +121,12 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Logo / Brand */}
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-sidebar-border/60">
-        {/* Gradient icon mark */}
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/40 shrink-0">
-          <Building2 className="w-5 h-5 text-white" />
-        </div>
-        {showLabels && (
-          <div className="overflow-hidden">
-            <p className="text-xs font-bold text-white leading-tight truncate">
-              Gestão Inteligente
-            </p>
-            <p className="text-[10px] text-sidebar-foreground/45 leading-tight">
-              Gabinete Digital
-            </p>
-          </div>
+      {/* Logo / Brand — Automatikus */}
+      <div className="flex items-center gap-3 px-3 py-4 border-b border-sidebar-border/60">
+        {showLabels ? (
+          <AutomatikusLogo variant="full" className="w-full max-w-[184px]" />
+        ) : (
+          <AutomatikusLogo variant="icon" iconSize={38} className="shrink-0" />
         )}
       </div>
 
