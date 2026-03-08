@@ -61,9 +61,7 @@ export function useGoogleCalendar() {
       origin = `https://id-preview--${uuid}.lovable.app`;
     }
     const redirectUri = `${origin}/auth/google-calendar/callback`;
-    // DEBUG: show exact redirect_uri so it can be registered in Google Cloud Console
-    alert(`DEBUG - Cadastre este URI no Google Cloud Console:\n\n${redirectUri}`);
-    const headers = await getHeaders();
+const headers = await getHeaders();
     const res = await fetch(`${FUNCTION_URL}?action=auth-url&redirect_uri=${encodeURIComponent(redirectUri)}`, { headers });
     const data = await res.json();
     if (data.url) {
