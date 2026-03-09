@@ -51,7 +51,7 @@ export function useGoogleCalendar() {
     checkStatus();
   }, [checkStatus]);
 
-  const connect = async () => {
+  const connect = async (): Promise<{ error?: string }> => {
     // Build the public-facing origin for the redirect URI
     let origin = window.location.origin;
     if (origin.includes('lovableproject.com')) {
@@ -61,11 +61,18 @@ export function useGoogleCalendar() {
       origin = `https://id-preview--${uuid}.lovable.app`;
     }
     const redirectUri = `${origin}/auth/google-calendar/callback`;
-const headers = await getHeaders();
-    const res = await fetch(`${FUNCTION_URL}?action=auth-url&redirect_uri=${encodeURIComponent(redirectUri)}`, { headers });
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
+    try {
+      const headers = await getHeaders();
+      const res = await fetch(`${FUNCTION_URL}?action=auth-url&redirect_uri=${encodeURIComponent(redirectUri)}`, { headers });
+      const data = await res.json();
+      if (data.error) return { error: data.error };
+      if (data.url) {
+        window.location.href = data.url;
+        return {};
+      }
+      return { error: "URL de autenticação não recebida." };
+    } catch {
+      return { error: "Erro ao iniciar conexão com o Google Calendar." };
     }
   };
 
