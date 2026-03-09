@@ -8,12 +8,12 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
-  Loader2,
   MessageSquare,
   Calendar,
   MapPin,
 } from "lucide-react";
 import StatCard from "@/components/StatCard";
+import DashboardSkeleton from "@/components/DashboardSkeleton";
 import AppLayout from "@/components/AppLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Progress } from "@/components/ui/progress";
@@ -322,9 +322,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </div>
+        <DashboardSkeleton />
       </AppLayout>
     );
   }
@@ -342,18 +340,18 @@ const Dashboard = () => {
 
         {/* Stats Row 1 — Tarefas + Usuários + Pessoas */}
         <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Total de Tarefas" value={totalTarefas} subtitle={`${coordProgress.length} coordenações`} icon={<ClipboardList className="w-5 h-5 text-primary" />} href="/relatorio-coordenacao" />
-          <StatCard title="Concluídas" value={totalDone} subtitle={`${totalPercent}% do total`} icon={<CheckCircle2 className="w-5 h-5 text-success" />} href="/relatorio-coordenacao" />
-          <StatCard title="Atrasadas" value={overdue.length} subtitle={`${upcoming.length} vencem esta semana`} icon={<AlertTriangle className="w-5 h-5 text-destructive" />} href="/relatorio-coordenacao" />
-          <StatCard title="Usuários" value={totalUsers} subtitle="Cadastrados no sistema" icon={<Users className="w-5 h-5 text-secondary" />} href="/usuarios" />
+          <StatCard title="Total de Tarefas" value={totalTarefas} subtitle={`${coordProgress.length} coordenações`} icon={<ClipboardList className="w-5 h-5" style={{ color: "hsl(213,94%,52%)" }} />} href="/relatorio-coordenacao" accentColor="hsl(213,94%,52%)" />
+          <StatCard title="Concluídas" value={totalDone} subtitle={`${totalPercent}% do total`} icon={<CheckCircle2 className="w-5 h-5" style={{ color: "hsl(142,70%,40%)" }} />} href="/relatorio-coordenacao" accentColor="hsl(142,70%,40%)" />
+          <StatCard title="Atrasadas" value={overdue.length} subtitle={`${upcoming.length} vencem esta semana`} icon={<AlertTriangle className="w-5 h-5" style={{ color: "hsl(0,72%,51%)" }} />} href="/relatorio-coordenacao" accentColor="hsl(0,72%,51%)" />
+          <StatCard title="Usuários" value={totalUsers} subtitle="Cadastrados no sistema" icon={<Users className="w-5 h-5" style={{ color: "hsl(239,84%,67%)" }} />} href="/usuarios" accentColor="hsl(239,84%,67%)" />
         </motion.div>
 
         {/* Stats Row 2 — Pessoas + Demandas */}
         <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Pessoas" value={totalPessoas} subtitle="Contatos cadastrados" icon={<Users className="w-5 h-5 text-primary" />} href="/pessoas" />
-          <StatCard title="Demandas" value={demandaStats.total} subtitle={`${demandaStats.pendente} pendentes`} icon={<MessageSquare className="w-5 h-5 text-warning" />} href="/demandas" />
-          <StatCard title="Em Andamento" value={demandaStats.andamento} subtitle={`${demandaStats.concluida} concluídas`} icon={<Clock className="w-5 h-5 text-info" />} href="/demandas" />
-          <StatCard title="Próximos Eventos" value={proximosEventos.length} subtitle="Agendados a partir de hoje" icon={<Calendar className="w-5 h-5 text-secondary" />} href="/eventos" />
+          <StatCard title="Pessoas" value={totalPessoas} subtitle="Contatos cadastrados" icon={<Users className="w-5 h-5" style={{ color: "hsl(199,89%,48%)" }} />} href="/pessoas" accentColor="hsl(199,89%,48%)" />
+          <StatCard title="Demandas" value={demandaStats.total} subtitle={`${demandaStats.pendente} pendentes`} icon={<MessageSquare className="w-5 h-5" style={{ color: "hsl(38,92%,50%)" }} />} href="/demandas" accentColor="hsl(38,92%,50%)" />
+          <StatCard title="Em Andamento" value={demandaStats.andamento} subtitle={`${demandaStats.concluida} concluídas`} icon={<Clock className="w-5 h-5" style={{ color: "hsl(199,89%,48%)" }} />} href="/demandas" accentColor="hsl(199,89%,48%)" />
+          <StatCard title="Próximos Eventos" value={proximosEventos.length} subtitle="Agendados a partir de hoje" icon={<Calendar className="w-5 h-5" style={{ color: "hsl(239,84%,67%)" }} />} href="/eventos" accentColor="hsl(239,84%,67%)" />
         </motion.div>
 
         {/* Charts Row */}
