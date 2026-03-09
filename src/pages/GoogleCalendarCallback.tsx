@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const GoogleCalendarCallback = () => {
   const navigate = useNavigate();
@@ -16,13 +17,17 @@ const GoogleCalendarCallback = () => {
 
       if (error) {
         setStatus("error");
-        setErrorMsg("Autorização negada pelo Google.");
+        setErrorMsg(
+          error === "access_denied"
+            ? "Acesso negado. Você cancelou a autorização do Google Calendar."
+            : `Erro do Google: ${error}`
+        );
         return;
       }
 
       if (!code || !state) {
         setStatus("error");
-        setErrorMsg("Parâmetros inválidos.");
+        setErrorMsg("Parâmetros inválidos na URL de retorno. Tente conectar novamente.");
         return;
       }
 
@@ -32,33 +37,49 @@ const GoogleCalendarCallback = () => {
           : window.location.origin;
         const redirectUri = `${origin}/auth/google-calendar/callback`;
 
-        // Use the anon key as the Bearer token — it is a valid JWT for the Supabase
-        // project and passes gateway JWT verification. Security for the callback
-        // action comes from the single-use state token stored in the database.
+        // Get the user's current session JWT so the edge function can authenticate
+        // the request. Falls back to the anon key if no session is present.
+        const { data: sessionData } = await supabase.auth.getSession();
+        const bearerToken = sessionData?.session?.access_token
+          ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
         const res = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar?action=callback`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${bearerToken}`,
+              apikey: anonKey,
             },
             body: JSON.stringify({ code, redirect_uri: redirectUri, state }),
           }
         );
 
-        const result = await res.json();
+        let result: { success?: boolean; error?: string } = {};
+        try {
+          result = await res.json();
+        } catch {
+          setStatus("error");
+          setErrorMsg(`Resposta inválida do servidor (HTTP ${res.status}). Tente novamente.`);
+          return;
+        }
+
         if (result.success) {
           setStatus("success");
-          setTimeout(() => navigate("/eventos"), 2000);
+          setTimeout(() => navigate("/calendario"), 2000);
         } else {
           setStatus("error");
-          setErrorMsg(result.error || "Erro ao conectar.");
+          setErrorMsg(result.error || `Erro ao conectar (HTTP ${res.status}).`);
         }
-      } catch {
+      } catch (err) {
         setStatus("error");
-        setErrorMsg("Erro ao processar callback.");
+        setErrorMsg(
+          err instanceof Error
+            ? `Erro de rede: ${err.message}`
+            : "Erro ao processar o retorno do Google Calendar."
+        );
       }
     };
 
@@ -67,31 +88,47 @@ const GoogleCalendarCallback = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center space-y-4">
+      <div className="text-center space-y-4 animate-fade-in max-w-sm px-6">
         {status === "loading" && (
           <>
-            <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
-            <p className="text-muted-foreground">Conectando ao Google Calendar...</p>
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+            <p className="text-base font-semibold text-foreground">Conectando ao Google Calendar...</p>
+            <p className="text-sm text-muted-foreground">Aguarde enquanto processamos sua autorização.</p>
           </>
         )}
         {status === "success" && (
           <>
-            <CheckCircle className="w-10 h-10 text-success mx-auto" />
-            <p className="text-foreground font-medium">Google Calendar conectado com sucesso!</p>
-            <p className="text-sm text-muted-foreground">Redirecionando...</p>
+            <div className="w-16 h-16 rounded-2xl bg-success/10 border border-success/20 flex items-center justify-center mx-auto">
+              <CheckCircle className="w-8 h-8 text-success" />
+            </div>
+            <p className="text-base font-semibold text-foreground">Google Calendar conectado!</p>
+            <p className="text-sm text-muted-foreground">Redirecionando para o Calendário...</p>
           </>
         )}
         {status === "error" && (
           <>
-            <XCircle className="w-10 h-10 text-destructive mx-auto" />
-            <p className="text-foreground font-medium">Erro na conexão</p>
+            <div className="w-16 h-16 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center mx-auto">
+              <XCircle className="w-8 h-8 text-destructive" />
+            </div>
+            <p className="text-base font-semibold text-foreground">Erro na conexão</p>
             <p className="text-sm text-muted-foreground">{errorMsg}</p>
-            <button
-              onClick={() => navigate("/eventos")}
-              className="mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm"
-            >
-              Voltar para Eventos
-            </button>
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                onClick={() => navigate("/calendario")}
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Tentar novamente
+              </button>
+              <button
+                onClick={() => navigate("/eventos")}
+                className="w-full px-4 py-2 rounded-xl bg-muted text-foreground text-sm hover:bg-muted/80 transition-all"
+              >
+                Voltar para Eventos
+              </button>
+            </div>
           </>
         )}
       </div>
