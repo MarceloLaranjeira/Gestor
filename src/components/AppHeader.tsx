@@ -138,71 +138,78 @@ const AppHeader = () => {
   const displayAvatar = user?.avatar_url;
 
   return (
-    <header className="sticky top-0 z-30 h-14 sm:h-16 bg-card/95 backdrop-blur-md border-b border-border flex items-center justify-between px-3 sm:px-6 gap-2 shadow-sm">
+    <header className="sticky top-0 z-30 h-14 sm:h-16 bg-card/95 backdrop-blur-md border-b border-border/80 flex items-center justify-between px-3 sm:px-6 gap-2 shadow-sm">
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {isMobile && (
           <button
             onClick={() => setMobileOpen(true)}
             className="p-2 rounded-lg hover:bg-muted transition-colors shrink-0"
+            aria-label="Abrir menu"
           >
             <Menu className="w-5 h-5 text-foreground" />
           </button>
         )}
         <div className="relative flex-1 max-w-md" ref={searchRef}>
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={isMobile ? "Buscar..." : "Buscar demandas, pessoas, eventos..."}
-            className="w-full h-9 pl-10 pr-8 text-sm rounded-lg bg-muted/50 border-0 outline-none focus:ring-2 focus:ring-ring/20 placeholder:text-muted-foreground/60 text-foreground"
+            className="w-full h-9 pl-10 pr-8 text-sm rounded-lg bg-muted/60 border border-border/50 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 placeholder:text-muted-foreground/50 text-foreground transition-all"
           />
           {query && (
-            <button onClick={() => { setQuery(""); setShowResults(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+            <button
+              onClick={() => { setQuery(""); setShowResults(false); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Limpar busca"
+            >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
 
           {showResults && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50 max-h-80 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-xl overflow-hidden z-50 max-h-80 overflow-y-auto">
               {searching ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">Buscando...</div>
               ) : results.length === 0 ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">Nenhum resultado encontrado</div>
+                <div className="p-5 text-center text-sm text-muted-foreground">Nenhum resultado encontrado</div>
               ) : (
-                results.map((r) => (
-                  <button
-                    key={`${r.type}-${r.id}`}
-                    onClick={() => handleSelect(r)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-muted/50 transition-colors"
-                  >
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${typeColor[r.type]}`}>
-                      {typeLabel[r.type]}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-foreground truncate">{r.title}</p>
-                      {r.subtitle && <p className="text-[11px] text-muted-foreground truncate">{r.subtitle}</p>}
-                    </div>
-                  </button>
-                ))
+                <div className="py-1">
+                  {results.map((r) => (
+                    <button
+                      key={`${r.type}-${r.id}`}
+                      onClick={() => handleSelect(r)}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-muted/50 transition-colors"
+                    >
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${typeColor[r.type]}`}>
+                        {typeLabel[r.type]}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-foreground truncate">{r.title}</p>
+                        {r.subtitle && <p className="text-[11px] text-muted-foreground truncate">{r.subtitle}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-3 shrink-0">
         <button
           onClick={toggleDarkMode}
           className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
           title={darkMode ? "Modo claro" : "Modo escuro"}
         >
-          {darkMode ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+          {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
         <NotificationPanel />
 
-        <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-4 border-l border-border">
-          <div className="w-8 h-8 rounded-full overflow-hidden border border-border flex items-center justify-center bg-muted">
+        <div className="flex items-center gap-2 sm:gap-2.5 pl-2 sm:pl-3 border-l border-border">
+          <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary/20 flex items-center justify-center bg-primary/10 shrink-0">
             {displayAvatar ? (
               <img src={displayAvatar} alt={user?.name || "Avatar"} className="w-full h-full object-cover" />
             ) : (
@@ -212,8 +219,8 @@ const AppHeader = () => {
             )}
           </div>
           <div className="hidden md:block">
-            <p className="text-sm font-medium text-foreground">{user?.name}</p>
-            <p className="text-[11px] text-muted-foreground">{user?.role}</p>
+            <p className="text-xs font-semibold text-foreground leading-tight">{user?.name}</p>
+            <p className="text-[10px] text-muted-foreground">{user?.role}</p>
           </div>
         </div>
       </div>

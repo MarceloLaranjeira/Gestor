@@ -100,10 +100,12 @@ const Login = () => {
     return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
   }, []);
 
+  const inputClass = "w-full h-11 px-4 text-sm rounded-xl bg-muted/50 border border-border outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary/50 text-foreground placeholder:text-muted-foreground/50 transition-all";
+
   return (
     <div className="min-h-screen flex">
       {/* Left Panel */}
-      <div className="hidden lg:flex lg:w-1/2 gradient-primary relative overflow-hidden items-center justify-center">
+      <div className="hidden lg:flex lg:w-[45%] gradient-primary relative overflow-hidden items-center justify-center">
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
         <div className="relative z-10 text-center px-12">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="flex flex-col items-center">
@@ -111,6 +113,18 @@ const Login = () => {
             <p className="text-sm text-white/55 max-w-sm text-center">
               Plataforma inteligente de gestão parlamentar — demandas, eventos, coordenações e IA integrada.
             </p>
+            <div className="flex items-center justify-center gap-6 mt-10">
+              {[
+                { label: "Demandas", value: "Controle" },
+                { label: "Pessoas", value: "Gestão" },
+                { label: "Eventos", value: "Agenda" },
+              ].map((item) => (
+                <div key={item.label} className="text-center">
+                  <p className="text-xs font-bold text-accent">{item.value}</p>
+                  <p className="text-[10px] text-primary-foreground/50 mt-0.5">{item.label}</p>
+                </div>
+              ))}
+            </div>
           </motion.div>
         </div>
       </div>
@@ -125,40 +139,42 @@ const Login = () => {
             <span className="text-xs text-muted-foreground">Automatikus — Automações Digitais</span>
           </div>
 
-          <h2 className="text-2xl font-bold font-display text-foreground mb-1">
-            {isSignup ? "Criar Conta" : "Bem-vindo"}
-          </h2>
-          <p className="text-sm text-muted-foreground mb-8">
-            {isSignup ? "Preencha os dados para criar sua conta." : "Entre com suas credenciais para acessar o sistema."}
-          </p>
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold font-display text-foreground mb-1">
+              {isSignup ? "Criar Conta" : "Bem-vindo de volta"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {isSignup ? "Preencha os dados para criar sua conta." : "Entre com suas credenciais para acessar."}
+            </p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {isSignup && (
               <div>
-                <label className="text-xs font-medium text-foreground mb-1.5 block">Nome completo</label>
+                <label className="text-xs font-semibold text-foreground/80 mb-1.5 block">Nome completo</label>
                 <input
                   type="text"
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
-                  placeholder="Seu nome"
+                  placeholder="Seu nome completo"
                   required
-                  className="w-full h-11 px-4 text-sm rounded-lg bg-muted/50 border border-border outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground placeholder:text-muted-foreground/50 transition-all"
+                  className={inputClass}
                 />
               </div>
             )}
             <div>
-              <label className="text-xs font-medium text-foreground mb-1.5 block">Email</label>
+              <label className="text-xs font-semibold text-foreground/80 mb-1.5 block">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 required
-                className="w-full h-11 px-4 text-sm rounded-lg bg-muted/50 border border-border outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground placeholder:text-muted-foreground/50 transition-all"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-foreground mb-1.5 block">Senha</label>
+              <label className="text-xs font-semibold text-foreground/80 mb-1.5 block">Senha</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -167,16 +183,21 @@ const Login = () => {
                   placeholder="••••••••"
                   required
                   minLength={6}
-                  className="w-full h-11 px-4 pr-10 text-sm rounded-lg bg-muted/50 border border-border outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground placeholder:text-muted-foreground/50 transition-all"
+                  className={`${inputClass} pr-10`}
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
             {isSignup && (
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2.5 pt-1">
                 <Checkbox
                   id="terms"
                   checked={acceptedTerms}
@@ -185,8 +206,8 @@ const Login = () => {
                 />
                 <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
                   Li e aceito os{" "}
-                  <a href="/termos-uso" target="_blank" className="text-primary hover:underline">Termos de Uso</a>{" "}e a{" "}
-                  <a href="/politica-privacidade" target="_blank" className="text-primary hover:underline">Política de Privacidade</a>.
+                  <a href="/termos-uso" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Termos de Uso</a>{" "}e a{" "}
+                  <a href="/politica-privacidade" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Política de Privacidade</a>.
                 </label>
               </div>
             )}
@@ -194,14 +215,14 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading || (isSignup && !acceptedTerms)}
-              className="w-full h-11 rounded-lg gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-xl gradient-primary text-primary-foreground font-semibold text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 shadow-md"
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               ) : isSignup ? (
                 <><UserPlus className="w-4 h-4" /> Criar Conta</>
               ) : (
-                <><LogIn className="w-4 h-4" /> Entrar</>
+                <><LogIn className="w-4 h-4" /> Entrar no Sistema</>
               )}
             </button>
           </form>
@@ -244,9 +265,9 @@ const Login = () => {
             {isSignup ? "Já tem conta? Faça login" : "Não tem conta? Cadastre-se"}
           </button>
 
-          <div className="flex justify-center gap-4 mt-3 text-[11px] text-muted-foreground">
-            <a href="/politica-privacidade" className="hover:text-primary transition-colors">Política de Privacidade</a>
-            <span>•</span>
+          <div className="flex justify-center gap-4 mt-4 text-[11px] text-muted-foreground/70">
+            <a href="/politica-privacidade" className="hover:text-primary transition-colors">Privacidade</a>
+            <span>·</span>
             <a href="/termos-uso" className="hover:text-primary transition-colors">Termos de Uso</a>
           </div>
         </motion.div>
