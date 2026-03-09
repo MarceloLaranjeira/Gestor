@@ -32,7 +32,18 @@ const GoogleCalendarCallback = () => {
           ? window.location.origin.replace('lovableproject.com', 'lovable.app').replace(/^(https?:\/\/)/, '$1id-preview--')
           : window.location.origin;
         const redirectUri = `${origin}/auth/google-calendar/callback`;
-        const { data: session } = await supabase.auth.getSession();
+
+        // Ensure we have a fresh session token
+        let { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          sessionData = refreshed;
+        }
+        if (!sessionData.session) {
+          setStatus("error");
+          setErrorMsg("Sessão expirada. Faça login novamente.");
+          return;
+        }
 
         const res = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar?action=callback`,
@@ -40,7 +51,7 @@ const GoogleCalendarCallback = () => {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${session.session?.access_token}`,
+              Authorization: `Bearer ${sessionData.session.access_token}`,
               apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             },
             body: JSON.stringify({ code, redirect_uri: redirectUri, state }),
@@ -85,12 +96,21 @@ const GoogleCalendarCallback = () => {
             <XCircle className="w-10 h-10 text-destructive mx-auto" />
             <p className="text-foreground font-medium">Erro na conexão</p>
             <p className="text-sm text-muted-foreground">{errorMsg}</p>
-            <button
-              onClick={() => navigate("/eventos")}
-              className="mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm"
-            >
-              Voltar para Eventos
-            </button>
+            {errorMsg.includes("Sessão expirada") ? (
+              <button
+                onClick={() => navigate("/login")}
+                className="mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm"
+              >
+                Fazer Login
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate("/eventos")}
+                className="mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm"
+              >
+                Voltar para Eventos
+              </button>
+            )}
           </>
         )}
       </div>

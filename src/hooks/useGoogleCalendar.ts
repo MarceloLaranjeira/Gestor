@@ -65,8 +65,7 @@ const headers = await getHeaders();
     const res = await fetch(`${FUNCTION_URL}?action=auth-url&redirect_uri=${encodeURIComponent(redirectUri)}`, { headers });
     const data = await res.json();
     if (data.url) {
-      // Open in new tab to avoid iframe restrictions with Google OAuth
-      window.open(data.url, '_blank');
+      window.location.href = data.url;
     }
   };
 
