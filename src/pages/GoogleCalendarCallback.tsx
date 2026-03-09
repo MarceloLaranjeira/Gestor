@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
 const GoogleCalendarCallback = () => {
@@ -33,25 +32,16 @@ const GoogleCalendarCallback = () => {
           : window.location.origin;
         const redirectUri = `${origin}/auth/google-calendar/callback`;
 
-        // Ensure we have a fresh session token
-        let { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
-          const { data: refreshed } = await supabase.auth.refreshSession();
-          sessionData = refreshed;
-        }
-        if (!sessionData.session) {
-          setStatus("error");
-          setErrorMsg("Sessão expirada. Faça login novamente.");
-          return;
-        }
-
+        // Use the anon key as the Bearer token — it is a valid JWT for the Supabase
+        // project and passes gateway JWT verification. Security for the callback
+        // action comes from the single-use state token stored in the database.
         const res = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar?action=callback`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${sessionData.session.access_token}`,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
               apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             },
             body: JSON.stringify({ code, redirect_uri: redirectUri, state }),
@@ -96,21 +86,12 @@ const GoogleCalendarCallback = () => {
             <XCircle className="w-10 h-10 text-destructive mx-auto" />
             <p className="text-foreground font-medium">Erro na conexão</p>
             <p className="text-sm text-muted-foreground">{errorMsg}</p>
-            {errorMsg.includes("Sessão expirada") ? (
-              <button
-                onClick={() => navigate("/login")}
-                className="mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm"
-              >
-                Fazer Login
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate("/eventos")}
-                className="mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm"
-              >
-                Voltar para Eventos
-              </button>
-            )}
+            <button
+              onClick={() => navigate("/eventos")}
+              className="mt-4 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm"
+            >
+              Voltar para Eventos
+            </button>
           </>
         )}
       </div>
