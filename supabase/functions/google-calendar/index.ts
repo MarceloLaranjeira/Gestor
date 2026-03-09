@@ -20,10 +20,9 @@ async function getAuthenticatedUser(req: Request) {
     global: { headers: { Authorization: authHeader } },
   });
 
-  const token = authHeader.replace("Bearer ", "");
-  const { data, error } = await client.auth.getClaims(token);
-  if (error || !data?.claims) return null;
-  return data.claims.sub as string;
+  const { data: { user }, error } = await client.auth.getUser();
+  if (error || !user) return null;
+  return user.id;
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<{ access_token: string; expires_in: number } | null> {
