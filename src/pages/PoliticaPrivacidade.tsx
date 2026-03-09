@@ -6,7 +6,7 @@ const PoliticaPrivacidade = () => (
     <div className="space-y-6 text-sm text-foreground/80 leading-relaxed">
       <section>
         <h2 className="text-lg font-semibold text-foreground mb-2">1. Introdução</h2>
-        <p>O sistema Gestão Inteligente – Gabinete CMD Dan ("Plataforma") tem o compromisso de proteger a privacidade e os dados pessoais de seus usuários. Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos suas informações, em conformidade com a Lei Geral de Proteção de Dados (LGPD – Lei nº 13.709/2018).</p>
+        <p>O sistema Gestão Inteligente – Gabinete Digital ("Plataforma") tem o compromisso de proteger a privacidade e os dados pessoais de seus usuários. Esta Política de Privacidade descreve como coletamos, usamos, armazenamos e protegemos suas informações, em conformidade com a Lei Geral de Proteção de Dados (LGPD – Lei nº 13.709/2018).</p>
       </section>
 
       <section>

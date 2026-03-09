@@ -1,49 +1,59 @@
 import { useState } from "react";
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import logoDan from "@/assets/logo-dan.png";
 import { useSidebarState } from "./AppLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { LucideProps } from "lucide-react";
 import {
   LayoutDashboard, Users, ClipboardList, Calendar, CalendarSync, BarChart3, FileText, Settings,
-  ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare, Church,
+  ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare,
   Megaphone, Database, Building2, UsersRound, Bot, Wallet, KeyRound, Flag, BookUser, BookOpen, Plug, Phone,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import AutomatikusLogo from "./AutomatikusLogo";
 
 const coordenacaoItems = [
-  { icon: Church, label: "Eclesiástica", path: "/coordenacao/eclesiastica" },
+  { icon: Building2, label: "Eclesiástica", path: "/coordenacao/eclesiastica" },
   { icon: Megaphone, label: "Comunicação", path: "/coordenacao/comunicacao" },
   { icon: Database, label: "Inteligência", path: "/coordenacao/inteligencia" },
-  { icon: Shield, label: "CSPJD", path: "/coordenacao/cspjd" },
-  { icon: Building2, label: "Gabinete", path: "/coordenacao/gabinete" },
-  { icon: UsersRound, label: "Equipe CMT", path: "/coordenacao/equipe" },
+  { icon: Shield, label: "Segurança", path: "/coordenacao/cspjd" },
+  { icon: Layers, label: "Gabinete", path: "/coordenacao/gabinete" },
+  { icon: UsersRound, label: "Equipe Interna", path: "/coordenacao/equipe" },
   { icon: ClipboardList, label: "Plenária", path: "/coordenacao/plenaria" },
 ];
 
 interface NavItem { icon: React.ComponentType<LucideProps>; label: string; path: string; module?: string }
 
-const navItems: NavItem[] = [
+const principalItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", module: "dashboard" },
-  { icon: Flag, label: "Modo Campanha", path: "/campanha", module: "campanha" },
   { icon: Bot, label: "Assessor IA", path: "/agente-ia", module: "agente-ia" },
-  { icon: Users, label: "Pessoas", path: "/pessoas", module: "pessoas" },
-  { icon: ClipboardList, label: "Demandas", path: "/demandas", module: "demandas" },
-  { icon: Calendar, label: "Eventos", path: "/eventos", module: "eventos" },
-  { icon: CalendarSync, label: "Calendário", path: "/calendario", module: "calendario" },
-  { icon: Wallet, label: "Financeiro", path: "/financas", module: "financas" },
-  { icon: BookUser, label: "Prontuário", path: "/prontuario", module: "prontuario" },
-  { icon: BookOpen, label: "Logbook", path: "/logbook", module: "logbook" },
-  { icon: MessageSquare, label: "Movimentos", path: "/movimentos", module: "movimentos" },
-  { icon: Plug, label: "Integração", path: "/integracao", module: "integracao" },
-  { icon: Phone, label: "WhatsApp", path: "/whatsapp", module: "integracao" },
 ];
 
-const bottomItems: NavItem[] = [
+const legislativoItems: NavItem[] = [
+  { icon: MessageSquare, label: "Demandas", path: "/demandas", module: "demandas" },
+  { icon: Calendar, label: "Eventos", path: "/eventos", module: "eventos" },
+  { icon: CalendarSync, label: "Calendário", path: "/calendario", module: "calendario" },
+  { icon: ClipboardList, label: "Movimentos", path: "/movimentos", module: "movimentos" },
+];
+
+const gestaoItems: NavItem[] = [
+  { icon: Users, label: "Pessoas", path: "/pessoas", module: "pessoas" },
+  { icon: BookUser, label: "Prontuário", path: "/prontuario", module: "prontuario" },
+  { icon: Wallet, label: "Financeiro", path: "/financas", module: "financas" },
+  { icon: BookOpen, label: "Logbook", path: "/logbook", module: "logbook" },
+];
+
+const operacoesItems: NavItem[] = [
+  { icon: Flag, label: "Modo Campanha", path: "/campanha", module: "campanha" },
+  { icon: Phone, label: "WhatsApp", path: "/whatsapp", module: "integracao" },
+  { icon: Plug, label: "Integração", path: "/integracao", module: "integracao" },
+];
+
+const sistemaItems: NavItem[] = [
   { icon: BarChart3, label: "Relatórios", path: "/relatorios", module: "relatorios" },
   { icon: FileText, label: "Rel. Coordenação", path: "/relatorio-coordenacao", module: "relatorio-coordenacao" },
   { icon: Users, label: "Usuários", path: "/usuarios", module: "usuarios" },
@@ -51,8 +61,17 @@ const bottomItems: NavItem[] = [
   { icon: Settings, label: "Configurações", path: "/configuracoes", module: "configuracoes" },
 ];
 
-export const SIDEBAR_WIDTH = 250;
+export const SIDEBAR_WIDTH = 260;
 export const SIDEBAR_COLLAPSED_WIDTH = 68;
+
+const SectionLabel = ({ label, show }: { label: string; show: boolean }) => {
+  if (!show) return <div className="h-3" />;
+  return (
+    <p className="px-3 pt-4 pb-1 text-[9px] font-bold uppercase tracking-widest text-sidebar-foreground/35 select-none">
+      {label}
+    </p>
+  );
+};
 
 const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const { collapsed } = useSidebarState();
@@ -74,7 +93,9 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const renderLink = (item: NavItem, small = false) => {
     if (!canSee(item)) return null;
     if (item.path === "/permissoes" && !isGestor) return null;
-    const isActive = location.pathname === item.path;
+    const isActive = item.path === "/"
+      ? location.pathname === "/"
+      : location.pathname.startsWith(item.path);
     const Icon = item.icon;
     return (
       <Link
@@ -89,8 +110,11 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
             : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
         )}
       >
-        <Icon className={cn("shrink-0", small ? "w-4 h-4" : "w-5 h-5")} />
-        {showLabels && <span className="truncate text-xs">{item.label}</span>}
+        {isActive && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-sidebar-primary rounded-full" />
+        )}
+        <Icon className={cn("shrink-0", small ? "w-4 h-4" : "w-4 h-4", isActive && "text-sidebar-primary")} />
+        {showLabels && <span className="truncate text-xs font-medium">{item.label}</span>}
       </Link>
     );
   };
@@ -99,61 +123,88 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-3 py-4 border-b border-sidebar-border">
-        <img
-          src={logoDan}
-          alt="Gabinete CMD Dan"
-          className={!showLabels ? "w-10 h-10 object-contain shrink-0" : "h-12 w-auto max-w-[160px] object-contain shrink-0"}
-        />
-        {showLabels && (
-          <div className="overflow-hidden">
-            <p className="text-xs font-bold text-accent truncate leading-tight">
-              Gestão Inteligente
-            </p>
-          </div>
+      {/* Logo / Brand — Automatikus */}
+      <div className="flex items-center gap-3 px-3 py-4 border-b border-sidebar-border/60">
+        {showLabels ? (
+          <AutomatikusLogo variant="full" className="w-full max-w-[184px]" />
+        ) : (
+          <AutomatikusLogo variant="icon" iconSize={38} className="shrink-0" />
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
-        {navItems.map((item) => renderLink(item))}
+      <nav className="flex-1 py-2 px-2 overflow-y-auto scrollbar-thin">
 
+        {/* PRINCIPAL */}
+        <SectionLabel label="Principal" show={showLabels} />
+        <div className="space-y-0.5">
+          {principalItems.map((item) => renderLink(item))}
+        </div>
+
+        {/* LEGISLATIVO */}
+        <SectionLabel label="Atividade" show={showLabels} />
+        <div className="space-y-0.5">
+          {legislativoItems.map((item) => renderLink(item))}
+        </div>
+
+        {/* GESTÃO */}
+        <SectionLabel label="Gestão" show={showLabels} />
+        <div className="space-y-0.5">
+          {gestaoItems.map((item) => renderLink(item))}
+        </div>
+
+        {/* OPERAÇÕES */}
+        <SectionLabel label="Operações" show={showLabels} />
+        <div className="space-y-0.5">
+          {operacoesItems.map((item) => renderLink(item))}
+        </div>
+
+        {/* COORDENAÇÕES */}
         {showCoord && (
-          <div>
-            <Link
-              to="/coordenacoes"
-              onClick={onNavigate}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 w-full cursor-pointer",
-                isCoordActive
-                  ? "bg-sidebar-accent text-sidebar-primary font-semibold"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          <>
+            <SectionLabel label="Coordenações" show={showLabels} />
+            <div className="space-y-0.5">
+              <Link
+                to="/coordenacoes"
+                onClick={onNavigate}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 w-full cursor-pointer relative",
+                  isCoordActive
+                    ? "bg-gradient-to-r from-sidebar-primary/20 to-sidebar-primary/5 text-sidebar-primary font-semibold border border-sidebar-primary/20"
+                    : "text-sidebar-foreground/65 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+                )}
+              >
+                {isCoordActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-sidebar-primary rounded-full" />
+                )}
+                <ClipboardList className="w-4 h-4 shrink-0" />
+                {showLabels && (
+                  <>
+                    <span className="truncate flex-1 text-left text-xs font-medium">Todas as Coordenações</span>
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCoordOpen(!coordOpen); }}
+                      className="p-0.5 rounded hover:bg-sidebar-accent/80"
+                    >
+                      <ChevronDown className={cn("w-3.5 h-3.5 transition-transform text-sidebar-foreground/50", coordOpen && "rotate-180")} />
+                    </button>
+                  </>
+                )}
+              </Link>
+              {coordOpen && showLabels && (
+                <div className="mt-0.5 space-y-0.5">
+                  {coordenacaoItems.map((item) => renderLink(item as NavItem, true))}
+                </div>
               )}
-            >
-              <ClipboardList className="w-5 h-5 shrink-0" />
-              {showLabels && (
-                <>
-                  <span className="truncate flex-1 text-left text-xs">Coordenações</span>
-                  <button
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCoordOpen(!coordOpen); }}
-                    className="p-0.5 rounded hover:bg-sidebar-accent/80"
-                  >
-                    <ChevronDown className={cn("w-4 h-4 transition-transform", coordOpen && "rotate-180")} />
-                  </button>
-                </>
-              )}
-            </Link>
-            {coordOpen && showLabels && (
-              <div className="mt-1 space-y-0.5">
-                {coordenacaoItems.map((item) => renderLink(item as NavItem, true))}
-              </div>
-            )}
-          </div>
+            </div>
+          </>
         )}
 
-        <div className="my-2 border-t border-sidebar-border/50" />
-        {bottomItems.map((item) => renderLink(item))}
+        {/* SISTEMA */}
+        <div className="my-3 border-t border-sidebar-border/40" />
+        <SectionLabel label="Sistema" show={showLabels} />
+        <div className="space-y-0.5">
+          {sistemaItems.map((item) => renderLink(item))}
+        </div>
       </nav>
 
       {/* User */}

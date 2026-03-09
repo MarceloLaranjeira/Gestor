@@ -110,9 +110,9 @@ type MetaKey = keyof typeof DEFAULT_METAS;
 const TABS = [
   { id: "visao", label: "Visão Geral" },
   { id: "desempenho", label: "Desempenho" },
-  { id: "equipe", label: "Equipe" },
+  { id: "equipe", label: "Assessoria" },
   { id: "financeiro", label: "Financeiro" },
-  { id: "metas", label: "🎯 Metas" },
+  { id: "metas", label: "Metas" },
 ];
 
 // ── Main ───────────────────────────────────────────────────────────────────────
@@ -266,7 +266,7 @@ const Relatorios = () => {
     const tipoLines = pessoasPorTipo.map(p => `  - ${p.tipo}: ${p.total}`).join("\n") || "  Sem dados";
     const coordLines = desempenhoCoordenacoes.map(c => `  - ${c.nome}: ${c.taxa}% (${c.concluidas}/${c.total})`).join("\n") || "  Sem dados";
     const respLines = responsaveis.slice(0, 5).map(r => `  - ${r.nome}: ${r.taxa}% conclusão (${r.total} demandas)`).join("\n") || "  Sem dados";
-    const prompt = `Analise os dados completos de desempenho do mandato do Deputado Comandante Dan:
+    const prompt = `Analise os dados completos de desempenho da gestão de gabinete parlamentar:
 
 ## 📋 DEMANDAS (Total: ${demandas.length})
 - Pendentes: ${pendentes} | Em andamento: ${andamento} | Concluídas: ${concluidas} (${taxaConclusaoDemandas}%) | Atrasadas: ${atrasadas} (${taxaAtrasadas}%)
@@ -289,7 +289,7 @@ const Relatorios = () => {
 ### Por Tipo de Pessoa: ${tipoLines}
 
 ---
-Forneça: 1) Score de desempenho geral (0-100) com justificativa, 2) Principais gargalos, 3) Destaques positivos, 4) Recomendações prioritárias por área (Demandas, Equipe, Coordenações, Financeiro), 5) Plano de ação das próximas 2 semanas.`;
+Forneça: 1) Score de desempenho geral (0-100) com justificativa, 2) Principais gargalos operacionais, 3) Destaques positivos, 4) Recomendações prioritárias por área (Demandas, Assessoria, Coordenações, Financeiro), 5) Plano de ação estratégico para as próximas 2 semanas.`;
     navigate("/agente-ia", { state: { prompt } });
   };
 
@@ -299,12 +299,12 @@ Forneça: 1) Score de desempenho geral (0-100) com justificativa, 2) Principais 
     try {
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const now = new Date().toLocaleDateString("pt-BR");
-      doc.setFillColor(25, 80, 50);
+      doc.setFillColor(13, 71, 161);
       doc.rect(0, 0, 210, 28, "F");
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.text("Relatório de Desempenho — Dep. Comandante Dan", 14, 12);
+      doc.text("Relatório de Desempenho — Gestão de Gabinete", 14, 12);
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.text(`Gerado em ${now}`, 14, 22);
@@ -325,17 +325,17 @@ Forneça: 1) Score de desempenho geral (0-100) com justificativa, 2) Principais 
         ["Score de Desempenho Geral", `${scoreGeral}/100`],
         ["Total de Eventos", eventos.length], ["Total de Pessoas", pessoas.length],
         ["Receitas", fmt(totalReceitas)], ["Despesas", fmt(totalDespesas)], ["Saldo", fmt(saldo)],
-      ], styles: { fontSize: 9 }, headStyles: { fillColor: [25, 80, 50] } });
+      ], styles: { fontSize: 9 }, headStyles: { fillColor: [13, 71, 161] } });
       y = (doc as any).lastAutoTable.finalY + 8;
       section("Desempenho por Coordenação");
-      autoTable(doc, { startY: y, head: [["Coordenação", "Total", "Concluídas", "Pendentes", "Taxa"]], body: desempenhoCoordenacoes.map(c => [c.nome, c.total, c.concluidas, c.pendentes, `${c.taxa}%`]), styles: { fontSize: 9 }, headStyles: { fillColor: [25, 80, 50] } });
+      autoTable(doc, { startY: y, head: [["Coordenação", "Total", "Concluídas", "Pendentes", "Taxa"]], body: desempenhoCoordenacoes.map(c => [c.nome, c.total, c.concluidas, c.pendentes, `${c.taxa}%`]), styles: { fontSize: 9 }, headStyles: { fillColor: [13, 71, 161] } });
       y = (doc as any).lastAutoTable.finalY + 8;
       section("Desempenho da Equipe (por Responsável)");
-      autoTable(doc, { startY: y, head: [["Responsável", "Total", "Concluídas", "Atrasadas", "Taxa"]], body: responsaveis.map(r => [r.nome, r.total, r.concluidas, r.atrasadas, `${r.taxa}%`]), styles: { fontSize: 9 }, headStyles: { fillColor: [25, 80, 50] } });
+      autoTable(doc, { startY: y, head: [["Responsável", "Total", "Concluídas", "Atrasadas", "Taxa"]], body: responsaveis.map(r => [r.nome, r.total, r.concluidas, r.atrasadas, `${r.taxa}%`]), styles: { fontSize: 9 }, headStyles: { fillColor: [13, 71, 161] } });
       y = (doc as any).lastAutoTable.finalY + 8;
       section("Demandas por Categoria");
-      autoTable(doc, { startY: y, head: [["Categoria", "Quantidade"]], body: demandasPorCategoria.map(d => [d.categoria, d.total]), styles: { fontSize: 9 }, headStyles: { fillColor: [25, 80, 50] } });
-      doc.save(`desempenho-mandato-${now.replace(/\//g, "-")}.pdf`);
+      autoTable(doc, { startY: y, head: [["Categoria", "Quantidade"]], body: demandasPorCategoria.map(d => [d.categoria, d.total]), styles: { fontSize: 9 }, headStyles: { fillColor: [13, 71, 161] } });
+      doc.save(`relatorio-gabinete-${now.replace(/\//g, "-")}.pdf`);
     } finally {
       setExporting(false);
     }
@@ -357,8 +357,8 @@ Forneça: 1) Score de desempenho geral (0-100) com justificativa, 2) Principais 
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold font-display text-foreground">Relatórios</h1>
-            <p className="text-sm text-muted-foreground">Análises e métricas reais do gabinete</p>
+            <h1 className="text-2xl font-bold font-display text-foreground">Relatórios & Análises</h1>
+            <p className="text-sm text-muted-foreground">Indicadores de desempenho, métricas e análises estratégicas do gabinete</p>
           </div>
           <div className="flex items-center gap-2">
             <Button onClick={analisarComIA} className="gradient-primary text-primary-foreground border-0 gap-2">
@@ -492,7 +492,7 @@ Forneça: 1) Score de desempenho geral (0-100) com justificativa, 2) Principais 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Score gauge */}
               <div className="glass-card rounded-xl p-5 flex flex-col items-center justify-center">
-                <h3 className="text-sm font-semibold text-foreground mb-2 font-display">Score de Desempenho</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-2 font-display">Score Geral do Gabinete</h3>
                 <ResponsiveContainer width="100%" height={160}>
                   <RadialBarChart cx="50%" cy="70%" innerRadius="60%" outerRadius="90%" data={[{ name: "Score", value: scoreGeral, fill: scoreGeral >= 70 ? "hsl(142,70%,40%)" : scoreGeral >= 40 ? "hsl(38,92%,50%)" : "hsl(0,72%,51%)" }]} startAngle={180} endAngle={0}>
                     <RadialBar dataKey="value" cornerRadius={8} />
@@ -574,20 +574,20 @@ Forneça: 1) Score de desempenho geral (0-100) com justificativa, 2) Principais 
         {tab === "equipe" && (
           <motion.div key="equipe" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
-              <StatCard icon={Users} label="Responsáveis ativos" value={responsaveis.length} />
+              <StatCard icon={Users} label="Assessores com demandas" value={responsaveis.length} />
               <StatCard icon={CheckCircle2} label="Melhor taxa" value={responsaveis[0] ? `${responsaveis[0].taxa}%` : "-"} sub={responsaveis[0]?.nome} color="success" />
               <StatCard icon={AlertTriangle} label="Com demandas atrasadas" value={responsaveis.filter(r => r.atrasadas > 0).length} color="destructive" />
             </div>
 
             {responsaveis.length === 0 ? (
               <div className="glass-card rounded-xl p-12 text-center text-muted-foreground">
-                Nenhum responsável cadastrado nas demandas ainda.
+                Nenhum assessor/responsável cadastrado nas demandas. Atribua responsáveis ao criar demandas.
               </div>
             ) : (
               <>
                 <div className="glass-card rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-foreground mb-4 font-display flex items-center gap-2">
-                    <Award className="w-4 h-4 text-primary" /> Ranking de Responsáveis
+                    <Award className="w-4 h-4 text-primary" /> Ranking de Desempenho — Assessores
                   </h3>
                   <div className="space-y-3">
                     {responsaveis.map((r, i) => (
@@ -647,7 +647,7 @@ Forneça: 1) Score de desempenho geral (0-100) com justificativa, 2) Principais 
 
             {financeiros.length === 0 ? (
               <div className="glass-card rounded-xl p-12 text-center text-muted-foreground">
-                Nenhum lançamento financeiro registrado ainda. Acesse a página <strong>Financeiro</strong> para registrar.
+                Nenhum lançamento financeiro registrado ainda. Acesse <strong>Financeiro</strong> no menu lateral para registrar receitas e despesas.
               </div>
             ) : (
               <>
@@ -702,7 +702,7 @@ Forneça: 1) Score de desempenho geral (0-100) com justificativa, 2) Principais 
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Settings2 className="w-4 h-4 text-primary" />
-                  <h3 className="text-sm font-semibold text-foreground font-display">Configurar Metas de Desempenho</h3>
+                  <h3 className="text-sm font-semibold text-foreground font-display">Metas Estratégicas de Desempenho do Gabinete</h3>
                 </div>
                 <div className="flex gap-2">
                   <button

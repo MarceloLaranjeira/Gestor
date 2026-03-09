@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
 const GoogleCalendarCallback = () => {
@@ -32,15 +31,17 @@ const GoogleCalendarCallback = () => {
           ? window.location.origin.replace('lovableproject.com', 'lovable.app').replace(/^(https?:\/\/)/, '$1id-preview--')
           : window.location.origin;
         const redirectUri = `${origin}/auth/google-calendar/callback`;
-        const { data: session } = await supabase.auth.getSession();
 
+        // Use the anon key as the Bearer token — it is a valid JWT for the Supabase
+        // project and passes gateway JWT verification. Security for the callback
+        // action comes from the single-use state token stored in the database.
         const res = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar?action=callback`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${session.session?.access_token}`,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
               apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             },
             body: JSON.stringify({ code, redirect_uri: redirectUri, state }),

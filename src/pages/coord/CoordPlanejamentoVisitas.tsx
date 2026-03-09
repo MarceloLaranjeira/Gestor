@@ -76,7 +76,7 @@ const CoordPlanejamentoVisitas = () => {
     const coord = getCoord(agendarCalha);
     await supabase.from("campanha_visitas").insert({
       calha_id: agendarCalha, coordenador_id: coord?.id || null,
-      data_visita: agendarForm.data_visita, objetivo: "Visita estratégica do Comandante",
+      data_visita: agendarForm.data_visita, objetivo: "Visita estratégica parlamentar",
       status: "planejada", observacoes: agendarForm.observacoes, user_id: user.user_id,
     });
     setAgendarCalha(null); setAgendarForm({ data_visita: "", observacoes: "" });
@@ -86,7 +86,7 @@ const CoordPlanejamentoVisitas = () => {
   const visitasAgendadas = visitas.filter(v => v.status === "planejada");
 
   return (
-    <CampanhaLayout title="Planejamento de Visitas do Comandante">
+    <CampanhaLayout title="Planejamento de Visitas Parlamentares">
       {/* Parâmetros */}
       <Card className="mb-6">
         <CardHeader>

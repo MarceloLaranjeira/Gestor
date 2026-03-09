@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, Sun, Moon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import NotificationPanel from "@/components/NotificationPanel";
 import { useSidebarState } from "./AppLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface SearchResult {
   type: "pessoa" | "demanda" | "evento" | "pagina" | "tarefa";
@@ -31,9 +32,9 @@ const sidebarPages: { label: string; path: string; keywords: string[] }[] = [
   { label: "Coord. Eclesiástica", path: "/coordenacao/eclesiastica", keywords: ["eclesiástica", "igreja", "coordenação"] },
   { label: "Coord. Comunicação", path: "/coordenacao/comunicacao", keywords: ["comunicação", "mídia", "coordenação"] },
   { label: "Coord. Inteligência de Dados", path: "/coordenacao/inteligencia", keywords: ["inteligência", "dados", "coordenação"] },
-  { label: "Coord. CSPJD", path: "/coordenacao/cspjd", keywords: ["cspjd", "segurança", "coordenação"] },
-  { label: "Coord. Gabinete", path: "/coordenacao/gabinete", keywords: ["gabinete", "coordenação"] },
-  { label: "Coord. Equipe CMT Dan", path: "/coordenacao/equipe", keywords: ["equipe", "cmt", "dan", "coordenação"] },
+  { label: "Coord. Segurança", path: "/coordenacao/cspjd", keywords: ["segurança", "proteção", "coordenação"] },
+  { label: "Coord. Gabinete", path: "/coordenacao/gabinete", keywords: ["gabinete", "coordenação", "interno"] },
+  { label: "Coord. Equipe Interna", path: "/coordenacao/equipe", keywords: ["equipe", "interna", "coordenação"] },
 ];
 
 const AppHeader = () => {
@@ -41,6 +42,7 @@ const AppHeader = () => {
   const { setMobileOpen } = useSidebarState();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const { darkMode, toggleDarkMode } = useTheme();
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -197,6 +199,13 @@ const AppHeader = () => {
       </div>
 
       <div className="flex items-center gap-1 sm:gap-3 shrink-0">
+        <button
+          onClick={toggleDarkMode}
+          className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+          title={darkMode ? "Modo claro" : "Modo escuro"}
+        >
+          {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
         <NotificationPanel />
 
         <div className="flex items-center gap-2 sm:gap-2.5 pl-2 sm:pl-3 border-l border-border">

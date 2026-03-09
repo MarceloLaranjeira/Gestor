@@ -20,10 +20,9 @@ async function getAuthenticatedUser(req: Request) {
     global: { headers: { Authorization: authHeader } },
   });
 
-  const token = authHeader.replace("Bearer ", "");
-  const { data, error } = await client.auth.getClaims(token);
-  if (error || !data?.claims) return null;
-  return data.claims.sub as string;
+  const { data: { user }, error } = await client.auth.getUser();
+  if (error || !user) return null;
+  return user.id;
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<{ access_token: string; expires_in: number } | null> {
@@ -97,44 +96,68 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Generate a random CSRF state token and store it in DB
+      const stateToken = crypto.randomUUID();
+      const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      await admin.from("google_calendar_oauth_states").insert({
+        state: stateToken,
+        user_id: userId,
+      });
+
       const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       authUrl.searchParams.set("client_id", GOOGLE_CLIENT_ID);
       authUrl.searchParams.set("redirect_uri", redirectUri);
       authUrl.searchParams.set("response_type", "code");
-      authUrl.searchParams.set("scope", "https://www.googleapis.com/auth/calendar");
+      authUrl.searchParams.set("scope", "https://www.googleapis.com/auth/calendar.events");
       authUrl.searchParams.set("access_type", "offline");
       authUrl.searchParams.set("prompt", "consent");
-      authUrl.searchParams.set("state", userId);
-
-      console.log("=== GOOGLE OAUTH DEBUG ===");
-      console.log("redirect_uri recebida:", redirectUri);
-      console.log("client_id usado:", GOOGLE_CLIENT_ID);
-      console.log("URL completa:", authUrl.toString());
+      authUrl.searchParams.set("state", stateToken);
 
       return new Response(JSON.stringify({ url: authUrl.toString() }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // === OAuth: exchange code for tokens ===
+    // === OAuth: exchange code for tokens (no JWT required — state validates the request) ===
     if (action === "callback") {
-      const userId = await getAuthenticatedUser(req);
-      if (!userId) {
-        return new Response(JSON.stringify({ error: "Não autorizado" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
       const { code, redirect_uri, state } = await req.json();
 
-      // Validate state matches authenticated user to prevent token theft
-      if (state !== userId) {
-        return new Response(JSON.stringify({ error: "Estado inválido" }), {
+      if (!code || !state) {
+        return new Response(JSON.stringify({ error: "Parâmetros inválidos" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      // Look up state token in DB — this is the CSRF protection
+      const { data: stateRow, error: stateError } = await admin
+        .from("google_calendar_oauth_states")
+        .select("user_id, expires_at")
+        .eq("state", state)
+        .single();
+
+      if (stateError || !stateRow) {
+        return new Response(JSON.stringify({ error: "Estado inválido ou expirado" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Check expiry
+      if (new Date(stateRow.expires_at) < new Date()) {
+        await admin.from("google_calendar_oauth_states").delete().eq("state", state);
+        return new Response(JSON.stringify({ error: "Estado expirado. Tente conectar novamente." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Delete the state token (single-use)
+      await admin.from("google_calendar_oauth_states").delete().eq("state", state);
+
+      const userId = stateRow.user_id;
 
       const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
@@ -156,7 +179,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
 
       await admin.from("google_calendar_tokens").upsert({
@@ -255,7 +277,7 @@ Deno.serve(async (req) => {
     // === Create event ===
     if (action === "create") {
       const body = await req.json();
-      
+
       // Add conferenceDataVersion to support Meet link creation
       const createUrl = `${calendarBase}/events?conferenceDataVersion=1`;
       const res = await fetch(createUrl, {
