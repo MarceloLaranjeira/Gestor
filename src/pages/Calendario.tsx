@@ -343,7 +343,15 @@ const Calendario = () => {
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
               Sincronize seus eventos do Google Calendar com o sistema para visualizar tudo em um só lugar.
             </p>
-            <Button onClick={gcal.connect} className="gradient-primary text-primary-foreground border-0">
+            <Button
+              onClick={async () => {
+                const result = await gcal.connect();
+                if (result?.error) {
+                  toast({ title: result.error, variant: "destructive" });
+                }
+              }}
+              className="gradient-primary text-primary-foreground border-0"
+            >
               Conectar Google Calendar
             </Button>
           </div>

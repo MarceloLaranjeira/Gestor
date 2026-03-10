@@ -12,6 +12,63 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// ─── Stateless HMAC state token (no DB table required) ───────────────────────
+// State format: base64url(userId.timestamp).signature
+// Validity window: 10 minutes
+
+async function createStateToken(userId: string): Promise<string> {
+  const payload = `${userId}.${Date.now()}`;
+  const sig = await hmacSign(payload);
+  return `${btoa(payload).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")}.${sig}`;
+}
+
+async function verifyStateToken(state: string): Promise<{ userId: string } | null> {
+  try {
+    const lastDot = state.lastIndexOf(".");
+    if (lastDot === -1) return null;
+
+    const encodedPayload = state.slice(0, lastDot);
+    const sig = state.slice(lastDot + 1);
+
+    // Restore base64 padding
+    const pad = encodedPayload.length % 4;
+    const padded = pad ? encodedPayload + "=".repeat(4 - pad) : encodedPayload;
+    const payload = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
+
+    const expectedSig = await hmacSign(payload);
+    if (sig !== expectedSig) return null;
+
+    const [userId, tsStr] = payload.split(".");
+    if (!userId || !tsStr) return null;
+
+    const ts = parseInt(tsStr, 10);
+    if (isNaN(ts) || Date.now() - ts > 10 * 60 * 1000) return null; // expired after 10 min
+
+    return { userId };
+  } catch {
+    return null;
+  }
+}
+
+async function hmacSign(data: string): Promise<string> {
+  const secret = GOOGLE_CLIENT_SECRET || SUPABASE_SERVICE_ROLE_KEY;
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
+  return btoa(String.fromCharCode(...new Uint8Array(sig)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+}
+
+// ─── Auth helpers ─────────────────────────────────────────────────────────────
+
 async function getAuthenticatedUser(req: Request) {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
@@ -69,6 +126,8 @@ async function getValidToken(userId: string) {
   return refreshed.access_token;
 }
 
+// ─── Main handler ─────────────────────────────────────────────────────────────
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -96,13 +155,8 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Generate a random CSRF state token and store it in DB
-      const stateToken = crypto.randomUUID();
-      const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      await admin.from("google_calendar_oauth_states").insert({
-        state: stateToken,
-        user_id: userId,
-      });
+      // Generate a stateless, HMAC-signed state token — no DB table required
+      const stateToken = await createStateToken(userId);
 
       const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       authUrl.searchParams.set("client_id", GOOGLE_CLIENT_ID);
@@ -118,7 +172,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // === OAuth: exchange code for tokens (no JWT required — state validates the request) ===
+    // === OAuth: exchange code for tokens ===
     if (action === "callback") {
       let body: { code?: string; redirect_uri?: string; state?: string } = {};
       try {
@@ -141,35 +195,16 @@ Deno.serve(async (req) => {
         });
       }
 
-      const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-      // Look up state token in DB — this is the CSRF protection
-      const { data: stateRow, error: stateError } = await admin
-        .from("google_calendar_oauth_states")
-        .select("user_id, expires_at")
-        .eq("state", state)
-        .single();
-
-      if (stateError || !stateRow) {
-        return new Response(JSON.stringify({ error: "Estado inválido ou expirado" }), {
+      // Verify the HMAC-signed state token — this is the CSRF protection
+      const verified = await verifyStateToken(state);
+      if (!verified) {
+        return new Response(JSON.stringify({ error: "Estado inválido ou expirado. Tente conectar novamente." }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Check expiry
-      if (new Date(stateRow.expires_at) < new Date()) {
-        await admin.from("google_calendar_oauth_states").delete().eq("state", state);
-        return new Response(JSON.stringify({ error: "Estado expirado. Tente conectar novamente." }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Delete the state token (single-use)
-      await admin.from("google_calendar_oauth_states").delete().eq("state", state);
-
-      const userId = stateRow.user_id;
+      const userId = verified.userId;
 
       const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
@@ -192,6 +227,7 @@ Deno.serve(async (req) => {
       }
 
       const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
+      const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
       await admin.from("google_calendar_tokens").upsert({
         user_id: userId,
@@ -290,7 +326,6 @@ Deno.serve(async (req) => {
     if (action === "create") {
       const body = await req.json();
 
-      // Add conferenceDataVersion to support Meet link creation
       const createUrl = `${calendarBase}/events?conferenceDataVersion=1`;
       const res = await fetch(createUrl, {
         method: "POST",
