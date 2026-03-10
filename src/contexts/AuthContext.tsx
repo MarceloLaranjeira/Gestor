@@ -30,19 +30,41 @@ export const useAuth = () => {
   return ctx;
 };
 
-async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
+async function fetchUserProfile(userId: string, authUser?: User): Promise<UserProfile | null> {
   const { data: profile } = await supabase
     .from("profiles")
     .select("nome, email, user_id, cargo, avatar_url")
     .eq("user_id", userId)
     .single();
 
+  if (!profile) {
+    if (!authUser) return null;
+
+    // Auto-create profile for OAuth/new users
+    const nome =
+      authUser.user_metadata?.full_name ||
+      authUser.user_metadata?.name ||
+      authUser.email?.split("@")[0] ||
+      "Usuário";
+    const email = authUser.email || "";
+
+    await supabase.from("profiles").insert({ user_id: userId, nome, email });
+    await supabase.from("user_roles").insert({ user_id: userId, role: "gestor" });
+
+    return {
+      name: nome,
+      email,
+      role: "Gestor",
+      user_id: userId,
+      cargo: "",
+      avatar_url: authUser.user_metadata?.avatar_url || null,
+    };
+  }
+
   const { data: roles } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId);
-
-  if (!profile) return null;
 
   const role = roles?.[0]?.role || "assessor";
   const roleLabel = role === "gestor" ? "Gestor" : role === "assessor" ? "Assessor" : "Coordenador";
@@ -71,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!isMounted) return;
         if (session?.user) {
-          const profile = await fetchUserProfile(session.user.id);
+          const profile = await fetchUserProfile(session.user.id, session.user);
           if (isMounted) setUser(profile);
         }
       } finally {
@@ -87,8 +109,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (event, session) => {
         if (!isMounted || !initialLoadDone) return;
         if (session?.user) {
+          const sessionUser = session.user;
           setTimeout(() => {
-            fetchUserProfile(session.user.id).then((profile) => {
+            fetchUserProfile(sessionUser.id, sessionUser).then((profile) => {
               if (isMounted) setUser(profile);
             });
           }, 0);
@@ -142,7 +165,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
-      const profile = await fetchUserProfile(session.user.id);
+      const profile = await fetchUserProfile(session.user.id, session.user);
       setUser(profile);
     }
   };
