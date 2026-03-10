@@ -120,9 +120,21 @@ Deno.serve(async (req) => {
 
     // === OAuth: exchange code for tokens (no JWT required — state validates the request) ===
     if (action === "callback") {
-      const { code, redirect_uri, state } = await req.json();
+      let body: { code?: string; redirect_uri?: string; state?: string } = {};
+      try {
+        body = await req.json();
+      } catch {
+        console.error("[google-calendar] callback: failed to parse request body");
+        return new Response(JSON.stringify({ error: "Corpo da requisição inválido" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { code, redirect_uri, state } = body;
 
       if (!code || !state) {
+        console.error("[google-calendar] callback: missing code or state", { code: !!code, state: !!state });
         return new Response(JSON.stringify({ error: "Parâmetros inválidos" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

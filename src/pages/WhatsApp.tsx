@@ -19,7 +19,8 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, Search, MessageSquare, Check, CheckCheck, AlertCircle,
   MoreVertical, Info, Trash2, Pencil, Copy, Reply, Star, Forward,
-  ChevronDown, ArrowDown, X, ImagePlus, Upload,
+  ChevronDown, ArrowDown, X, ImagePlus, Upload, RefreshCw, Smartphone,
+  QrCode, Wifi, WifiOff,
 } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -62,8 +63,117 @@ const WhatsApp = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
-  const [instanceName, setInstanceName] = useState("");
+  const [instanceName, setInstanceName] = useState(() => {
+    try { return localStorage.getItem("wa-instance") || ""; } catch { return ""; }
+  });
   const [numero, setNumero] = useState("");
+
+  // ── WhatsApp Connection / QR Code ──────────────────────────────────────
+  const [instanceStatus, setInstanceStatus] = useState<"unknown" | "checking" | "open" | "close">("unknown");
+  const [qrBase64, setQrBase64] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrCountdown, setQrCountdown] = useState(0);
+  const statusPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const qrTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const getEvolutionHeaders = useCallback((cfg: Config) => {
+    const authType = cfg.auth_header_type || "apikey";
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (authType === "bearer") headers["Authorization"] = `Bearer ${cfg.api_token}`;
+    else if (authType === "x-api-key") headers["x-api-key"] = cfg.api_token;
+    else headers["apikey"] = cfg.api_token;
+    return headers;
+  }, []);
+
+  const getBaseUrl = useCallback((cfg: Config) =>
+    cfg.api_url.replace(/\/+$/, "").replace(/\/manager$/, ""), []);
+
+  const checkStatus = useCallback(async (cfg: Config, inst: string) => {
+    if (!inst.trim()) return;
+    setInstanceStatus("checking");
+    try {
+      const res = await fetch(`${getBaseUrl(cfg)}/instance/connectionState/${inst}`, {
+        headers: getEvolutionHeaders(cfg),
+      });
+      const data = await res.json();
+      const state: string = data?.instance?.state || data?.state || "close";
+      setInstanceStatus(state === "open" ? "open" : "close");
+      return state === "open";
+    } catch {
+      setInstanceStatus("close");
+      return false;
+    }
+  }, [getBaseUrl, getEvolutionHeaders]);
+
+  const fetchQRCode = useCallback(async (cfg: Config, inst: string) => {
+    if (!inst.trim() || qrLoading) return;
+    setQrLoading(true);
+    setQrBase64(null);
+    try {
+      const res = await fetch(`${getBaseUrl(cfg)}/instance/connect/${inst}`, {
+        headers: getEvolutionHeaders(cfg),
+      });
+      const data = await res.json();
+      const qr = data?.base64 || data?.qrcode?.base64 || data?.qr;
+      if (qr) {
+        setQrBase64(qr);
+        // 30-second countdown until next auto-refresh
+        setQrCountdown(30);
+      }
+    } catch {
+      toast({ title: "Não foi possível obter o QR Code", description: "Verifique a URL e token da API", variant: "destructive" });
+    } finally {
+      setQrLoading(false);
+    }
+  }, [getBaseUrl, getEvolutionHeaders, qrLoading]);
+
+  // Save instance name to localStorage
+  useEffect(() => {
+    try { localStorage.setItem("wa-instance", instanceName); } catch {}
+  }, [instanceName]);
+
+  // Check status when config + instanceName are ready
+  useEffect(() => {
+    if (!config || !instanceName.trim()) return;
+    checkStatus(config, instanceName);
+  }, [config, instanceName]);
+
+  // Poll connection status every 3s when on QR screen
+  useEffect(() => {
+    if (!config || !instanceName.trim()) return;
+    if (instanceStatus === "open") {
+      if (statusPollRef.current) clearInterval(statusPollRef.current);
+      return;
+    }
+    if (instanceStatus === "close" || instanceStatus === "checking") {
+      if (statusPollRef.current) clearInterval(statusPollRef.current);
+      statusPollRef.current = setInterval(async () => {
+        const connected = await checkStatus(config, instanceName);
+        if (connected) {
+          if (statusPollRef.current) clearInterval(statusPollRef.current);
+          toast({ title: "✅ WhatsApp conectado!", description: "Seu número está vinculado ao sistema." });
+        }
+      }, 3000);
+    }
+    return () => { if (statusPollRef.current) clearInterval(statusPollRef.current); };
+  }, [config, instanceName, instanceStatus]);
+
+  // QR code 30-second countdown + auto-refresh
+  useEffect(() => {
+    if (qrCountdown <= 0) { if (qrTimerRef.current) clearInterval(qrTimerRef.current); return; }
+    qrTimerRef.current = setInterval(() => {
+      setQrCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(qrTimerRef.current!);
+          if (config && instanceName.trim() && instanceStatus !== "open") fetchQRCode(config, instanceName);
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => { if (qrTimerRef.current) clearInterval(qrTimerRef.current); };
+  }, [qrCountdown]);
+  // ── End Connection / QR Code ───────────────────────────────────────────
   const [showSearch, setShowSearch] = useState(false);
   const [chatSearch, setChatSearch] = useState("");
   const [showChatSearch, setShowChatSearch] = useState(false);
@@ -403,6 +513,138 @@ const WhatsApp = () => {
     );
   }
 
+  // ── QR Code Connection Screen ─────────────────────────────────────────
+  if (instanceStatus !== "open") {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] p-4">
+          <div className="w-full max-w-3xl rounded-2xl border border-border overflow-hidden shadow-xl animate-fade-in"
+            style={{ background: "#fff" }}>
+            {/* Header */}
+            <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ background: WA_HEADER }}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: WA_GREEN }}>
+                <MessageSquare className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-[15px] font-semibold text-[#111b21]">WhatsApp — Conectar Dispositivo</p>
+                <p className="text-xs text-[#667781]">Escaneie o QR code para vincular seu WhatsApp</p>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                {instanceStatus === "checking" && (
+                  <span className="flex items-center gap-1.5 text-xs text-[#667781]">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verificando...
+                  </span>
+                )}
+                {instanceStatus === "close" && (
+                  <span className="flex items-center gap-1.5 text-xs text-[#667781]">
+                    <WifiOff className="w-3.5 h-3.5" /> Desconectado
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row">
+              {/* Left panel — instructions */}
+              <div className="flex-1 px-8 py-8 space-y-6">
+                <div>
+                  <p className="text-[22px] font-light text-[#41525d]">Use o WhatsApp no sistema</p>
+                  <p className="text-sm text-[#667781] mt-1">Conecte seu número para enviar e receber mensagens dos eleitores.</p>
+                </div>
+
+                <ol className="space-y-4">
+                  {[
+                    { n: 1, text: "Abra o WhatsApp no seu celular" },
+                    { n: 2, text: "Toque em Menu (⋮) ou Configurações" },
+                    { n: 3, text: "Selecione Dispositivos conectados" },
+                    { n: 4, text: "Toque em Conectar dispositivo e escaneie o QR code" },
+                  ].map(({ n, text }) => (
+                    <li key={n} className="flex items-start gap-3">
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5"
+                        style={{ backgroundColor: WA_GREEN }}>{n}</span>
+                      <span className="text-sm text-[#41525d]">{text}</span>
+                    </li>
+                  ))}
+                </ol>
+
+                <div className="pt-2 border-t border-[#e9edef]">
+                  <p className="text-xs text-[#8696a0] font-semibold mb-2 uppercase tracking-wider">Nome da Instância</p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={instanceName}
+                      onChange={(e) => setInstanceName(e.target.value)}
+                      placeholder="ex: gabinete-principal"
+                      className="h-9 text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      className="h-9 px-4 shrink-0 text-white"
+                      style={{ backgroundColor: WA_GREEN }}
+                      onClick={() => config && fetchQRCode(config, instanceName)}
+                      disabled={!instanceName.trim() || qrLoading}
+                    >
+                      {qrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right panel — QR Code */}
+              <div className="w-full md:w-[320px] flex flex-col items-center justify-center px-8 py-8 border-t md:border-t-0 md:border-l border-[#e9edef] bg-[#fafafa]">
+                {!instanceName.trim() ? (
+                  <div className="text-center space-y-3">
+                    <div className="w-[180px] h-[180px] border-2 border-dashed border-[#d1d7db] rounded-xl flex items-center justify-center mx-auto">
+                      <Smartphone className="w-16 h-16 text-[#d1d7db]" />
+                    </div>
+                    <p className="text-xs text-[#8696a0]">Informe o nome da instância para gerar o QR code</p>
+                  </div>
+                ) : qrLoading ? (
+                  <div className="w-[180px] h-[180px] border border-[#e9edef] rounded-xl flex items-center justify-center bg-white shadow-sm">
+                    <Loader2 className="w-10 h-10 animate-spin" style={{ color: WA_GREEN }} />
+                  </div>
+                ) : qrBase64 ? (
+                  <div className="text-center space-y-3">
+                    <div className="w-[200px] h-[200px] p-2 bg-white border border-[#e9edef] rounded-xl shadow-sm overflow-hidden">
+                      <img src={qrBase64} alt="QR Code WhatsApp" className="w-full h-full object-contain" />
+                    </div>
+                    <button
+                      onClick={() => config && fetchQRCode(config, instanceName)}
+                      className="flex items-center gap-2 text-xs font-medium mx-auto"
+                      style={{ color: WA_GREEN }}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      {qrCountdown > 0 ? `Atualiza em ${qrCountdown}s` : "Atualizar QR Code"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-4">
+                    <div className="w-[180px] h-[180px] border border-[#e9edef] rounded-xl flex flex-col items-center justify-center gap-2 bg-white shadow-sm mx-auto">
+                      <QrCode className="w-14 h-14 text-[#d1d7db]" />
+                      <p className="text-xs text-[#8696a0] px-4">Clique no botão para gerar o QR Code</p>
+                    </div>
+                    <Button
+                      onClick={() => config && fetchQRCode(config, instanceName)}
+                      disabled={!instanceName.trim()}
+                      className="text-white text-sm h-9 px-6"
+                      style={{ backgroundColor: WA_GREEN }}
+                    >
+                      <QrCode className="w-4 h-4 mr-2" />
+                      Gerar QR Code
+                    </Button>
+                  </div>
+                )}
+                <div className="mt-4 flex items-center gap-1.5 text-[11px] text-[#8696a0]">
+                  <Wifi className="w-3 h-3" />
+                  Verificando conexão automaticamente...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+  // ── End QR Code Screen ────────────────────────────────────────────────
+
   return (
     <AppLayout>
       <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden rounded-lg border shadow-lg">
@@ -530,8 +772,15 @@ const WhatsApp = () => {
                   </p>
                   <div className="pt-6 flex items-center justify-center gap-2 text-[12px] text-[#8696a0]">
                     <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: "#25d366" }} />
-                    Conectado ao sistema do Gabinete
+                    {instanceName ? `Instância: ${instanceName}` : "Conectado ao sistema do Gabinete"}
                   </div>
+                  <button
+                    onClick={() => setInstanceStatus("close")}
+                    className="mt-2 text-[11px] underline"
+                    style={{ color: WA_GREEN }}
+                  >
+                    Trocar dispositivo
+                  </button>
                 </div>
               </div>
             ) : (
