@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { usePermissions, getModuleForRoute } from "@/hooks/usePermissions";
 import { Loader2 } from "lucide-react";
+import { Analytics } from "@vercel/analytics/react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Pessoas from "./pages/Pessoas";
@@ -172,6 +173,7 @@ const App = () => (
           </BrowserRouter>
         </AuthProvider>
       </ThemeProvider>
+      <Analytics />
     </TooltipProvider>
   </QueryClientProvider>
 );
