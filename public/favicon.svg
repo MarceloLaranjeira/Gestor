@@ -1,13 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#5B21B6"/>
-      <stop offset="100%" stop-color="#2563EB"/>
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#0EA5E9"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="64" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="14" fill="url(#bg)"/>
-  <!-- Letter A -->
-  <text x="32" y="46" font-family="Arial, sans-serif" font-weight="700" font-size="36" fill="white" text-anchor="middle">A</text>
-  <!-- Bottom accent dot -->
-  <circle cx="32" cy="56" r="2.5" fill="rgba(255,255,255,0.5)"/>
+  <rect width="64" height="32" rx="13" fill="url(#shine)"/>
+  <text x="32" y="44" font-family="'Arial Black', Arial, sans-serif" font-weight="900" font-size="34" fill="white" text-anchor="middle">G</text>
+  <circle cx="32" cy="57" r="2.5" fill="rgba(255,255,255,0.45)"/>
 </svg>

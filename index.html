@@ -3,23 +3,28 @@
   <head>
     <meta charset="UTF-8" />
 
-    <!-- ── Favicon Automatikus ── -->
+    <!-- ── Favicon Gestor Inteligente ── -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Gestor" />
+    <meta name="application-name" content="Gestor" />
     <link rel="manifest" href="/site.webmanifest" />
 
     <!-- ── Viewport & Theme ── -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#5B21B6" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#1D4ED8" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="msapplication-TileColor" content="#1D4ED8" />
 
     <!-- ── Primary SEO ── -->
-    <title>Gestão Inteligente de Gabinete | Automatikus</title>
-    <meta name="title" content="Gestão Inteligente de Gabinete | Automatikus" />
-    <meta name="description" content="Plataforma inteligente de gestão parlamentar desenvolvida pela Automatikus. Gerencie demandas, pessoas, eventos, coordenações e finanças do gabinete em um único sistema integrado com IA." />
-    <meta name="keywords" content="gestão parlamentar, gabinete digital, automatikus, automação digital, gestão de demandas, gestão de eventos, coordenação parlamentar, assessoria parlamentar, IA parlamentar, software gabinete" />
-    <meta name="author" content="Automatikus — Automações Digitais" />
+    <title>Gestor Inteligente — Gestão Parlamentar com IA</title>
+    <meta name="title" content="Gestor Inteligente — Gestão Parlamentar com IA" />
+    <meta name="description" content="Plataforma completa de gestão parlamentar potencializada por Inteligência Artificial. Gerencie demandas, pessoas, eventos, agenda, movimentos sociais, WhatsApp e finanças do gabinete em um único sistema." />
+    <meta name="keywords" content="gestão parlamentar, gabinete digital, gestor inteligente, inteligência artificial parlamentar, gestão de demandas, agenda parlamentar, movimentos sociais, vereador digital, assessoria parlamentar, software gabinete, WhatsApp parlamentar" />
+    <meta name="author" content="Gestor Inteligente" />
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="language" content="Portuguese" />
     <meta name="revisit-after" content="7 days" />
@@ -27,28 +32,26 @@
     <meta name="google-site-verification" content="ZeyvP5X01zA-ECo9nd19aORl0rP4V_R9cfbNzvwprLQ" />
 
     <!-- ── Canonical ── -->
-    <link rel="canonical" href="https://gabinetedancamara.automatikus.com.br/" />
+    <link rel="canonical" href="https://gestor.automatikus.com.br/" />
 
     <!-- ── Open Graph / Facebook ── -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://gabinetedancamara.automatikus.com.br/" />
-    <meta property="og:title" content="Gestão Inteligente de Gabinete | Automatikus" />
-    <meta property="og:description" content="Plataforma inteligente de gestão parlamentar com IA integrada. Demandas, eventos, coordenações, finanças e muito mais em um único sistema." />
-    <meta property="og:image" content="https://gabinetedancamara.automatikus.com.br/og-image.png" />
+    <meta property="og:url" content="https://gestor.automatikus.com.br/" />
+    <meta property="og:title" content="Gestor Inteligente — Gestão Parlamentar com IA" />
+    <meta property="og:description" content="Gerencie seu gabinete com Inteligência Artificial. Demandas, agenda, movimentos sociais, WhatsApp e muito mais — tudo integrado, tudo inteligente." />
+    <meta property="og:image" content="https://gestor.automatikus.com.br/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Automatikus — Gestão Inteligente de Gabinete Parlamentar" />
+    <meta property="og:image:alt" content="Gestor Inteligente — Plataforma de Gestão Parlamentar com IA" />
     <meta property="og:locale" content="pt_BR" />
-    <meta property="og:site_name" content="Automatikus — Gestão Inteligente" />
+    <meta property="og:site_name" content="Gestor Inteligente" />
 
     <!-- ── Twitter / X ── -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@automatikus" />
-    <meta name="twitter:creator" content="@automatikus" />
-    <meta name="twitter:url" content="https://gabinetedancamara.automatikus.com.br/" />
-    <meta name="twitter:title" content="Gestão Inteligente de Gabinete | Automatikus" />
-    <meta name="twitter:description" content="Plataforma com IA para gestão parlamentar. Demandas, eventos, coordenações e finanças integradas." />
-    <meta name="twitter:image" content="https://gabinetedancamara.automatikus.com.br/og-image.png" />
+    <meta name="twitter:url" content="https://gestor.automatikus.com.br/" />
+    <meta name="twitter:title" content="Gestor Inteligente — Gestão Parlamentar com IA" />
+    <meta name="twitter:description" content="Gerencie seu gabinete com IA. Demandas, agenda, movimentos sociais, WhatsApp integrado e muito mais." />
+    <meta name="twitter:image" content="https://gestor.automatikus.com.br/og-image.png" />
 
     <!-- ── Schema.org Structured Data ── -->
     <script type="application/ld+json">
@@ -57,52 +60,39 @@
       "@graph": [
         {
           "@type": "SoftwareApplication",
-          "name": "Gestão Inteligente de Gabinete",
-          "description": "Plataforma inteligente de gestão parlamentar com IA integrada para gerenciamento de demandas, pessoas, eventos, coordenações e finanças.",
-          "url": "https://gabinetedancamara.automatikus.com.br",
-          "applicationCategory": "BusinessApplication",
+          "name": "Gestor Inteligente",
+          "alternateName": "Gabinete Inteligente",
+          "description": "Plataforma completa de gestão parlamentar com Inteligência Artificial integrada. Gerencie demandas, pessoas, eventos, movimentos sociais, WhatsApp e finanças do gabinete.",
+          "url": "https://gestor.automatikus.com.br",
+          "applicationCategory": "GovernmentApplication",
           "operatingSystem": "Web",
+          "browserRequirements": "Requires JavaScript",
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
-          "author": {
-            "@type": "Organization",
-            "name": "Automatikus — Automações Digitais",
-            "url": "https://automatikus.com.br"
-          },
-          "screenshot": "https://gabinetedancamara.automatikus.com.br/og-image.png",
+          "screenshot": "https://gestor.automatikus.com.br/og-image.png",
           "featureList": [
+            "Dashboard com IA",
             "Gestão de Demandas",
-            "Gestão de Eventos e Calendário",
-            "Coordenações Parlamentares",
+            "Agenda e Calendário Integrado",
+            "Movimentos Sociais — Segurança, Saúde, Mobilidade, Infraestrutura, Meio Ambiente, Inclusão Social",
+            "WhatsApp Web Integrado",
             "Gestão de Pessoas e Contatos",
-            "Financeiro",
+            "Financeiro e Orçamento",
             "Relatórios e Analytics",
-            "Assessor IA Integrado",
-            "WhatsApp Integrado",
+            "Assessor IA",
             "Modo Campanha"
           ],
           "inLanguage": "pt-BR",
           "availableLanguage": "Portuguese"
         },
         {
-          "@type": "Organization",
-          "name": "Automatikus — Automações Digitais",
-          "url": "https://automatikus.com.br",
-          "logo": "https://gabinetedancamara.automatikus.com.br/favicon.svg",
-          "description": "Empresa especializada em automações digitais e desenvolvimento de software para gestão parlamentar e institucional.",
-          "contactPoint": {
-            "@type": "ContactPoint",
-            "contactType": "customer service",
-            "availableLanguage": "Portuguese"
-          }
-        },
-        {
           "@type": "WebSite",
-          "url": "https://gabinetedancamara.automatikus.com.br",
-          "name": "Gestão Inteligente de Gabinete | Automatikus",
-          "description": "Plataforma de gestão parlamentar inteligente.",
-          "publisher": {
-            "@type": "Organization",
-            "name": "Automatikus — Automações Digitais"
+          "url": "https://gestor.automatikus.com.br",
+          "name": "Gestor Inteligente",
+          "description": "Plataforma de gestão parlamentar com Inteligência Artificial.",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://gestor.automatikus.com.br/?q={search_term_string}",
+            "query-input": "required name=search_term_string"
           }
         }
       ]
@@ -112,7 +102,7 @@
     <!-- ── Performance hints ── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="dns-prefetch" href="https://automatikus.com.br" />
+    <link rel="dns-prefetch" href="https://gestor.automatikus.com.br" />
   </head>
 
   <body>

@@ -1,12 +1,12 @@
 {
-  "name": "Gestão Inteligente de Gabinete — Automatikus",
-  "short_name": "Gestão Inteligente",
-  "description": "Plataforma inteligente de gestão parlamentar com IA integrada, desenvolvida pela Automatikus.",
+  "name": "Gestor Inteligente",
+  "short_name": "Gestor",
+  "description": "Plataforma completa de gestão parlamentar com Inteligência Artificial integrada.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#0f0a1e",
-  "theme_color": "#5B21B6",
+  "background_color": "#0a1628",
+  "theme_color": "#1D4ED8",
   "lang": "pt-BR",
   "categories": ["government", "productivity", "business"],
   "icons": [
