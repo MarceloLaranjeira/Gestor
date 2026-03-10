@@ -1,29 +1,79 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import {
-  LogIn, Eye, EyeOff, UserPlus,
-  BarChart3, Users, CalendarDays, MessageSquare,
-  Sparkles, Shield, Globe, FileText, Wallet, Bot,
-} from "lucide-react";
+import { LogIn, Eye, EyeOff, UserPlus, Sparkles } from "lucide-react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import AutomatikusLogo from "@/components/AutomatikusLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
-/* ─── All features grid ────────────────────────────────── */
-const FEATURES = [
-  { icon: BarChart3,    label: "Dashboard",        desc: "Analytics com IA",          color: "#60A5FA", bg: "#1e3a5f" },
-  { icon: CalendarDays, label: "Agenda",            desc: "Calendário integrado",      color: "#34D399", bg: "#0d3a2a" },
-  { icon: FileText,     label: "Demandas",          desc: "Controle total",            color: "#A78BFA", bg: "#2d1b4e" },
-  { icon: MessageSquare,label: "WhatsApp",          desc: "Web integrado",             color: "#4ADE80", bg: "#0d3320" },
-  { icon: Users,        label: "Pessoas",           desc: "Gestão de contatos",        color: "#F472B6", bg: "#3d1a2e" },
-  { icon: Globe,        label: "Movimentos",        desc: "Temas sociais",             color: "#FB923C", bg: "#3d2010" },
-  { icon: Wallet,       label: "Financeiro",        desc: "Orçamento e gastos",        color: "#FBBF24", bg: "#3d2e00" },
-  { icon: Bot,          label: "Assessor IA",       desc: "Inteligência artificial",   color: "#38BDF8", bg: "#0a2d3d" },
-  { icon: Shield,       label: "Segurança",         desc: "Acesso e controle",         color: "#F87171", bg: "#3d1010" },
+/* ─── Floating words ─────────────────────────────────────── */
+const FLOAT_WORDS = [
+  { label: "Dashboard",      color: "#60A5FA", size: 22 },
+  { label: "Agenda",         color: "#34D399", size: 18 },
+  { label: "Demandas",       color: "#A78BFA", size: 20 },
+  { label: "WhatsApp",       color: "#4ADE80", size: 16 },
+  { label: "Pessoas",        color: "#F472B6", size: 19 },
+  { label: "Movimentos",     color: "#FB923C", size: 17 },
+  { label: "Financeiro",     color: "#FBBF24", size: 21 },
+  { label: "Assessor IA",    color: "#38BDF8", size: 24 },
+  { label: "Segurança",      color: "#F87171", size: 18 },
+  { label: "Eleitor",        color: "#818CF8", size: 15 },
+  { label: "Gestão",         color: "#6EE7B7", size: 20 },
+  { label: "Relatórios",     color: "#FCA5A5", size: 16 },
+  { label: "Inteligência",   color: "#93C5FD", size: 17 },
+  { label: "Parlamentar",    color: "#C4B5FD", size: 23 },
+  { label: "Gabinete",       color: "#FDE68A", size: 19 },
 ];
+
+/* Each word gets a deterministic random position + animation */
+const seed = (n: number) => ((Math.sin(n * 9301 + 49297) * 233280) % 1 + 1) % 1;
+
+const WORD_CONFIGS = FLOAT_WORDS.map((w, i) => ({
+  ...w,
+  x: 8 + seed(i * 3 + 0) * 80,          // % across panel
+  y: 10 + seed(i * 3 + 1) * 80,          // % down panel
+  dx: (seed(i * 3 + 2) - 0.5) * 60,     // drift range px
+  dy: (seed(i * 5 + 2) - 0.5) * 60,
+  dur: 6 + seed(i * 7) * 10,            // animation duration
+  delay: seed(i * 11) * -12,            // phase offset
+  opacity: 0.12 + seed(i * 13) * 0.22,
+}));
+
+function FloatingWords() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {WORD_CONFIGS.map((w) => (
+        <motion.span
+          key={w.label}
+          className="absolute font-bold select-none whitespace-nowrap"
+          style={{
+            left: `${w.x}%`,
+            top: `${w.y}%`,
+            fontSize: w.size,
+            color: w.color,
+            opacity: w.opacity,
+            textShadow: `0 0 24px ${w.color}55`,
+          }}
+          animate={{
+            x: [0, w.dx, -w.dx * 0.4, 0],
+            y: [0, w.dy * 0.5, w.dy, 0],
+            opacity: [w.opacity, w.opacity * 1.6, w.opacity * 0.7, w.opacity],
+          }}
+          transition={{
+            duration: w.dur,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: w.delay,
+          }}
+        >
+          {w.label}
+        </motion.span>
+      ))}
+    </div>
+  );
+}
 
 /* ─── Particle canvas ───────────────────────────────────── */
 function ParticleCanvas() {
@@ -75,6 +125,37 @@ function ParticleCanvas() {
   return <canvas ref={ref} className="absolute inset-0 w-full h-full" />;
 }
 
+/* ─── FloatInput — defined OUTSIDE Login to keep stable reference ── */
+interface FloatInputProps {
+  id: string; label: string; type: string; value: string;
+  onChange: (v: string) => void; placeholder?: string;
+  required?: boolean; minLength?: number; rightSlot?: React.ReactNode;
+  focusedField: string | null;
+  onFocus: (id: string) => void;
+  onBlur: () => void;
+}
+
+function FloatInput({ id, label, type, value, onChange, placeholder, required, minLength, rightSlot, focusedField, onFocus, onBlur }: FloatInputProps) {
+  const active = focusedField === id || value.length > 0;
+  return (
+    <div className="relative">
+      <label htmlFor={id} className={`absolute left-4 pointer-events-none transition-all duration-200 z-10 select-none ${active ? "top-2 text-[10px] font-semibold text-blue-400" : "top-1/2 -translate-y-1/2 text-sm text-white/40"}`}>
+        {label}
+      </label>
+      <input
+        id={id} type={type} value={value}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => onFocus(id)}
+        onBlur={onBlur}
+        placeholder={active ? placeholder : ""}
+        required={required} minLength={minLength}
+        className={`w-full h-14 px-4 pt-5 pb-2 text-sm rounded-xl border outline-none transition-all duration-200 bg-white/[0.04] text-white placeholder:text-white/25 ${focusedField === id ? "border-blue-500/60 ring-2 ring-blue-500/15" : "border-white/[0.09] hover:border-white/[0.18]"} ${rightSlot ? "pr-11" : ""}`}
+      />
+      {rightSlot && <div className="absolute right-3 top-1/2 -translate-y-1/2">{rightSlot}</div>}
+    </div>
+  );
+}
+
 /* ─── Main ──────────────────────────────────────────────── */
 const Login = () => {
   const [email, setEmail]               = useState("");
@@ -114,32 +195,6 @@ const Login = () => {
     }
   };
 
-  /* Floating label input */
-  const FloatInput = ({ id, label, type, value, onChange, placeholder, required, minLength, rightSlot }: {
-    id: string; label: string; type: string; value: string;
-    onChange: (v: string) => void; placeholder?: string;
-    required?: boolean; minLength?: number; rightSlot?: React.ReactNode;
-  }) => {
-    const active = focusedField === id || value.length > 0;
-    return (
-      <div className="relative">
-        <label htmlFor={id} className={`absolute left-4 pointer-events-none transition-all duration-200 z-10 select-none ${active ? "top-2 text-[10px] font-semibold text-blue-400" : "top-1/2 -translate-y-1/2 text-sm text-white/40"}`}>
-          {label}
-        </label>
-        <input
-          id={id} type={type} value={value}
-          onChange={e => onChange(e.target.value)}
-          onFocus={() => setFocusedField(id)}
-          onBlur={() => setFocusedField(null)}
-          placeholder={active ? placeholder : ""}
-          required={required} minLength={minLength}
-          className={`w-full h-14 px-4 pt-5 pb-2 text-sm rounded-xl border outline-none transition-all duration-200 bg-white/[0.04] text-white placeholder:text-white/25 ${focusedField === id ? "border-blue-500/60 ring-2 ring-blue-500/15" : "border-white/[0.09] hover:border-white/[0.18]"} ${rightSlot ? "pr-11" : ""}`}
-        />
-        {rightSlot && <div className="absolute right-3 top-1/2 -translate-y-1/2">{rightSlot}</div>}
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen flex bg-[#070d1a]">
 
@@ -148,6 +203,7 @@ const Login = () => {
         <div className="absolute inset-0" style={{ background: "linear-gradient(155deg,#070d1a 0%,#0b1a35 45%,#0d2148 100%)" }} />
         <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg,transparent,#3B82F6,#0EA5E9,transparent)" }} />
         <ParticleCanvas />
+        <FloatingWords />
         {/* subtle grid */}
         <div className="absolute inset-0 opacity-[0.022]" style={{ backgroundImage: "linear-gradient(rgba(99,179,237,1) 1px,transparent 1px),linear-gradient(90deg,rgba(99,179,237,1) 1px,transparent 1px)", backgroundSize: "44px 44px" }} />
 
@@ -178,60 +234,25 @@ const Login = () => {
             </p>
           </motion.div>
 
-          {/* ── Feature grid — ALL highlighted ── */}
-          <motion.div
-            initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}
-            transition={{ duration:.65, delay:.25 }}
-            className="grid grid-cols-3 gap-3 flex-1"
-          >
-            {FEATURES.map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <motion.div
-                  key={f.label}
-                  initial={{ opacity:0, scale:.9 }}
-                  animate={{ opacity:1, scale:1 }}
-                  transition={{ duration:.4, delay:.3 + i * .06 }}
-                  className="rounded-xl p-3.5 flex flex-col gap-2 border transition-all duration-300 hover:scale-[1.03] hover:shadow-lg cursor-default"
-                  style={{
-                    background: `linear-gradient(135deg, ${f.bg}cc, ${f.bg}88)`,
-                    borderColor: `${f.color}22`,
-                    boxShadow: `0 0 0 1px ${f.color}15 inset`,
-                  }}
-                  whileHover={{ boxShadow: `0 8px 30px ${f.color}20, 0 0 0 1px ${f.color}30 inset` }}
-                >
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${f.color}20`, border: `1px solid ${f.color}35` }}>
-                    <Icon className="w-4 h-4" style={{ color: f.color }} />
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-bold text-white leading-none mb-0.5">{f.label}</p>
-                    <p className="text-[11px] text-white/40 leading-snug">{f.desc}</p>
-                  </div>
-                  {/* colored bottom accent */}
-                  <div className="h-[2px] rounded-full mt-auto" style={{ background: `linear-gradient(90deg,${f.color}60,transparent)` }} />
-                </motion.div>
-              );
-            })}
-          </motion.div>
-
           {/* Bottom stats */}
-          <motion.div
-            initial={{ opacity:0 }} animate={{ opacity:1 }}
-            transition={{ duration:.6, delay:.55 }}
-            className="flex items-center gap-8 pt-6 mt-6 border-t border-white/[0.06]"
-          >
-            {[
-              { value:"9+",   label:"Módulos integrados" },
-              { value:"IA",   label:"Assessor virtual" },
-              { value:"100%", label:"Web & Mobile" },
-            ].map(s => (
-              <div key={s.label}>
-                <p className="text-lg font-black text-white">{s.value}</p>
-                <p className="text-[11px] text-white/35 mt-0.5">{s.label}</p>
-              </div>
-            ))}
-          </motion.div>
+          <div className="mt-auto">
+            <motion.div
+              initial={{ opacity:0 }} animate={{ opacity:1 }}
+              transition={{ duration:.6, delay:.55 }}
+              className="flex items-center gap-8 pt-6 border-t border-white/[0.06]"
+            >
+              {[
+                { value:"9+",   label:"Módulos integrados" },
+                { value:"IA",   label:"Assessor virtual" },
+                { value:"100%", label:"Web & Mobile" },
+              ].map(s => (
+                <div key={s.label}>
+                  <p className="text-lg font-black text-white">{s.value}</p>
+                  <p className="text-[11px] text-white/35 mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </motion.div>
+          </div>
         </div>
       </div>
 
@@ -268,7 +289,7 @@ const Login = () => {
               </motion.div>
             </AnimatePresence>
 
-            {/* ── Google — destaque principal ── */}
+            {/* ── Google ── */}
             <button
               type="button"
               onClick={handleGoogle}
@@ -276,7 +297,6 @@ const Login = () => {
               className="w-full h-13 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-3 disabled:opacity-50 mb-2 relative overflow-hidden group"
               style={{ background:"linear-gradient(135deg,#ffffff10,#ffffff08)", border:"1px solid rgba(255,255,255,0.15)" }}
             >
-              {/* hover glow */}
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" style={{ background:"linear-gradient(135deg,#ffffff18,#ffffff0a)" }} />
               <svg className="w-5 h-5 flex-shrink-0 relative z-10" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -303,16 +323,17 @@ const Login = () => {
               <AnimatePresence>
                 {isSignup && (
                   <motion.div initial={{ opacity:0,height:0 }} animate={{ opacity:1,height:"auto" }} exit={{ opacity:0,height:0 }} transition={{ duration:.22 }} className="overflow-hidden">
-                    <FloatInput id="nome" label="Nome completo" type="text" value={nome} onChange={setNome} placeholder="Seu nome" required />
+                    <FloatInput id="nome" label="Nome completo" type="text" value={nome} onChange={setNome} placeholder="Seu nome" required focusedField={focusedField} onFocus={setFocusedField} onBlur={() => setFocusedField(null)} />
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <FloatInput id="email" label="Email" type="email" value={email} onChange={setEmail} placeholder="seu@email.com" required />
+              <FloatInput id="email" label="Email" type="email" value={email} onChange={setEmail} placeholder="seu@email.com" required focusedField={focusedField} onFocus={setFocusedField} onBlur={() => setFocusedField(null)} />
 
               <FloatInput
                 id="password" label="Senha" type={showPassword?"text":"password"}
                 value={password} onChange={setPassword} placeholder="••••••••" required minLength={6}
+                focusedField={focusedField} onFocus={setFocusedField} onBlur={() => setFocusedField(null)}
                 rightSlot={
                   <button type="button" onClick={() => setShowPassword(s=>!s)} className="text-white/30 hover:text-white/70 transition-colors p-1" aria-label={showPassword?"Ocultar senha":"Mostrar senha"}>
                     {showPassword ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
