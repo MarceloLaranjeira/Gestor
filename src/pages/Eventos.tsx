@@ -204,12 +204,12 @@ const Eventos = () => {
   return (
     <AppLayout>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold font-display text-foreground">Eventos</h1>
             <p className="text-sm text-muted-foreground">Agenda parlamentar e eventos institucionais</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex rounded-lg border border-border overflow-hidden">
               <button
                 onClick={() => setView("lista")}

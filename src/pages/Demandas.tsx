@@ -187,7 +187,7 @@ Por favor, forneça: 1) Análise da situação atual, 2) Riscos e oportunidades,
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {(["todos", "pendente", "andamento", "concluida"] as const).map((status) => {
             const labels = { todos: "Total", pendente: "Pendentes", andamento: "Em Andamento", concluida: "Concluídas" };
             return (
