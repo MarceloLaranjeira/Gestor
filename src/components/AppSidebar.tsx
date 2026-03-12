@@ -50,7 +50,7 @@ const gestaoItems: NavItem[] = [
 
 const operacoesItems: NavItem[] = [
   { icon: Flag, label: "Modo Campanha", path: "/campanha", module: "campanha" },
-  { icon: Phone, label: "WhatsApp", path: "/whatsapp", module: "integracao" },
+  { icon: Phone, label: "WhatsApp", path: "/whatsapp", module: "whatsapp" },
   { icon: Plug, label: "Integração", path: "/integracao", module: "integracao" },
 ];
 
