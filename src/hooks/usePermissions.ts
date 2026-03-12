@@ -27,6 +27,7 @@ const MODULE_LABELS: Record<string, string> = {
   logbook: "Logbook de Calhas",
   integracao: "Integração",
   webchat: "WebChat",
+  whatsapp: "WhatsApp",
 };
 
 export const ALL_MODULES = Object.keys(MODULE_LABELS);
@@ -57,6 +58,7 @@ export function getModuleForRoute(path: string): string | null {
   if (path.startsWith("/prontuario")) return "prontuario";
   if (path.startsWith("/logbook")) return "logbook";
   if (path.startsWith("/integracao")) return "integracao";
+  if (path.startsWith("/whatsapp")) return "whatsapp";
   if (path.startsWith("/webchat")) return "webchat";
   return ROUTE_TO_MODULE[path] || null;
 }

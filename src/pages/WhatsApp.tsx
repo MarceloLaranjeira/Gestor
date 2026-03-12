@@ -98,6 +98,7 @@ const QRScreen = ({ config, instanceName, onInstanceChange, onConnected }: QRScr
   const [qrBase64, setQrBase64] = useState<string | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const autoFetchedRef = useRef(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cdRef  = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -193,6 +194,15 @@ const QRScreen = ({ config, instanceName, onInstanceChange, onConnected }: QRScr
     return () => { if (cdRef.current) clearInterval(cdRef.current); };
   }, [countdown]);
 
+  /* Auto-check connection then fetch QR on mount */
+  useEffect(() => {
+    if (autoFetchedRef.current || !instanceName.trim()) return;
+    autoFetchedRef.current = true;
+    checkStatus().then(open => {
+      if (!open) fetchQR();
+    });
+  }, [instanceName]); // eslint-disable-line
+
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] p-4 bg-background">
       <div className="w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl border border-border animate-scale-in bg-white">
@@ -235,25 +245,14 @@ const QRScreen = ({ config, instanceName, onInstanceChange, onConnected }: QRScr
               ))}
             </ol>
 
-            {/* Instance input */}
+            {/* Actions */}
             <div className="space-y-3 pt-3 border-t border-[#e9edef]">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: "#8696a0" }}>
-                  Nome da Instância
-                </label>
-                <Input
-                  value={instanceName}
-                  onChange={e => onInstanceChange(e.target.value)}
-                  placeholder="ex: gabinete-principal"
-                  className="h-10 text-sm"
-                />
-              </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   className="flex-1 h-10 text-sm gap-2"
                   onClick={handleVerify}
-                  disabled={!instanceName.trim() || status === "checking"}
+                  disabled={status === "checking"}
                 >
                   {status === "checking" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
                   Verificar conexão
@@ -262,25 +261,21 @@ const QRScreen = ({ config, instanceName, onInstanceChange, onConnected }: QRScr
                   className="flex-1 h-10 text-sm gap-2 text-white"
                   style={{ backgroundColor: WA_GREEN }}
                   onClick={fetchQR}
-                  disabled={!instanceName.trim() || qrLoading}
+                  disabled={qrLoading}
                 >
                   {qrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
-                  Gerar QR Code
+                  Novo QR Code
                 </Button>
               </div>
+              <p className="text-[11px]" style={{ color: "#8696a0" }}>
+                O QR Code é gerado automaticamente. Escaneie com seu celular.
+              </p>
             </div>
           </div>
 
           {/* Right — QR display */}
           <div className="w-full md:w-[300px] flex flex-col items-center justify-center px-8 py-8 border-t md:border-t-0 md:border-l border-[#e9edef] bg-[#fafafa]">
-            {!instanceName.trim() ? (
-              <div className="text-center space-y-3">
-                <div className="w-[196px] h-[196px] border-2 border-dashed border-[#d1d7db] rounded-xl flex flex-col items-center justify-center mx-auto gap-3">
-                  <Smartphone className="w-14 h-14 text-[#d1d7db]" />
-                  <p className="text-xs px-4" style={{ color: "#8696a0" }}>Informe o nome da instância</p>
-                </div>
-              </div>
-            ) : qrLoading ? (
+            {qrLoading ? (
               <div className="w-[196px] h-[196px] border border-[#e9edef] rounded-xl flex items-center justify-center bg-white shadow-sm">
                 <Loader2 className="w-10 h-10 animate-spin" style={{ color: WA_GREEN }} />
               </div>
@@ -325,7 +320,7 @@ const WhatsApp = () => {
 
   /* ── Instance / Connection ── */
   const [instanceName, setInstanceName] = useState(() => {
-    try { return localStorage.getItem("wa-instance") || ""; } catch { return ""; }
+    try { return localStorage.getItem("wa-instance") || "gabinete-inteligente"; } catch { return "gabinete-inteligente"; }
   });
   const [connected, setConnected] = useState(false);
 
