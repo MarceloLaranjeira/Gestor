@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, ClipboardList, Calendar, CalendarSync, BarChart3, FileText, Settings,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare,
   Megaphone, Database, Building2, UsersRound, Bot, Wallet, KeyRound, Flag, BookUser, BookOpen, Plug, Phone,
-  Layers,
+  Layers, MessageCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -42,6 +42,7 @@ const legislativoItems: NavItem[] = [
 
 const gestaoItems: NavItem[] = [
   { icon: Users, label: "Pessoas", path: "/pessoas", module: "pessoas" },
+  { icon: MessageCircle, label: "WebChat", path: "/webchat", module: "webchat" },
   { icon: BookUser, label: "Prontuário", path: "/prontuario", module: "prontuario" },
   { icon: Wallet, label: "Financeiro", path: "/financas", module: "financas" },
   { icon: BookOpen, label: "Logbook", path: "/logbook", module: "logbook" },
