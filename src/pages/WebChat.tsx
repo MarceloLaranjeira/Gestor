@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send, MessageSquare, Users, Flag, AlertTriangle, Wallet,
-  Hash, Loader2, MessageCircle, Plus, Search, X, Lock,
+  Hash, Loader2, MessageCircle, Plus, Search, X, Lock, ChevronLeft,
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
@@ -224,10 +225,14 @@ const MessageSkeleton = () => (
 const WebChat = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const [salas, setSalas] = useState<ChatSala[]>([]);
   const [salasLoading, setSalasLoading] = useState(true);
   const [selectedSala, setSelectedSala] = useState<ChatSala | null>(null);
+
+  // Mobile: show the sidebar (rooms list) or the chat panel
+  const [showSidebar, setShowSidebar] = useState(true);
 
   const [mensagens, setMensagens] = useState<ChatMensagem[]>([]);
   const [mensagensLoading, setMensagensLoading] = useState(false);
@@ -438,6 +443,7 @@ const WebChat = () => {
 
     if (existing) {
       setSelectedSala(existing);
+      if (isMobile) setShowSidebar(false);
       return;
     }
 
@@ -463,6 +469,7 @@ const WebChat = () => {
 
     setSalas(prev => [...prev, newSala as ChatSala]);
     setSelectedSala(newSala as ChatSala);
+    if (isMobile) setShowSidebar(false);
   };
 
   /* ── DM display name (the other person) ─────────────────────────── */
@@ -480,10 +487,15 @@ const WebChat = () => {
   /* ── Render ──────────────────────────────────────────────────────── */
   return (
     <AppLayout>
-      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="flex h-[calc(100vh-4rem)] overflow-hidden rounded-xl">
 
-        {/* ── Left panel ─────────────────────────────────────────────── */}
-        <div className="w-[250px] shrink-0 border-r border-border flex flex-col glass-card rounded-none rounded-l-xl overflow-hidden">
+        {/* ── Left panel: Rooms list ──────────────────────────────────── */}
+        <div className={cn(
+          "shrink-0 border-r border-border flex flex-col glass-card overflow-hidden transition-all duration-200",
+          isMobile
+            ? showSidebar ? "w-full rounded-xl" : "w-0 hidden"
+            : "w-[250px] rounded-l-xl"
+        )}>
           {/* Header */}
           <div className="px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">
@@ -513,7 +525,7 @@ const WebChat = () => {
                         sala={sala}
                         isActive={selectedSala?.id === sala.id}
                         unread={unread[sala.id] || 0}
-                        onClick={() => { setSelectedSala(sala); setUnread(p => ({ ...p, [sala.id]: 0 })); }}
+                        onClick={() => { setSelectedSala(sala); setUnread(p => ({ ...p, [sala.id]: 0 })); if (isMobile) setShowSidebar(false); }}
                       />
                     ))}
                   </>
@@ -550,7 +562,7 @@ const WebChat = () => {
                       unread={unread[sala.id] || 0}
                       isPrivate
                       otherName={getDMName(sala)}
-                      onClick={() => { setSelectedSala(sala); setUnread(p => ({ ...p, [sala.id]: 0 })); }}
+                      onClick={() => { setSelectedSala(sala); setUnread(p => ({ ...p, [sala.id]: 0 })); if (isMobile) setShowSidebar(false); }}
                     />
                   ))
                 )}
@@ -560,11 +572,22 @@ const WebChat = () => {
         </div>
 
         {/* ── Right panel: Chat area ────────────────────────────────── */}
-        <div className="flex-1 flex flex-col overflow-hidden glass-card rounded-none rounded-r-xl">
+        <div className={cn(
+          "flex-1 flex flex-col overflow-hidden glass-card",
+          isMobile ? (showSidebar ? "hidden" : "w-full rounded-xl") : "rounded-r-xl"
+        )}>
           {selectedSala ? (
             <>
               {/* Chat header */}
-              <div className="px-5 py-3 border-b border-border flex items-center gap-3 shrink-0">
+              <div className="px-3 sm:px-5 py-3 border-b border-border flex items-center gap-2 sm:gap-3 shrink-0">
+                {isMobile && (
+                  <button
+                    onClick={() => setShowSidebar(true)}
+                    className="p-1.5 rounded-lg hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                )}
                 {selectedSala.tipo === "privado" ? (
                   <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                     {getDMName(selectedSala).charAt(0).toUpperCase()}
@@ -646,7 +669,7 @@ const WebChat = () => {
               </div>
 
               {/* Input bar */}
-              <div className="px-4 py-3 border-t border-border shrink-0">
+              <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-border shrink-0">
                 <div className="flex gap-2 items-end">
                   <div className="flex-1 relative">
                     <Textarea
