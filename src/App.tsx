@@ -59,6 +59,7 @@ import LogbookMunicipioForm from "./pages/logbook/LogbookMunicipioForm";
 // Integração
 import Integracao from "./pages/Integracao";
 import WhatsApp from "./pages/WhatsApp";
+import WebChat from "./pages/WebChat";
 import ApoiadorForm from "./pages/prontuario/ApoiadorForm";
 import ApoiadorDetalhes from "./pages/prontuario/ApoiadorDetalhes";
 import ResumoExecutivo from "./pages/prontuario/ResumoExecutivo";
@@ -158,6 +159,7 @@ const AppRoutes = () => (
     {/* Integração */}
     <Route path="/integracao" element={<PermissionRoute><Integracao /></PermissionRoute>} />
     <Route path="/whatsapp" element={<PermissionRoute><WhatsApp /></PermissionRoute>} />
+    <Route path="/webchat" element={<PermissionRoute><WebChat /></PermissionRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

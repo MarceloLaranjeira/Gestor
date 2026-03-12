@@ -6,6 +6,7 @@ import AppLayout from "@/components/AppLayout";
 import { useToast } from "@/hooks/use-toast";
 import { AgentSettingsPanel, DEFAULT_SETTINGS, type AgentSettings } from "@/components/AgentSettingsPanel";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type Msg = {
   role: "user" | "assistant";
@@ -149,7 +150,7 @@ interface SphereState {
   isLoading: boolean;
 }
 
-const HorusSphere = ({ isListening, isSpeaking, isLoading }: SphereState) => {
+const HorusSphere = ({ isListening, isSpeaking, isLoading, size = 310 }: SphereState & { size?: number }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const stateRef = useRef<SphereState>({ isListening, isSpeaking, isLoading });
@@ -192,7 +193,8 @@ const HorusSphere = ({ isListening, isSpeaking, isLoading }: SphereState) => {
       ctx.clearRect(0, 0, W, H);
 
       const rotSpeed = isListening ? 0.022 : isSpeaking ? 0.01 : 0.004;
-      const baseR = isSpeaking ? 118 : isListening ? 110 : 95;
+      const scale310 = (canvas.width / 310);
+      const baseR = (isSpeaking ? 118 : isListening ? 110 : 95) * scale310;
       const radius = baseR + (isSpeaking ? Math.sin(time * 4) * 9 : isLoading ? Math.sin(time * 2) * 4 : 0);
 
       const color = isListening ? [255, 110, 50] : isSpeaking ? [0, 230, 255] : [0, 190, 230];
@@ -250,8 +252,8 @@ const HorusSphere = ({ isListening, isSpeaking, isLoading }: SphereState) => {
   return (
     <canvas
       ref={canvasRef}
-      width={310}
-      height={310}
+      width={size}
+      height={size}
       style={{ filter: "drop-shadow(0 0 24px rgba(0,200,255,0.35))" }}
     />
   );
@@ -261,6 +263,7 @@ const HorusSphere = ({ isListening, isSpeaking, isLoading }: SphereState) => {
 // Frequency Visualizer
 // ---------------------------------------------------------------------------
 const FrequencyVisualizer = ({ isActive }: { isActive: boolean }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const activeRef = useRef(isActive);
@@ -269,9 +272,17 @@ const FrequencyVisualizer = ({ isActive }: { isActive: boolean }) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    // Resize canvas to container width
+    const ro = new ResizeObserver(() => {
+      canvas.width = container.offsetWidth || 320;
+    });
+    ro.observe(container);
+    canvas.width = container.offsetWidth || 320;
 
     const BARS = 52;
     const heights = Array(BARS).fill(0);
@@ -312,10 +323,14 @@ const FrequencyVisualizer = ({ isActive }: { isActive: boolean }) => {
     };
 
     draw();
-    return () => cancelAnimationFrame(animRef.current);
+    return () => { cancelAnimationFrame(animRef.current); ro.disconnect(); };
   }, []);
 
-  return <canvas ref={canvasRef} width={420} height={72} />;
+  return (
+    <div ref={containerRef} className="w-full max-w-sm sm:max-w-md px-4">
+      <canvas ref={canvasRef} height={60} style={{ width: "100%", display: "block" }} />
+    </div>
+  );
 };
 
 // ---------------------------------------------------------------------------
@@ -324,6 +339,8 @@ const FrequencyVisualizer = ({ isActive }: { isActive: boolean }) => {
 const AgenteIA = () => {
   const { toast } = useToast();
   const location = useLocation();
+  const isMobile = useIsMobile();
+  const sphereSize = isMobile ? 230 : 310;
   const [messages, setMessages] = useState<Msg[]>([]);
   const [isLoading, setIsLoading]   = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -358,6 +375,17 @@ const AgenteIA = () => {
   const ensureAudioUnlocked = useCallback(() => {
     if (!unlockedAudioRef.current) unlockedAudioRef.current = createUnlockedAudio();
   }, []);
+
+  // Unlock audio context on first user gesture (required for iOS Safari TTS)
+  useEffect(() => {
+    const unlock = () => ensureAudioUnlocked();
+    document.addEventListener("touchstart", unlock, { once: true, passive: true });
+    document.addEventListener("click", unlock, { once: true });
+    return () => {
+      document.removeEventListener("touchstart", unlock);
+      document.removeEventListener("click", unlock);
+    };
+  }, [ensureAudioUnlocked]);
 
   const send = useCallback(async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -530,19 +558,19 @@ const AgenteIA = () => {
           className="text-center mb-5 z-10"
         >
           <h1
-            className="text-4xl font-black tracking-[0.55em] font-mono text-cyan-400"
+            className="text-2xl sm:text-4xl font-black tracking-[0.45em] sm:tracking-[0.55em] font-mono text-cyan-400"
             style={{ textShadow: "0 0 30px rgba(0,200,255,0.55), 0 0 60px rgba(0,200,255,0.2)" }}
           >
             HORUS
           </h1>
-          <p className="text-[9px] tracking-[0.5em] font-mono text-cyan-400/25 mt-1.5 uppercase">
+          <p className="text-[9px] tracking-[0.4em] sm:tracking-[0.5em] font-mono text-cyan-400/25 mt-1.5 uppercase">
             Assessor de Inteligência Artificial
           </p>
         </motion.div>
 
         {/* Sphere */}
         <div className="z-10">
-          <HorusSphere isListening={isListening} isSpeaking={isSpeaking} isLoading={isLoading} />
+          <HorusSphere isListening={isListening} isSpeaking={isSpeaking} isLoading={isLoading} size={sphereSize} />
         </div>
 
         {/* Status */}
