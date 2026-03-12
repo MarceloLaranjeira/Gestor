@@ -1271,8 +1271,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -1505,9 +1505,9 @@ ${customInstructions ? `\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstru
     const MAX_TOOL_ROUNDS = 5;
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: selectedModel,
           messages: currentMessages,
@@ -1529,9 +1529,9 @@ ${customInstructions ? `\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstru
 
       // No tool calls → stream final response
       if (!choice?.message?.tool_calls || choice.message.tool_calls.length === 0) {
-        const streamResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const streamResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             model: selectedModel,
             messages: currentMessages,
@@ -1569,9 +1569,9 @@ ${customInstructions ? `\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstru
     }
 
     // If we exhausted all rounds, stream final response
-    const finalResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const finalResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: selectedModel,
         messages: currentMessages,

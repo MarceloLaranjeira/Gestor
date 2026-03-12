@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Mic, MicOff, Square, Trash2 } from "lucide-react";
+import { Settings, Mic, MicOff, Square, Trash2, Send, Smile, Paperclip, Camera, Volume2 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { useToast } from "@/hooks/use-toast";
 import { AgentSettingsPanel, DEFAULT_SETTINGS, type AgentSettings } from "@/components/AgentSettingsPanel";
@@ -11,6 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 type Msg = {
   role: "user" | "assistant";
   content: string;
+  isLive?: boolean;
 };
 
 const AGENT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agente-ia`;
@@ -150,7 +151,7 @@ interface SphereState {
   isLoading: boolean;
 }
 
-const HorusSphere = ({ isListening, isSpeaking, isLoading, size = 310 }: SphereState & { size?: number }) => {
+const HorusSphere = ({ isListening, isSpeaking, isLoading, size = 280 }: SphereState & { size?: number }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const stateRef = useRef<SphereState>({ isListening, isSpeaking, isLoading });
@@ -165,7 +166,6 @@ const HorusSphere = ({ isListening, isSpeaking, isLoading, size = 310 }: SphereS
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Fibonacci sphere points
     const N = 220;
     const goldenRatio = (1 + Math.sqrt(5)) / 2;
     const pts: { x: number; y: number; z: number }[] = [];
@@ -205,7 +205,6 @@ const HorusSphere = ({ isListening, isSpeaking, isLoading, size = 310 }: SphereS
       const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
       const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
 
-      // Ambient glow
       const glowAlpha = isSpeaking ? 0.22 : isListening ? 0.18 : 0.06;
       const glow = ctx.createRadialGradient(CX, CY, 0, CX, CY, radius * 1.7);
       glow.addColorStop(0, `rgba(${color.join(",")},${glowAlpha})`);
@@ -213,7 +212,6 @@ const HorusSphere = ({ isListening, isSpeaking, isLoading, size = 310 }: SphereS
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, W, H);
 
-      // Project and sort
       const projected = pts.map((pt, idx) => {
         const x1 = pt.x * cosY + pt.z * sinY;
         const z1 = -pt.x * sinY + pt.z * cosY;
@@ -260,91 +258,20 @@ const HorusSphere = ({ isListening, isSpeaking, isLoading, size = 310 }: SphereS
 };
 
 // ---------------------------------------------------------------------------
-// Frequency Visualizer
-// ---------------------------------------------------------------------------
-const FrequencyVisualizer = ({ isActive }: { isActive: boolean }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
-  const activeRef = useRef(isActive);
-
-  useEffect(() => { activeRef.current = isActive; }, [isActive]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Resize canvas to container width
-    const ro = new ResizeObserver(() => {
-      canvas.width = container.offsetWidth || 320;
-    });
-    ro.observe(container);
-    canvas.width = container.offsetWidth || 320;
-
-    const BARS = 52;
-    const heights = Array(BARS).fill(0);
-    let time = 0;
-
-    const draw = () => {
-      const W = canvas.width;
-      const H = canvas.height;
-      ctx.clearRect(0, 0, W, H);
-
-      const active = activeRef.current;
-      const barW = W / BARS;
-
-      for (let i = 0; i < BARS; i++) {
-        let target = 1;
-        if (active) {
-          target = (
-            Math.abs(Math.sin(time * 2.8 + i * 0.38)) * 0.45 +
-            Math.abs(Math.sin(time * 5.9 + i * 0.82)) * 0.30 +
-            Math.abs(Math.sin(time * 11.5 + i * 1.35)) * 0.18 +
-            0.07
-          ) * H * 0.9;
-        }
-        heights[i] += (target - heights[i]) * (active ? 0.14 : 0.07);
-
-        const h = heights[i];
-        const x = i * barW;
-        const grad = ctx.createLinearGradient(0, H / 2 - h / 2, 0, H / 2 + h / 2);
-        grad.addColorStop(0,   "rgba(0,200,255,0.04)");
-        grad.addColorStop(0.5, `rgba(0,200,255,${active ? 0.88 : 0.18})`);
-        grad.addColorStop(1,   "rgba(0,200,255,0.04)");
-        ctx.fillStyle = grad;
-        ctx.fillRect(x + 1, H / 2 - h / 2, barW - 2, h);
-      }
-
-      time += 0.016;
-      animRef.current = requestAnimationFrame(draw);
-    };
-
-    draw();
-    return () => { cancelAnimationFrame(animRef.current); ro.disconnect(); };
-  }, []);
-
-  return (
-    <div ref={containerRef} className="w-full max-w-sm sm:max-w-md px-4">
-      <canvas ref={canvasRef} height={60} style={{ width: "100%", display: "block" }} />
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 const AgenteIA = () => {
   const { toast } = useToast();
   const location = useLocation();
   const isMobile = useIsMobile();
-  const sphereSize = isMobile ? 230 : 310;
+  const sphereSize = isMobile ? 200 : 260;
+
   const [messages, setMessages] = useState<Msg[]>([]);
   const [isLoading, setIsLoading]   = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState("");
+  const [inputText, setInputText] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<AgentSettings>(() => {
     try {
@@ -353,15 +280,21 @@ const AgenteIA = () => {
     } catch { return DEFAULT_SETTINGS; }
   });
 
-  const hasAutoSent     = useRef(false);
-  const recognitionRef  = useRef<any>(null);
-  const abortRef        = useRef<AbortController | null>(null);
-  const audioRef        = useRef<HTMLAudioElement | null>(null);
+  const hasAutoSent      = useRef(false);
+  const recognitionRef   = useRef<any>(null);
+  const finalTranscriptRef = useRef("");
+  const abortRef         = useRef<AbortController | null>(null);
+  const audioRef         = useRef<HTMLAudioElement | null>(null);
   const unlockedAudioRef = useRef<HTMLAudioElement | null>(null);
+  const messagesEndRef   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     localStorage.setItem("agent-settings", JSON.stringify(settings));
   }, [settings]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, liveTranscript]);
 
   useEffect(() => {
     const statePrompt = (location.state as { prompt?: string } | null)?.prompt;
@@ -376,7 +309,6 @@ const AgenteIA = () => {
     if (!unlockedAudioRef.current) unlockedAudioRef.current = createUnlockedAudio();
   }, []);
 
-  // Unlock audio context on first user gesture (required for iOS Safari TTS)
   useEffect(() => {
     const unlock = () => ensureAudioUnlocked();
     document.addEventListener("touchstart", unlock, { once: true, passive: true });
@@ -393,6 +325,7 @@ const AgenteIA = () => {
     const userMsg: Msg = { role: "user", content: text.trim() };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
+    setInputText("");
     setIsLoading(true);
 
     let fullResponse = "";
@@ -410,7 +343,7 @@ const AgenteIA = () => {
           abortRef.current = null;
           setIsLoading(false);
           setMessages(prev => [...prev, { role: "assistant", content: fullResponse }]);
-          if (fullResponse) {
+          if (fullResponse && settings.responseMode !== "text") {
             setIsSpeaking(true);
             try {
               const { audio } = await speakText(fullResponse, settings, preUnlockedAudio);
@@ -442,6 +375,12 @@ const AgenteIA = () => {
     }
   }, [messages, isLoading, settings, toast]);
 
+  const stopSpeaking = useCallback(() => {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    setIsSpeaking(false);
+  }, []);
+
   const toggleListening = useCallback(async () => {
     if (!SpeechRecognitionAPI) {
       toast({ title: "Não suportado", description: "Reconhecimento de voz não disponível neste navegador.", variant: "destructive" });
@@ -463,24 +402,34 @@ const AgenteIA = () => {
     const recognition = new SpeechRecognitionAPI();
     recognition.lang = "pt-BR";
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
 
-    let finalTranscript = "";
+    finalTranscriptRef.current = "";
 
     recognition.onresult = (event: any) => {
+      let interim = "";
+      let final = "";
       for (let i = 0; i < event.results.length; i++) {
-        if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript + " ";
+        if (event.results[i].isFinal) {
+          final += event.results[i][0].transcript + " ";
+        } else {
+          interim += event.results[i][0].transcript;
+        }
       }
+      finalTranscriptRef.current = final;
+      setLiveTranscript(interim || final);
     };
 
     recognition.onend = () => {
       setIsListening(false);
-      const text = finalTranscript.trim();
+      const text = finalTranscriptRef.current.trim();
+      setLiveTranscript("");
       if (text) send(text);
     };
 
     recognition.onerror = (e: any) => {
       setIsListening(false);
+      setLiveTranscript("");
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
         toast({ title: "Permissão negada", description: "Permita o microfone no navegador.", variant: "destructive" });
       }
@@ -500,187 +449,287 @@ const AgenteIA = () => {
     isListening ? "OUVINDO"     :
     isLoading   ? "PROCESSANDO" :
     isSpeaking  ? "FALANDO"     :
-    messages.length > 0 ? "AGUARDANDO" : "PRONTO";
+    "AGUARDANDO";
 
-  const hintText = isListening ? "TOQUE PARA PARAR" : isSpeaking || isLoading ? "" : "TOQUE PARA FALAR";
+  const statusColor =
+    isListening ? "#22c55e" :
+    isLoading   ? "#eab308" :
+    isSpeaking  ? "#06b6d4" :
+    "#64748b";
+
+  const handleSendText = () => {
+    const text = inputText.trim();
+    if (text) send(text);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendText();
+    }
+  };
 
   return (
     <AppLayout>
       <div
-        className="flex flex-col items-center justify-center h-[calc(100vh-80px)] relative overflow-hidden select-none"
+        className="flex flex-col h-[calc(100vh-4.5rem)] overflow-hidden rounded-xl"
         style={{ background: "linear-gradient(160deg, #020c18 0%, #040f1f 60%, #030b17 100%)" }}
       >
         {/* Background grid */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none rounded-xl overflow-hidden"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(0,200,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,255,0.04) 1px, transparent 1px)",
+              "linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px)",
             backgroundSize: "52px 52px",
           }}
         />
 
-        {/* Corner scan-lines accent */}
-        <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none opacity-20"
-          style={{ background: "linear-gradient(135deg, rgba(0,200,255,0.15) 0%, transparent 60%)" }} />
-        <div className="absolute bottom-0 right-0 w-24 h-24 pointer-events-none opacity-20"
-          style={{ background: "linear-gradient(315deg, rgba(0,200,255,0.15) 0%, transparent 60%)" }} />
+        {/* ── Header ── */}
+        <div className="relative z-10 flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/5 shrink-0">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-[11px] font-mono tracking-[0.35em] text-cyan-400/70 uppercase">
+                Horus — IA Conversacional
+              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span
+                  className="w-1.5 h-1.5 rounded-full animate-pulse"
+                  style={{ backgroundColor: statusColor }}
+                />
+                <span className="text-[10px] font-mono tracking-[0.3em] uppercase" style={{ color: statusColor }}>
+                  {statusLabel}
+                </span>
+              </div>
+            </div>
+          </div>
 
-        {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 py-4 z-10">
-          <span className="text-[10px] font-mono tracking-[0.45em] text-cyan-400/30 uppercase">
-            Sistema Ativo
-          </span>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {isSpeaking && (
+              <button
+                onClick={stopSpeaking}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-cyan-400/30 bg-cyan-400/10 text-cyan-400 text-[11px] font-mono tracking-wider hover:bg-cyan-400/20 transition-all"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Parar voz</span>
+              </button>
+            )}
             {messages.length > 0 && (
               <button
                 onClick={() => setMessages([])}
-                className="flex items-center gap-1.5 text-[10px] font-mono tracking-[0.3em] text-cyan-400/25 hover:text-cyan-400/60 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-white/40 text-[11px] font-mono tracking-wider hover:bg-white/10 hover:text-white/70 transition-all"
               >
-                <Trash2 className="w-3 h-3" /> LIMPAR
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Limpar</span>
               </button>
             )}
             <button
               onClick={() => setSettingsOpen(true)}
-              className="text-cyan-400/30 hover:text-cyan-400/70 transition-colors"
-              title="Configurações"
+              className="p-1.5 rounded-lg border border-white/10 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70 transition-all"
             >
               <Settings className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Title */}
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-5 z-10"
-        >
-          <h1
-            className="text-2xl sm:text-4xl font-black tracking-[0.45em] sm:tracking-[0.55em] font-mono text-cyan-400"
-            style={{ textShadow: "0 0 30px rgba(0,200,255,0.55), 0 0 60px rgba(0,200,255,0.2)" }}
-          >
-            HORUS
-          </h1>
-          <p className="text-[9px] tracking-[0.4em] sm:tracking-[0.5em] font-mono text-cyan-400/25 mt-1.5 uppercase">
-            Assessor de Inteligência Artificial
-          </p>
-        </motion.div>
-
-        {/* Sphere */}
-        <div className="z-10">
-          <HorusSphere isListening={isListening} isSpeaking={isSpeaking} isLoading={isLoading} size={sphereSize} />
-        </div>
-
-        {/* Status */}
-        <div className="mt-3 h-7 flex items-center justify-center z-10">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={statusLabel}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.2 }}
-              className="flex items-center gap-2"
+        {/* ── Scrollable content ── */}
+        <div className="relative z-10 flex-1 overflow-y-auto flex flex-col">
+          {/* Sphere section */}
+          <div className="flex items-center justify-center py-6 shrink-0">
+            {/* Circular frame */}
+            <div
+              className="relative flex items-center justify-center rounded-full"
+              style={{
+                width: sphereSize + 40,
+                height: sphereSize + 40,
+                background: "radial-gradient(circle, rgba(0,30,60,0.9) 40%, rgba(0,15,35,0.95) 100%)",
+                border: "1px solid rgba(0,200,255,0.12)",
+                boxShadow: "0 0 60px rgba(0,200,255,0.06), inset 0 0 40px rgba(0,0,0,0.4)",
+              }}
             >
-              {isListening && (
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-              )}
-              {isSpeaking && (
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              )}
-              {isLoading && (
-                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
-              )}
-              <span className="text-[11px] font-mono tracking-[0.4em] text-cyan-400/55">
-                {statusLabel}
-              </span>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        {/* Frequency visualizer */}
-        <div className="mt-3 mb-5 z-10">
-          <FrequencyVisualizer isActive={isSpeaking} />
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center justify-center gap-8 z-10">
-          {/* Stop speaking */}
-          <AnimatePresence>
-            {isSpeaking && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.7 }}
-                onClick={() => {
-                  audioRef.current?.pause();
-                  audioRef.current = null;
-                  setIsSpeaking(false);
+              {/* Outer ring */}
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{
+                  border: "1px solid rgba(0,200,255,0.06)",
+                  transform: "scale(1.06)",
                 }}
-                className="w-11 h-11 rounded-full border border-red-400/40 bg-red-400/10 text-red-400/80 flex items-center justify-center hover:bg-red-400/20 hover:text-red-400 transition-all"
-                title="Parar fala"
-              >
-                <Square className="w-4 h-4" />
-              </motion.button>
+              />
+              <HorusSphere
+                isListening={isListening}
+                isSpeaking={isSpeaking}
+                isLoading={isLoading}
+                size={sphereSize}
+              />
+            </div>
+          </div>
+
+          {/* Chat messages */}
+          <div className="flex-1 px-3 sm:px-6 pb-3 space-y-3">
+            {/* Welcome state */}
+            {messages.length === 0 && !liveTranscript && (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-[10px] font-mono tracking-[0.4em] text-cyan-400/20 uppercase">
+                  Toque no microfone para iniciar
+                </p>
+              </div>
             )}
-          </AnimatePresence>
 
-          {/* Mic button */}
-          <motion.button
-            whileTap={{ scale: 0.93 }}
-            onClick={toggleListening}
-            disabled={isLoading || isSpeaking}
-            className={`w-[68px] h-[68px] rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
-              isListening
-                ? "border-orange-400 bg-orange-400/20 text-orange-400 shadow-[0_0_24px_rgba(255,110,50,0.45)]"
-                : isLoading || isSpeaking
-                  ? "border-cyan-400/15 bg-cyan-400/5 text-cyan-400/25 cursor-not-allowed"
-                  : "border-cyan-400/45 bg-cyan-400/10 text-cyan-400 hover:border-cyan-400 hover:bg-cyan-400/20 hover:shadow-[0_0_24px_rgba(0,200,255,0.35)]"
-            }`}
-          >
-            {isListening
-              ? <MicOff className="w-6 h-6" />
-              : <Mic    className="w-6 h-6" />
-            }
-          </motion.button>
+            {/* Message history */}
+            {messages.map((msg, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                {msg.role === "user" ? (
+                  <div
+                    className="rounded-xl px-4 py-3"
+                    style={{
+                      background: "rgba(0,200,255,0.06)",
+                      border: "1px solid rgba(0,200,255,0.12)",
+                    }}
+                  >
+                    <p className="text-[9px] font-mono tracking-[0.35em] text-cyan-400/40 uppercase mb-1">
+                      Você • Transcrição ao vivo
+                    </p>
+                    <p className="text-sm text-white/75 leading-relaxed">{msg.content}</p>
+                  </div>
+                ) : (
+                  <div
+                    className="rounded-xl px-4 py-3"
+                    style={{
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                    }}
+                  >
+                    <p className="text-sm text-white/85 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                )}
+              </motion.div>
+            ))}
 
-          {/* Stop processing */}
-          <AnimatePresence>
+            {/* AI is typing indicator */}
             {isLoading && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.7 }}
-                onClick={() => {
-                  abortRef.current?.abort();
-                  abortRef.current = null;
-                  setIsLoading(false);
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="rounded-xl px-4 py-3"
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
                 }}
-                className="w-11 h-11 rounded-full border border-yellow-400/40 bg-yellow-400/10 text-yellow-400/80 flex items-center justify-center hover:bg-yellow-400/20 hover:text-yellow-400 transition-all"
-                title="Cancelar"
               >
-                <Square className="w-4 h-4" />
-              </motion.button>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              </motion.div>
             )}
-          </AnimatePresence>
+
+            {/* Live transcription card */}
+            <AnimatePresence>
+              {isListening && liveTranscript && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  className="rounded-xl px-4 py-3"
+                  style={{
+                    background: "rgba(0,200,255,0.08)",
+                    border: "1px solid rgba(0,200,255,0.2)",
+                  }}
+                >
+                  <p className="text-[9px] font-mono tracking-[0.35em] text-cyan-400/60 uppercase mb-1">
+                    Transcrição em tempo real
+                  </p>
+                  <p className="text-sm text-cyan-100/80 leading-relaxed">{liveTranscript}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
-        {/* Bottom hint */}
-        <AnimatePresence>
-          {hintText && (
-            <motion.p
-              key={hintText}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute bottom-5 text-[10px] font-mono tracking-[0.4em] text-cyan-400/20"
+        {/* ── Bottom input bar ── */}
+        <div
+          className="relative z-10 border-t shrink-0"
+          style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(2,12,24,0.95)" }}
+        >
+          <div className="flex items-end gap-2 px-3 sm:px-4 py-3">
+            {/* Left icons */}
+            <div className="flex items-center gap-1 shrink-0 pb-1">
+              <button className="p-2 rounded-full text-white/25 hover:text-white/50 hover:bg-white/5 transition-all">
+                <Smile className="w-5 h-5" />
+              </button>
+              <button className="p-2 rounded-full text-white/25 hover:text-white/50 hover:bg-white/5 transition-all">
+                <Paperclip className="w-5 h-5" />
+              </button>
+              <button className="hidden sm:flex p-2 rounded-full text-white/25 hover:text-white/50 hover:bg-white/5 transition-all">
+                <Camera className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Text input */}
+            <div className="flex-1 relative">
+              <textarea
+                value={isListening ? liveTranscript || "" : inputText}
+                onChange={e => { if (!isListening) setInputText(e.target.value); }}
+                onKeyDown={handleKeyDown}
+                placeholder={isListening ? "Ouvindo... toque no microfone para enviar" : "Digite uma mensagem..."}
+                readOnly={isListening}
+                rows={1}
+                className="w-full resize-none rounded-xl px-4 py-2.5 text-sm text-white/80 placeholder:text-white/20 outline-none"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  maxHeight: "120px",
+                  lineHeight: "1.5",
+                }}
+              />
+            </div>
+
+            {/* Mic button */}
+            <button
+              onClick={toggleListening}
+              disabled={isLoading || isSpeaking}
+              className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                isListening
+                  ? "bg-orange-500/90 text-white shadow-[0_0_16px_rgba(249,115,22,0.5)]"
+                  : isLoading || isSpeaking
+                    ? "bg-white/5 text-white/20 cursor-not-allowed"
+                    : "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/30"
+              }`}
             >
-              {hintText}
-            </motion.p>
-          )}
-        </AnimatePresence>
+              {isListening ? <MicOff className="w-4.5 h-4.5" /> : <Mic className="w-4.5 h-4.5" />}
+            </button>
+
+            {/* Send button */}
+            <button
+              onClick={handleSendText}
+              disabled={!inputText.trim() || isLoading}
+              className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
+                inputText.trim() && !isLoading
+                  ? "bg-cyan-500 text-white hover:bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.4)]"
+                  : "bg-white/5 text-white/15 cursor-not-allowed"
+              }`}
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Bottom hint */}
+          <div className="pb-2 text-center">
+            <p className="text-[9px] font-mono tracking-[0.4em] uppercase" style={{ color: "rgba(255,255,255,0.1)" }}>
+              {isListening
+                ? "Toque no microfone para parar e enviar"
+                : "Toque no microfone para falar"}
+            </p>
+          </div>
+        </div>
       </div>
 
       <AgentSettingsPanel

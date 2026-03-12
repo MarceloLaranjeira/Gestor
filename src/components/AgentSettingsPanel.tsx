@@ -51,11 +51,11 @@ export const DEFAULT_SETTINGS: AgentSettings = {
 const MODELS = [
   { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash (Rápido)", provider: "Google" },
   { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro (Avançado)", provider: "Google" },
-  { value: "google/gemini-3-flash-preview", label: "Gemini 3 Flash Preview", provider: "Google" },
-  { value: "google/gemini-3-pro-preview", label: "Gemini 3 Pro Preview", provider: "Google" },
-  { value: "openai/gpt-5-mini", label: "GPT-5 Mini (Equilibrado)", provider: "OpenAI" },
-  { value: "openai/gpt-5", label: "GPT-5 (Premium)", provider: "OpenAI" },
-  { value: "openai/gpt-5-nano", label: "GPT-5 Nano (Econômico)", provider: "OpenAI" },
+  { value: "google/gemini-2.0-flash-001", label: "Gemini 2.0 Flash", provider: "Google" },
+  { value: "anthropic/claude-sonnet-4-5", label: "Claude Sonnet 4.5 (Premium)", provider: "Anthropic" },
+  { value: "anthropic/claude-haiku-4-5", label: "Claude Haiku 4.5 (Econômico)", provider: "Anthropic" },
+  { value: "openai/gpt-4o", label: "GPT-4o (OpenAI)", provider: "OpenAI" },
+  { value: "openai/gpt-4o-mini", label: "GPT-4o Mini (Equilibrado)", provider: "OpenAI" },
 ];
 
 const RESPONSE_MODES = [
