@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
@@ -18,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Loader2, Search, MessageSquare, Check, CheckCheck, AlertCircle,
   MoreVertical, Info, Trash2, Pencil, Copy, Reply, Star, Forward,
-  ChevronDown, ArrowDown, X, Upload, RefreshCw, Smartphone,
+  ChevronLeft, ChevronDown, ArrowDown, X, Upload, RefreshCw, Smartphone,
   QrCode, Wifi, WifiOff, Link2, LogOut, Filter, Circle,
 } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
@@ -407,6 +408,7 @@ const QRScreen = ({ config, instanceName, onInstanceChange, onConnected }: QRScr
 ═══════════════════════════════════════════════════════════════════════ */
 const WhatsApp = () => {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   /* ── Config & Messages ── */
   const [config, setConfig] = useState<Config | null>(null);
@@ -661,7 +663,15 @@ const WhatsApp = () => {
         style={{ background: "#fff" }}
       >
         {/* ══════════════ SIDEBAR ══════════════ */}
-        <div className="w-[360px] flex flex-col shrink-0 border-r" style={{ background: "#fff" }}>
+        <div
+          className={cn(
+            "flex flex-col shrink-0 border-r",
+            isMobile
+              ? selectedContact ? "hidden" : "w-full"
+              : "w-[360px]"
+          )}
+          style={{ background: "#fff" }}
+        >
 
           {/* Sidebar header */}
           <div className="flex items-center justify-between px-4 py-3 border-b" style={{ backgroundColor: WA_HEADER }}>
@@ -802,7 +812,13 @@ const WhatsApp = () => {
         </div>
 
         {/* ══════════════ CHAT AREA ══════════════ */}
-        <div className="flex-1 flex flex-col" style={{ backgroundColor: WA_BG }}>
+        <div
+          className={cn(
+            "flex-1 flex flex-col",
+            isMobile && !selectedContact ? "hidden" : ""
+          )}
+          style={{ backgroundColor: WA_BG }}
+        >
           {!selectedContact ? (
             /* Empty state */
             <div className="flex-1 flex flex-col items-center justify-center gap-4" style={{ backgroundColor: WA_HEADER }}>
@@ -822,7 +838,16 @@ const WhatsApp = () => {
           ) : (
             <>
               {/* Chat header */}
-              <div className="flex items-center justify-between px-4 py-[10px] border-b" style={{ backgroundColor: WA_HEADER }}>
+              <div className="flex items-center justify-between px-2 sm:px-4 py-[10px] border-b" style={{ backgroundColor: WA_HEADER }}>
+                <div className="flex items-center gap-1 sm:gap-3">
+                  {isMobile && (
+                    <button
+                      onClick={() => setSelectedContact(null)}
+                      className="p-2 rounded-full hover:bg-black/5 transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" style={{ color: WA_DARK }} />
+                    </button>
+                  )}
                 <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowInfo(!showInfo)}>
                   <Avatar className="h-10 w-10">
                     <AvatarFallback style={{ backgroundColor: avatarColor(selectedContact) }} className="text-white font-bold text-sm">
@@ -837,6 +862,7 @@ const WhatsApp = () => {
                       {chatMessages.length} mensagens
                     </p>
                   </div>
+                </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
