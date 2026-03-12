@@ -85,6 +85,101 @@ const getMsgText = (msg: Mensagem) => {
 };
 
 /* ═══════════════════════════════════════════════════════════════════════
+   SETUP SCREEN (first-time config, embedded in WhatsApp page)
+═══════════════════════════════════════════════════════════════════════ */
+const WhatsAppSetupScreen = ({ onConfigSaved }: { onConfigSaved: (cfg: Config) => void }) => {
+  const [apiUrl, setApiUrl] = useState("");
+  const [apiToken, setApiToken] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!apiUrl.trim() || !apiToken.trim()) {
+      toast({ title: "Preencha todos os campos", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    const { data, error } = await supabase
+      .from("integracao_agente_config")
+      .insert({ api_url: apiUrl.trim(), api_token: apiToken.trim(), auth_header_type: "apikey", ativo: true })
+      .select()
+      .single();
+    setSaving(false);
+    if (error) {
+      toast({ title: "Erro ao salvar configuração", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "✅ Configuração salva!", description: "Gerando QR Code..." });
+    onConfigSaved(data as Config);
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] p-4 bg-background">
+      <div className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl border border-border bg-white">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ background: WA_HEADER }}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: WA_TEAL }}>
+            <MessageSquare className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="text-[15px] font-semibold" style={{ color: WA_DARK }}>WhatsApp — Configuração Inicial</p>
+            <p className="text-xs" style={{ color: WA_GREY }}>Configure uma vez e conecte via QR Code</p>
+          </div>
+        </div>
+
+        <div className="px-8 py-8 space-y-6">
+          <div>
+            <p className="text-[20px] font-light" style={{ color: "#41525d" }}>Conectar WhatsApp</p>
+            <p className="text-sm mt-1" style={{ color: WA_GREY }}>
+              Informe os dados da API Evolution para gerar o QR Code de conexão.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: "#8696a0" }}>
+                URL da API Evolution
+              </label>
+              <Input
+                value={apiUrl}
+                onChange={e => setApiUrl(e.target.value)}
+                placeholder="https://sua-api.exemplo.com"
+                className="h-11 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: "#8696a0" }}>
+                API Token (Global Key)
+              </label>
+              <Input
+                type="password"
+                value={apiToken}
+                onChange={e => setApiToken(e.target.value)}
+                placeholder="Sua chave de API"
+                className="h-11 text-sm"
+              />
+            </div>
+          </div>
+
+          <Button
+            className="w-full h-11 text-sm font-semibold gap-2 text-white"
+            style={{ backgroundColor: WA_GREEN }}
+            onClick={handleSave}
+            disabled={saving || !apiUrl.trim() || !apiToken.trim()}
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
+            {saving ? "Salvando..." : "Salvar e gerar QR Code"}
+          </Button>
+
+          <p className="text-[11px] text-center" style={{ color: "#8696a0" }}>
+            Esta configuração é feita uma única vez. Após salvar, o QR Code será gerado automaticamente.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
    QR CODE SCREEN
 ═══════════════════════════════════════════════════════════════════════ */
 interface QRScreenProps {
@@ -541,14 +636,7 @@ const WhatsApp = () => {
 
   if (!config) return (
     <AppLayout>
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] gap-4 text-center px-4">
-        <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: WA_TEAL }}>
-          <MessageSquare className="w-10 h-10 text-white" />
-        </div>
-        <p className="text-muted-foreground max-w-sm">
-          Configure a integração em <strong>Integração</strong> para usar o WhatsApp.
-        </p>
-      </div>
+      <WhatsAppSetupScreen onConfigSaved={(cfg) => setConfig(cfg)} />
     </AppLayout>
   );
 
