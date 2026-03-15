@@ -30,6 +30,7 @@ import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import TermosUso from "./pages/TermosUso";
 import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 import NotFound from "./pages/NotFound";
+import EbookVendas from "./pages/EbookVendas";
 
 // Campanha
 import CampanhaDashboard from "./pages/campanha/CampanhaDashboard";
@@ -135,6 +136,7 @@ const AppRoutes = () => (
     <Route path="/permissoes" element={<ProtectedRoute><Permissoes /></ProtectedRoute>} />
     <Route path="/acesso-negado" element={<ProtectedRoute><AcessoNegado /></ProtectedRoute>} />
     <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+    <Route path="/ebook" element={<EbookVendas />} />
     <Route path="/termos-uso" element={<TermosUso />} />
     <Route path="/auth/google-calendar/callback" element={<GoogleCalendarCallback />} />
     {/* Campanha */}
