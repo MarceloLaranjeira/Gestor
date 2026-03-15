@@ -32,7 +32,7 @@ export interface AgentSettings {
 }
 
 export const DEFAULT_SETTINGS: AgentSettings = {
-  model: "google/gemini-2.5-flash",
+  model: "gemini-2.5-flash",
   responseMode: "both",
   voiceId: "nPczCjzI2devNBz1zQrb",
   voiceName: "Brian",
@@ -49,13 +49,9 @@ export const DEFAULT_SETTINGS: AgentSettings = {
 };
 
 const MODELS = [
-  { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash (Rápido)", provider: "Google" },
-  { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro (Avançado)", provider: "Google" },
-  { value: "google/gemini-2.0-flash-001", label: "Gemini 2.0 Flash", provider: "Google" },
-  { value: "anthropic/claude-sonnet-4-5", label: "Claude Sonnet 4.5 (Premium)", provider: "Anthropic" },
-  { value: "anthropic/claude-haiku-4-5", label: "Claude Haiku 4.5 (Econômico)", provider: "Anthropic" },
-  { value: "openai/gpt-4o", label: "GPT-4o (OpenAI)", provider: "OpenAI" },
-  { value: "openai/gpt-4o-mini", label: "GPT-4o Mini (Equilibrado)", provider: "OpenAI" },
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Rápido)", provider: "Google" },
+  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Avançado)", provider: "Google" },
+  { value: "gemini-2.0-flash-001", label: "Gemini 2.0 Flash", provider: "Google" },
 ];
 
 const RESPONSE_MODES = [
@@ -181,12 +177,7 @@ export const AgentSettingsPanel = ({ isOpen, onClose, settings, onChange }: Agen
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Google</div>
-                    {MODELS.filter(m => m.provider === "Google").map(m => (
-                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                    ))}
-                    <div className="px-2 py-1 text-xs font-semibold text-muted-foreground mt-1">OpenAI</div>
-                    {MODELS.filter(m => m.provider === "OpenAI").map(m => (
+                    {MODELS.map(m => (
                       <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
                     ))}
                   </SelectContent>
