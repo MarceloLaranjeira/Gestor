@@ -1271,8 +1271,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
-    if (!GOOGLE_API_KEY) throw new Error("GOOGLE_API_KEY is not configured");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -1498,16 +1498,16 @@ ${customInstructions ? `\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstru
       }
     }
 
-    const selectedModel = model || "gemini-2.5-flash";
+    const selectedModel = model || "gpt-4o-mini";
 
     // ─── Iterative tool-calling loop (up to 5 rounds) ───
     let currentMessages = [...aiMessages];
     const MAX_TOOL_ROUNDS = 5;
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const aiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+      const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
-        headers: { Authorization: `Bearer ${GOOGLE_API_KEY}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: selectedModel,
           messages: currentMessages,
@@ -1529,9 +1529,9 @@ ${customInstructions ? `\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstru
 
       // No tool calls → stream final response
       if (!choice?.message?.tool_calls || choice.message.tool_calls.length === 0) {
-        const streamResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+        const streamResponse = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
-          headers: { Authorization: `Bearer ${GOOGLE_API_KEY}`, "Content-Type": "application/json" },
+          headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             model: selectedModel,
             messages: currentMessages,
@@ -1569,9 +1569,9 @@ ${customInstructions ? `\n## INSTRUÇÕES ADICIONAIS DO USUÁRIO\n${customInstru
     }
 
     // If we exhausted all rounds, stream final response
-    const finalResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+    const finalResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${GOOGLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: selectedModel,
         messages: currentMessages,
