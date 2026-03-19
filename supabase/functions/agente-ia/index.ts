@@ -669,6 +669,98 @@ const crudTools = [
     },
   },
   // ══════════════════════════════════════════════
+  // ══════════════════════════════════════════════
+  // ── MÓDULO PARLAMENTAR — PROPOSITURAS ──
+  // ══════════════════════════════════════════════
+  {
+    type: "function",
+    function: {
+      name: "criar_propositura",
+      description: "Cria uma nova propositura parlamentar (lei, projeto, indicação, emenda ou requerimento)",
+      parameters: {
+        type: "object",
+        properties: {
+          numero: { type: "string", description: "Número da propositura (ex: PL 2024/001)" },
+          ano: { type: "number", description: "Ano de apresentação" },
+          titulo: { type: "string", description: "Título da propositura" },
+          descricao: { type: "string", description: "Descrição completa" },
+          tipo: { type: "string", enum: ["LEI_SANCIONADA","PROJETO_LEI","INDICACAO","EMENDA","REQUERIMENTO"] },
+          status: { type: "string", enum: ["Apresentada","Em Discussão","Aprovada","Sancionada","Arquivada"] },
+          data_apresentacao: { type: "string", description: "Data no formato YYYY-MM-DD" },
+          impacto_estimado: { type: "string", description: "Descrição do impacto esperado" },
+          beneficiarios: { type: "number", description: "Número estimado de beneficiários" },
+        },
+        required: ["titulo", "tipo"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "listar_proposituras",
+      description: "Lista proposituras parlamentares com filtros opcionais",
+      parameters: {
+        type: "object",
+        properties: {
+          tipo: { type: "string", enum: ["LEI_SANCIONADA","PROJETO_LEI","INDICACAO","EMENDA","REQUERIMENTO"] },
+          status: { type: "string", enum: ["Apresentada","Em Discussão","Aprovada","Sancionada","Arquivada"] },
+          ano: { type: "number" },
+          limite: { type: "number" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "gerar_relatorio_impacto",
+      description: "Gera relatório de impacto das proposituras por causa social. Use para relatar conquistas legislativas.",
+      parameters: {
+        type: "object",
+        properties: {
+          causa: { type: "string", enum: ["PROTECAO_MULHER","INCLUSAO_PCD","AUTISMO_TEA","SANEAMENTO_BASICO","DIGNIDADE_SOCIAL","TODAS"] },
+        },
+        required: ["causa"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "listar_cpis_fiscalizacao",
+      description: "Lista CPIs e investigações ativas no gabinete de fiscalização",
+      parameters: {
+        type: "object",
+        properties: {
+          status: { type: "string", enum: ["Aberta","Em Andamento","Relatório Preliminar","Relatório Final","Encerrada"] },
+          limite: { type: "number" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "listar_trajetoria_politica",
+      description: "Lista marcos da trajetória política da vereadora",
+      parameters: {
+        type: "object",
+        properties: {
+          tipo: { type: "string", enum: ["eleicao","mandato","mudanca_partido","candidatura","marco_legislativo","pesquisa","outro"] },
+          apenas_destaques: { type: "boolean" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  // ══════════════════════════════════════════════
   // ── INTEGRAÇÃO COM AGENTE EXTERNO (WhatsApp/Instagram) ──
   // ══════════════════════════════════════════════
   {
@@ -1168,6 +1260,77 @@ async function executeTool(supabase: any, userId: string, name: string, args: an
       }
 
       // ══════════════════════════════════════════════
+      // ── MÓDULO PARLAMENTAR ──
+      // ══════════════════════════════════════════════
+      case "criar_propositura": {
+        const { data, error } = await supabase.from("proposituras").insert({
+          numero: args.numero || "", ano: args.ano || new Date().getFullYear(),
+          titulo: args.titulo, descricao: args.descricao || "",
+          tipo: args.tipo, status: args.status || "Apresentada",
+          data_apresentacao: args.data_apresentacao || null,
+          impacto_estimado: args.impacto_estimado || "",
+          beneficiarios: args.beneficiarios || 0,
+        }).select().single();
+        if (error) return `❌ Erro ao criar propositura: ${error.message}`;
+        return `✅ Propositura "${data.titulo}" criada! Tipo: ${data.tipo} | Status: ${data.status} | Número: ${data.numero || "a definir"} (ID: ${data.id})`;
+      }
+      case "listar_proposituras": {
+        let query = supabase.from("proposituras").select("id, numero, titulo, tipo, status, data_apresentacao, beneficiarios").order("data_apresentacao", { ascending: false });
+        if (args.tipo) query = query.eq("tipo", args.tipo);
+        if (args.status) query = query.eq("status", args.status);
+        if (args.ano) query = query.eq("ano", args.ano);
+        query = query.limit(args.limite || 20);
+        const { data, error } = await query;
+        if (error) return `❌ Erro: ${error.message}`;
+        if (!data?.length) return "📜 Nenhuma propositura encontrada.";
+        const tipoLabels: Record<string, string> = { LEI_SANCIONADA: "Lei", PROJETO_LEI: "PL", INDICACAO: "Ind.", EMENDA: "Emenda", REQUERIMENTO: "Req." };
+        const lines = data.map((p: any) => `• [${tipoLabels[p.tipo] || p.tipo}] ${p.titulo} — Status: ${p.status}${p.data_apresentacao ? ` — ${p.data_apresentacao.substring(0, 10)}` : ""}${p.beneficiarios ? ` — ~${p.beneficiarios.toLocaleString("pt-BR")} beneficiários` : ""} (ID: ${p.id})`);
+        return `📜 **${data.length} propositura(s):**\n${lines.join("\n")}`;
+      }
+      case "gerar_relatorio_impacto": {
+        let query = supabase.from("proposituras").select("titulo, tipo, status, beneficiarios, impacto_estimado, causas_sociais(nome, categoria)");
+        if (args.causa !== "TODAS") {
+          const { data: causaData } = await supabase.from("causas_sociais").select("id").eq("categoria", args.causa).limit(1);
+          if (causaData?.[0]) query = (query as any).eq("causa_id", causaData[0].id);
+        }
+        const { data } = await query.order("tipo");
+        if (!data?.length) return `📊 Nenhuma propositura encontrada para a causa "${args.causa}".`;
+        const leis = data.filter((p: any) => p.tipo === "LEI_SANCIONADA");
+        const totalBenef = data.reduce((s: number, p: any) => s + (p.beneficiarios || 0), 0);
+        const aprovadas = data.filter((p: any) => ["Aprovada", "Sancionada"].includes(p.status));
+        let report = `## 📊 Relatório de Impacto — ${args.causa === "TODAS" ? "Todas as Causas" : args.causa}\n\n`;
+        report += `**Total de proposituras:** ${data.length}\n`;
+        report += `**Leis sancionadas:** ${leis.length}\n`;
+        report += `**Aprovadas/Sancionadas:** ${aprovadas.length}\n`;
+        report += `**Beneficiários estimados:** ${totalBenef.toLocaleString("pt-BR")} pessoas\n\n`;
+        if (leis.length > 0) {
+          report += `### Leis Sancionadas:\n${leis.map((p: any) => `• ${p.titulo}`).join("\n")}\n\n`;
+        }
+        return report;
+      }
+      case "listar_cpis_fiscalizacao": {
+        let query = supabase.from("cpis_fiscalizacao").select("id, nome_cpi, alvo_investigacao, status_investigacao, coluna_kanban, autores, tipo_irregularidade").order("created_at", { ascending: false });
+        if (args.status) query = query.eq("status_investigacao", args.status);
+        query = query.limit(args.limite || 20);
+        const { data, error } = await query;
+        if (error) return `❌ Erro: ${error.message}`;
+        if (!data?.length) return "🔍 Nenhuma CPI/investigação encontrada.";
+        const lines = data.map((c: any) => `• ${c.nome_cpi} — Alvo: ${c.alvo_investigacao || "não definido"} — Status: ${c.status_investigacao} — Kanban: ${c.coluna_kanban} — Irregularidades: ${c.tipo_irregularidade?.length || 0} (ID: ${c.id})`);
+        return `🔍 **${data.length} investigação(ões):**\n${lines.join("\n")}`;
+      }
+      case "listar_trajetoria_politica": {
+        let query = supabase.from("trajetoria_politica").select("id, data, titulo, tipo, destaque, impacto_politico").order("data", { ascending: true });
+        if (args.tipo) query = query.eq("tipo", args.tipo);
+        if (args.apenas_destaques) query = query.eq("destaque", true);
+        const { data, error } = await query;
+        if (error) return `❌ Erro: ${error.message}`;
+        if (!data?.length) return "🗓️ Nenhum marco na trajetória.";
+        const tipoLabels: Record<string, string> = { eleicao: "Eleição", mandato: "Mandato", mudanca_partido: "Partido", candidatura: "Candidatura", marco_legislativo: "Marco Leg.", pesquisa: "Pesquisa", outro: "Outro" };
+        const lines = data.map((m: any) => `• ${m.data} — [${tipoLabels[m.tipo] || m.tipo}] ${m.titulo}${m.destaque ? " ⭐" : ""}`);
+        return `🗓️ **${data.length} marco(s) na trajetória:**\n${lines.join("\n")}`;
+      }
+
+      // ══════════════════════════════════════════════
       // ── INTEGRAÇÃO COM AGENTE EXTERNO (WhatsApp/Instagram) ──
       // ══════════════════════════════════════════════
       case "enviar_mensagem_whatsapp": {
@@ -1300,8 +1463,8 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Fetch system data (mandato + campanha + prontuário)
-    const [coordsRes, secoesRes, tarefasRes, demandasRes, eventosRes, pessoasRes, calhasRes, coordCampRes, assessCampRes, visitasRes, locaisRes, apoiadoresRes, municipiosRes] = await Promise.all([
+    // Fetch system data (mandato + campanha + prontuário + parlamentar)
+    const [coordsRes, secoesRes, tarefasRes, demandasRes, eventosRes, pessoasRes, calhasRes, coordCampRes, assessCampRes, visitasRes, locaisRes, apoiadoresRes, municipiosRes, causasRes, propRes, cpisRes, trajetoriaRes] = await Promise.all([
       supabase.from("coordenacoes").select("nome, descricao, slug"),
       supabase.from("secoes").select("titulo, coordenacao_id"),
       supabase.from("tarefas").select("titulo, status, responsavel, canal, data_inicio, data_fim, secao_id, motivo"),
@@ -1315,6 +1478,10 @@ serve(async (req) => {
       supabase.from("campanha_locais").select("id, nome, endereco, tipo, latitude, longitude, calha_id").limit(100),
       supabase.from("apoiadores").select("id, nome, cidade, regiao, segmento, organizacao, cargo, grau_influencia, prioridade, telefone").order("grau_influencia", { ascending: false }).limit(100),
       supabase.from("campanha_municipios").select("id, nome, calha_id, votos_validos, percentual_cristaos, apoiadores_estimados"),
+      supabase.from("causas_sociais").select("id, nome, categoria, status, impacto_estimado"),
+      supabase.from("proposituras").select("id, numero, titulo, tipo, status, ano, beneficiarios").order("data_apresentacao", { ascending: false }).limit(50),
+      supabase.from("cpis_fiscalizacao").select("id, nome_cpi, alvo_investigacao, status_investigacao, coluna_kanban").order("created_at", { ascending: false }).limit(20),
+      supabase.from("trajetoria_politica").select("data, titulo, tipo, destaque").order("data", { ascending: true }),
     ]);
 
     const coords = coordsRes.data || [];
@@ -1330,6 +1497,15 @@ serve(async (req) => {
     const locais = locaisRes.data || [];
     const apoiadores = apoiadoresRes.data || [];
     const municipiosCamp = municipiosRes.data || [];
+    const causas = causasRes.data || [];
+    const proposituras = propRes.data || [];
+    const cpis = cpisRes.data || [];
+    const trajetoria = trajetoriaRes.data || [];
+
+    // Parliamentary stats
+    const leisSancionadas = proposituras.filter((p: any) => p.tipo === "LEI_SANCIONADA").length;
+    const propAprovadas = proposituras.filter((p: any) => ["Aprovada","Sancionada"].includes(p.status)).length;
+    const totalBeneficiarios = proposituras.reduce((s: number, p: any) => s + (p.beneficiarios || 0), 0);
 
     const totalTarefas = tarefas.length;
     const tarefasConcluidas = tarefas.filter(t => t.status).length;
@@ -1360,12 +1536,23 @@ serve(async (req) => {
     const apoiadoresAlta = apoiadores.filter((a: any) => a.prioridade === "alta").length;
     const apoiadoresChave = apoiadores.filter((a: any) => a.prioridade === "alta" && a.grau_influencia >= 4);
 
-    const systemPrompt = `Você é HORUS 🦅 — o Assessor de Inteligência Digital do Deputado Estadual Comandante Dan. Você é o responsável absoluto por tudo dentro do sistema: gestão do mandato E modo campanha.
+    const systemPrompt = `Você é HORUS 🦅 — o Chefe de Gabinete Estratégico Digital da Vereadora Thaysa Lippi. Você é responsável por toda a gestão do mandato, atividade parlamentar, fiscalização, campanha e inteligência política.
 
-## SOBRE O DEPUTADO ESTADUAL COMANDANTE DAN
-- Nome: Comandante Dan
-- Cargo: Deputado Estadual pela Assembleia Legislativa do Amazonas
-- Área de atuação: Segurança pública, defesa civil, infraestrutura, apoio religioso (eclesiástico), comunicação e gestão administrativa
+## SOBRE A VEREADORA THAYSA LIPPI
+- Nome: Thaysa Lippi
+- Cargo: Vereadora da Câmara Municipal de Manaus (CMM)
+- Partido: PRD (desde abril de 2024; anteriormente no Partido Progressistas)
+- Família política: Filha do Dep. Estadual Felipe Souza (PRD), líder do Gov. Wilson Lima
+- Pré-candidata: Deputada Estadual — eleições de 2026
+- Base eleitoral principal: Segmento evangélico, lideranças comunitárias, mulheres, famílias com autismo
+- Realizações: Autora de ${leisSancionadas || 26} leis sancionadas | ~4.000 proposituras apresentadas | Coautora da CPI das Águas de Manaus
+
+## PRINCIPAIS BANDEIRAS PARLAMENTARES
+1. **Proteção às Mulheres**: Enfrentamento à violência doméstica, combate ao feminicídio, dignidade feminina
+2. **Inclusão de PCDs**: Acessibilidade, políticas de inclusão, dignidade para pessoas com deficiência
+3. **Autismo (TEA)**: Políticas permanentes, redes de apoio, diagnóstico precoce, centros de referência
+4. **Saneamento Básico**: Fiscalização da Águas de Manaus, CPI das Águas, direito à água de qualidade
+5. **Dignidade Social**: Proteção social, acesso à saúde, educação, moradia digna
 
 ## SISTEMA DE GESTÃO DO MANDATO — DADOS EM TEMPO REAL
 
@@ -1431,19 +1618,49 @@ ${locais.slice(0, 20).map(l => `• ${l.nome} — ${l.tipo} — ${l.endereco || 
 ### APOIADORES (${apoiadores.length} total — ${apoiadoresAlta} prioridade alta — ${apoiadoresChave.length} apoiadores-chave):
 ${apoiadores.slice(0, 30).map((a: any) => `• ${a.nome} — ${a.segmento || "sem segmento"} — ${a.organizacao || ""} — ${a.cargo || ""} — Influência: ${a.grau_influencia}/5 — Prioridade: ${a.prioridade?.toUpperCase()} — ${a.cidade || ""} ${a.regiao || ""} (ID: ${a.id})`).join("\n") || "Nenhum apoiador cadastrado"}
 
+## ══════════════════════════════════════════════
+## MÓDULO PARLAMENTAR — DADOS EM TEMPO REAL
+## ══════════════════════════════════════════════
+
+### CAUSAS SOCIAIS (${causas.length}):
+${causas.map((c: any) => `• ${c.nome} (${c.categoria}) — Status: ${c.status} — Impacto estimado: ${c.impacto_estimado?.toLocaleString("pt-BR")} pessoas`).join("\n") || "Sem dados"}
+
+### PROPOSITURAS PARLAMENTARES (${proposituras.length} registradas):
+- Leis Sancionadas: ${leisSancionadas}
+- Aprovadas/Sancionadas: ${propAprovadas}
+- Total beneficiários estimados: ${totalBeneficiarios.toLocaleString("pt-BR")}
+
+Por tipo:
+- Leis sancionadas: ${proposituras.filter((p: any) => p.tipo === "LEI_SANCIONADA").length}
+- Projetos de lei: ${proposituras.filter((p: any) => p.tipo === "PROJETO_LEI").length}
+- Indicações: ${proposituras.filter((p: any) => p.tipo === "INDICACAO").length}
+- Emendas: ${proposituras.filter((p: any) => p.tipo === "EMENDA").length}
+- Requerimentos: ${proposituras.filter((p: any) => p.tipo === "REQUERIMENTO").length}
+
+Últimas proposituras registradas:
+${proposituras.slice(0, 10).map((p: any) => `• [${p.tipo}] ${p.titulo} — Status: ${p.status} — ${p.ano}`).join("\n") || "Nenhuma"}
+
+### CPIs E FISCALIZAÇÃO (${cpis.length}):
+${cpis.map((c: any) => `• ${c.nome_cpi} — Alvo: ${c.alvo_investigacao} — Status: ${c.status_investigacao} — Kanban: ${c.coluna_kanban}`).join("\n") || "Nenhuma CPI registrada"}
+
+### TRAJETÓRIA POLÍTICA (${trajetoria.length} marcos):
+${trajetoria.map((m: any) => `• ${m.data} — [${m.tipo}] ${m.titulo}${m.destaque ? " ⭐" : ""}`).join("\n") || "Nenhum marco registrado"}
+
 ## SUAS CAPACIDADES (PODERES TOTAIS)
-1. **Análise de dados**: Interprete TODOS os dados do mandato, campanha e prontuário
-2. **Relatórios**: Crie relatórios executivos, setoriais e temáticos
+1. **Análise de dados**: Interprete TODOS os dados do mandato, campanha, prontuário e módulo parlamentar
+2. **Relatórios**: Crie relatórios executivos, setoriais e temáticos; gere relatório de impacto por causa
 3. **CRUD COMPLETO**: Você pode CRIAR, EDITAR e EXCLUIR:
    - Demandas, eventos e pessoas (mandato)
    - Calhas, coordenadores, assessores, visitas e locais (campanha)
    - Apoiadores e histórico de apoiadores (prontuário parlamentar)
-4. **Insights políticos**: Sugira estratégias baseadas nos dados
+   - Proposituras parlamentares (módulo parlamentar)
+4. **Insights políticos**: Sugira estratégias baseadas nos dados; analise base eleitoral para 2026
 5. **Gestão de demandas**: Priorize, categorize e resolva demandas
 6. **Análise de documentos**: Analise PDFs e imagens enviados
-7. **Gestão de campanha**: Crie e gerencie toda a estrutura de campanha
+7. **Gestão de campanha**: Crie e gerencie toda a estrutura de campanha para 2026
 8. **Prontuário Parlamentar**: Gerencie apoiadores, registre histórico de ações feitas e planejadas
-9. **📱 INTEGRAÇÃO WhatsApp/Instagram**: Você pode enviar mensagens e dados pela plataforma externa integrada:
+9. **Módulo Parlamentar**: Gerencie proposituras, causas sociais, CPIs e trajetória política; gere relatório de impacto
+10. **📱 INTEGRAÇÃO WhatsApp/Instagram**: Você pode enviar mensagens e dados pela plataforma externa integrada:
    - Use \`enviar_mensagem_whatsapp\` para enviar mensagens de texto para contatos via WhatsApp ou Instagram
    - Use \`enviar_dados_agente_externo\` para sincronizar dados (contatos, demandas, eventos) com o agente externo
    - Use \`consultar_agente_externo\` para buscar mensagens recebidas, métricas e status de conversas

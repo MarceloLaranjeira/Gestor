@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, ClipboardList, Calendar, CalendarSync, BarChart3, FileText, Settings,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, MessageSquare,
   Megaphone, Database, Building2, UsersRound, Bot, Wallet, KeyRound, Flag, BookUser, BookOpen, Plug, Phone,
-  Layers, MessageCircle,
+  Layers, MessageCircle, Scale, ScrollText, Gavel, GitBranch,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -52,6 +52,13 @@ const operacoesItems: NavItem[] = [
   { icon: Flag, label: "Modo Campanha", path: "/campanha", module: "campanha" },
   { icon: Phone, label: "WhatsApp", path: "/whatsapp", module: "whatsapp" },
   { icon: Plug, label: "Integração", path: "/integracao", module: "integracao" },
+];
+
+const parlamentarItems: NavItem[] = [
+  { icon: Scale,      label: "Radar de Causas",  path: "/parlamentar",              module: "parlamentar" },
+  { icon: ScrollText, label: "Proposituras",      path: "/parlamentar/proposituras", module: "parlamentar" },
+  { icon: Gavel,      label: "Fiscalização",      path: "/parlamentar/fiscalizacao", module: "parlamentar" },
+  { icon: GitBranch,  label: "Trajetória",        path: "/parlamentar/trajetoria",   module: "parlamentar" },
 ];
 
 const sistemaItems: NavItem[] = [
@@ -159,6 +166,16 @@ const SidebarContent = ({ onNavigate }: { onNavigate?: () => void }) => {
         <div className="space-y-0.5">
           {operacoesItems.map((item) => renderLink(item))}
         </div>
+
+        {/* PARLAMENTAR */}
+        {hasAccess("parlamentar") && (
+          <>
+            <SectionLabel label="Parlamentar" show={showLabels} />
+            <div className="space-y-0.5">
+              {parlamentarItems.map((item) => renderLink(item))}
+            </div>
+          </>
+        )}
 
         {/* COORDENAÇÕES */}
         {showCoord && (
