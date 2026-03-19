@@ -64,6 +64,12 @@ import ApoiadorForm from "./pages/prontuario/ApoiadorForm";
 import ApoiadorDetalhes from "./pages/prontuario/ApoiadorDetalhes";
 import ResumoExecutivo from "./pages/prontuario/ResumoExecutivo";
 
+// Módulo Parlamentar
+import RadarCausas from "./pages/parlamentar/RadarCausas";
+import Proposituras from "./pages/parlamentar/Proposituras";
+import GabineteFiscalizacao from "./pages/parlamentar/GabineteFiscalizacao";
+import TrajetoriaPolitica from "./pages/parlamentar/TrajetoriaPolitica";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -160,6 +166,11 @@ const AppRoutes = () => (
     <Route path="/integracao" element={<PermissionRoute><Integracao /></PermissionRoute>} />
     <Route path="/whatsapp" element={<PermissionRoute><WhatsApp /></PermissionRoute>} />
     <Route path="/webchat" element={<PermissionRoute><WebChat /></PermissionRoute>} />
+    {/* Módulo Parlamentar */}
+    <Route path="/parlamentar" element={<PermissionRoute><RadarCausas /></PermissionRoute>} />
+    <Route path="/parlamentar/proposituras" element={<PermissionRoute><Proposituras /></PermissionRoute>} />
+    <Route path="/parlamentar/fiscalizacao" element={<PermissionRoute><GabineteFiscalizacao /></PermissionRoute>} />
+    <Route path="/parlamentar/trajetoria" element={<PermissionRoute><TrajetoriaPolitica /></PermissionRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
