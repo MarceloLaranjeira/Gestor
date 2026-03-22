@@ -32,7 +32,7 @@ export interface AgentSettings {
 }
 
 export const DEFAULT_SETTINGS: AgentSettings = {
-  model: "gemini-2.5-flash",
+  model: "gpt-4o-mini",
   responseMode: "both",
   voiceId: "nPczCjzI2devNBz1zQrb",
   voiceName: "Brian",
@@ -49,9 +49,9 @@ export const DEFAULT_SETTINGS: AgentSettings = {
 };
 
 const MODELS = [
-  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Rápido)", provider: "Google" },
-  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Avançado)", provider: "Google" },
-  { value: "gemini-2.0-flash-001", label: "Gemini 2.0 Flash", provider: "Google" },
+  { value: "gpt-4o-mini", label: "GPT-4o Mini (Rápido)", provider: "OpenAI" },
+  { value: "gpt-4o", label: "GPT-4o (Avançado)", provider: "OpenAI" },
+  { value: "gpt-4.1-mini", label: "GPT-4.1 Mini", provider: "OpenAI" },
 ];
 
 const RESPONSE_MODES = [
