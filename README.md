@@ -1,4 +1,4 @@
-# Gestão de Gabinete DAN
+# Gestão de Gabinete Inteligente
 
 Aplicação web para operação de gabinete parlamentar, com autenticação, controle de permissões, gestão de pessoas/demandas/eventos, módulos estratégicos de campanha, prontuário parlamentar, integrações (incluindo WhatsApp) e funções serverless no Supabase.
 
