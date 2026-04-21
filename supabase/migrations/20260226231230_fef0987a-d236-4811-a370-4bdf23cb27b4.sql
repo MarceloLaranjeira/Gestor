@@ -1,0 +1,4 @@
+
+ALTER TABLE public.campanha_calhas
+  ADD COLUMN latitude NUMERIC(10,7) DEFAULT NULL,
+  ADD COLUMN longitude NUMERIC(10,7) DEFAULT NULL;

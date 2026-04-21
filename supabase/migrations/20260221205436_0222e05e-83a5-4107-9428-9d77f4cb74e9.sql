@@ -1,0 +1,1 @@
+ALTER TABLE public.eventos ADD COLUMN google_synced BOOLEAN NOT NULL DEFAULT false;
