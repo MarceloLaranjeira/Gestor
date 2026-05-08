@@ -400,8 +400,17 @@ const CoordenacaoPage = () => {
     } else {
       ({ error } = await supabase.from("demandas").insert(payload));
     }
+
+    if (error && payload.categoria !== coord.nome) {
+      const retryPayload = { ...payload, categoria: coord.nome };
+      if (editingId) {
+        ({ error } = await supabase.from("demandas").update(retryPayload).eq("id", editingId));
+      } else {
+        ({ error } = await supabase.from("demandas").insert(retryPayload));
+      }
+    }
     setSaving(false);
-    if (error) { toast({ title: "Erro ao salvar demanda", variant: "destructive" }); return; }
+    if (error) { toast({ title: "Erro ao salvar demanda", description: error.message, variant: "destructive" }); return; }
     toast({ title: editingId ? "Demanda atualizada!" : "Demanda registrada!" });
     setDemandaDialog(false);
     loadDemandas(coord.id);

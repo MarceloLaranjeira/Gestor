@@ -814,7 +814,7 @@ const MovimentoDetalhes = () => {
         demandaId = await persistDemanda(payload.categoria);
       } catch (firstError) {
         saveError = firstError as Error;
-        if (isSaudeSetor && payload.categoria !== fallbackCategoria) {
+        if (payload.categoria !== fallbackCategoria) {
           demandaId = await persistDemanda(fallbackCategoria);
           saveError = null;
         }
