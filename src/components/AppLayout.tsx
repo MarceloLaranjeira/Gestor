@@ -44,14 +44,14 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <SidebarContext.Provider value={{ collapsed, setCollapsed, mobileOpen, setMobileOpen }}>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background overflow-x-hidden">
         <AppSidebar />
         <div
           className="transition-all duration-300 flex flex-col min-h-screen"
           style={{ marginLeft: currentWidth }}
         >
           <AppHeader />
-          <main className="flex-1 p-4 sm:p-6 max-w-[1600px] mx-auto w-full">
+          <main className="flex-1 w-full max-w-[1600px] mx-auto px-3 py-3 sm:px-5 sm:py-5 lg:px-6">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={location.pathname}

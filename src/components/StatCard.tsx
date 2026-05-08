@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StatCardProps {
@@ -13,9 +13,10 @@ interface StatCardProps {
   href?: string;
   accentColor?: string;
   iconBg?: string;
+  onEdit?: () => void;
 }
 
-const StatCard = ({ title, value, subtitle, icon, trend, className, href, accentColor, iconBg }: StatCardProps) => {
+const StatCard = ({ title, value, subtitle, icon, trend, className, href, accentColor, iconBg, onEdit }: StatCardProps) => {
   const navigate = useNavigate();
 
   return (
@@ -37,11 +38,22 @@ const StatCard = ({ title, value, subtitle, icon, trend, className, href, accent
         style={{ background: accentColor ?? "hsl(var(--primary))" }}
       />
 
+      {/* Quick-insert button */}
+      {onEdit && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-primary/15 hover:bg-primary/30 text-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-sm"
+          title="Inserir dado"
+        >
+          <Plus className="w-3 h-3" />
+        </button>
+      )}
+
       {/* Subtle radial glow on hover */}
-      {href && (
+      {(href || onEdit) && (
         <div
           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"
-          style={{ background: `radial-gradient(ellipse at top left, ${accentColor ?? "hsl(var(--primary))"} 0%, transparent 60%)`, opacity: 0.04 }}
+          style={{ background: `radial-gradient(ellipse at top left, ${accentColor ?? "hsl(var(--primary))"} 0%, transparent 60%)`, opacity: 0 }}
         />
       )}
 

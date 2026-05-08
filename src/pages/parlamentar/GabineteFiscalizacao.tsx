@@ -55,7 +55,7 @@ const STATUS_INV = ["Aberta", "Em Andamento", "Relatório Preliminar", "Relatór
 const emptyForm = (): Omit<CPI, "id" | "created_at"> => ({
   nome_cpi: "", data_instauracao: null, alvo_investigacao: "",
   tipo_irregularidade: [], status_investigacao: "Aberta",
-  autores: ["Vereadora Thaysa Lippi"],
+  autores: [],
   documentos_investigacao: [], recomendacoes: "",
   resultado_final: "", impacto_esperado: "",
   coluna_kanban: "Denúncia Recebida",

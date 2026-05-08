@@ -358,11 +358,11 @@ const Calendario = () => {
         ) : (
           <>
             {/* Month Navigation */}
-            <div className="flex items-center justify-between glass-card rounded-xl px-4 py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between glass-card rounded-xl px-4 py-3">
               <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
                 <ChevronLeft className="w-5 h-5 text-foreground" />
               </button>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center gap-3">
                 <h2 className="text-lg font-semibold text-foreground capitalize">
                   {formatMonthYear(year, month)}
                 </h2>
@@ -378,6 +378,8 @@ const Calendario = () => {
             {viewMode === "grade" ? (
               /* ─── Calendar Grid ─── */
               <div className="glass-card rounded-xl overflow-hidden">
+                <div className="overflow-x-auto">
+                <div className="min-w-[700px]">
                 <div className="grid grid-cols-7 border-b border-border">
                   {WEEKDAYS.map((d) => (
                     <div key={d} className="text-center py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -435,6 +437,8 @@ const Calendario = () => {
                       </div>
                     );
                   })}
+                </div>
+                </div>
                 </div>
               </div>
             ) : (
@@ -559,7 +563,7 @@ const Calendario = () => {
 
         {/* ─── Event Detail Dialog ─── */}
         <Dialog open={!!detailEvent} onOpenChange={(open) => !open && setDetailEvent(null)}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="w-[calc(100vw-1rem)] sm:max-w-md">
             <DialogHeader>
               {detailEvent && (
                 <div className="flex items-center gap-2">
@@ -632,7 +636,7 @@ const Calendario = () => {
 
         {/* ─── Create/Edit Form Dialog ─── */}
         <Dialog open={showForm} onOpenChange={(open) => !open && setShowForm(false)}>
-          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[calc(100vw-1rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editTarget ? "Editar Evento" : "Novo Evento"}</DialogTitle>
             </DialogHeader>
@@ -646,7 +650,7 @@ const Calendario = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-foreground">Data *</label>
                   <Input type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} />

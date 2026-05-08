@@ -116,11 +116,15 @@ export const THEME_PRESETS: ThemePreset[] = [
   },
 ];
 
+export type ColorScheme = "light" | "dark" | "system";
+
 interface ThemeContextType {
   currentTheme: ThemePreset;
   setTheme: (id: string) => void;
   darkMode: boolean;
   toggleDarkMode: () => void;
+  colorScheme: ColorScheme;
+  setColorScheme: (scheme: ColorScheme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -128,6 +132,8 @@ const ThemeContext = createContext<ThemeContextType>({
   setTheme: () => {},
   darkMode: false,
   toggleDarkMode: () => {},
+  colorScheme: "light",
+  setColorScheme: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
@@ -168,13 +174,31 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return THEME_PRESETS[0];
   });
 
-  const [darkMode, setDarkMode] = useState(() => {
+  const [colorScheme, setColorSchemeState] = useState<ColorScheme>(() => {
     try {
-      const saved = localStorage.getItem("app-dark-mode");
-      if (saved !== null) return saved === "true";
+      const saved = localStorage.getItem("app-color-scheme") as ColorScheme | null;
+      if (saved === "light" || saved === "dark" || saved === "system") return saved;
+      // migrate old dark-mode pref
+      const oldDark = localStorage.getItem("app-dark-mode");
+      if (oldDark === "true") return "dark";
     } catch {}
-    return false;
+    return "light";
   });
+
+  // Derived: is dark active right now?
+  const [systemDark, setSystemDark] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
+  );
+
+  const darkMode = colorScheme === "dark" || (colorScheme === "system" && systemDark);
+
+  // Listen to OS preference changes
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   useEffect(() => {
     applyTheme(currentTheme);
@@ -192,16 +216,18 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const setColorScheme = (scheme: ColorScheme) => {
+    setColorSchemeState(scheme);
+    try { localStorage.setItem("app-color-scheme", scheme); } catch {}
+  };
+
+  // Backward-compat toggle: cycles light→dark→light
   const toggleDarkMode = () => {
-    setDarkMode((prev) => {
-      const next = !prev;
-      try { localStorage.setItem("app-dark-mode", String(next)); } catch {}
-      return next;
-    });
+    setColorScheme(darkMode ? "light" : "dark");
   };
 
   return (
-    <ThemeContext.Provider value={{ currentTheme, setTheme, darkMode, toggleDarkMode }}>
+    <ThemeContext.Provider value={{ currentTheme, setTheme, darkMode, toggleDarkMode, colorScheme, setColorScheme }}>
       {children}
     </ThemeContext.Provider>
   );

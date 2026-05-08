@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import CampanhaLayout from "@/components/campanha/CampanhaLayout";
@@ -30,6 +31,7 @@ interface Calha { id: string; nome: string; }
 const emptyForm = { nome: "", telefone: "", email: "", calha_id: "" as string, status: "ativo" };
 
 const CampanhaCoordenadores = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Coordenador[]>([]);
   const [calhas, setCalhas] = useState<Calha[]>([]);
   const [form, setForm] = useState(emptyForm);
@@ -39,6 +41,13 @@ const CampanhaCoordenadores = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const isGestor = user?.role === "Gestor";
+
+  useEffect(() => {
+    if (searchParams.get("inserir") === "1" && isGestor) {
+      setOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, isGestor, setSearchParams]);
 
   const fetchData = async () => {
     const [c, ca] = await Promise.all([

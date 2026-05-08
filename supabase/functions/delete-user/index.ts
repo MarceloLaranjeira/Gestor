@@ -67,12 +67,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Delete related data first
-    await adminClient.from("user_coordenacoes").delete().eq("user_id", user_id);
-    await adminClient.from("user_roles").delete().eq("user_id", user_id);
-    await adminClient.from("profiles").delete().eq("user_id", user_id);
-
-    // Delete auth user
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(user_id);
 
     if (deleteError) {
@@ -82,11 +76,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    await adminClient.from("user_coordenacoes").delete().eq("user_id", user_id);
+    await adminClient.from("user_roles").delete().eq("user_id", user_id);
+    await adminClient.from("profiles").delete().eq("user_id", user_id);
+
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: "Erro interno do servidor" }), {
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Erro interno do servidor" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

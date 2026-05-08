@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import CampanhaLayout from "@/components/campanha/CampanhaLayout";
@@ -24,6 +25,7 @@ const emptyForm = { calha_id: "", coordenador_id: "", data_visita: "", objetivo:
 const statusColors: Record<string, "default" | "secondary" | "destructive"> = { planejada: "secondary", realizada: "default", cancelada: "destructive" };
 
 const CampanhaVisitas = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Visita[]>([]);
   const [calhas, setCalhas] = useState<Ref[]>([]);
   const [coordenadores, setCoordenadores] = useState<Ref[]>([]);
@@ -33,6 +35,13 @@ const CampanhaVisitas = () => {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (searchParams.get("inserir") === "1") {
+      setOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const fetchData = async () => {
     const [v, ca, co] = await Promise.all([

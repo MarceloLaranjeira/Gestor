@@ -86,22 +86,27 @@ const getMsgText = (msg: Mensagem) => {
 };
 
 /* ═══════════════════════════════════════════════════════════════════════
-   SETUP SCREEN (first-time config, embedded in WhatsApp page)
+   SETUP SCREEN — API Oficial WhatsApp Business (Meta Cloud API)
 ═══════════════════════════════════════════════════════════════════════ */
 const WhatsAppSetupScreen = ({ onConfigSaved }: { onConfigSaved: (cfg: Config) => void }) => {
-  const [apiUrl, setApiUrl] = useState("");
-  const [apiToken, setApiToken] = useState("");
+  const [accessToken, setAccessToken] = useState("");
+  const [phoneNumberId, setPhoneNumberId] = useState("");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!apiUrl.trim() || !apiToken.trim()) {
+    if (!accessToken.trim() || !phoneNumberId.trim()) {
       toast({ title: "Preencha todos os campos", variant: "destructive" });
       return;
     }
     setSaving(true);
     const { data, error } = await supabase
       .from("integracao_agente_config")
-      .insert({ api_url: apiUrl.trim(), api_token: apiToken.trim(), auth_header_type: "apikey", ativo: true })
+      .insert({
+        api_url: "https://graph.facebook.com/v20.0",
+        api_token: accessToken.trim(),
+        auth_header_type: "bearer",
+        ativo: true,
+      })
       .select()
       .single();
     setSaving(false);
@@ -109,7 +114,8 @@ const WhatsAppSetupScreen = ({ onConfigSaved }: { onConfigSaved: (cfg: Config) =
       toast({ title: "Erro ao salvar configuração", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "✅ Configuração salva!", description: "Gerando QR Code..." });
+    try { localStorage.setItem("wa_phone_number_id", phoneNumberId.trim()); } catch {}
+    toast({ title: "✅ WhatsApp Business configurado!", description: "Pronto para enviar mensagens." });
     onConfigSaved(data as Config);
   };
 
@@ -122,42 +128,48 @@ const WhatsAppSetupScreen = ({ onConfigSaved }: { onConfigSaved: (cfg: Config) =
             <MessageSquare className="w-5 h-5 text-white" />
           </div>
           <div>
-            <p className="text-[15px] font-semibold" style={{ color: WA_DARK }}>WhatsApp — Configuração Inicial</p>
-            <p className="text-xs" style={{ color: WA_GREY }}>Configure uma vez e conecte via QR Code</p>
+            <p className="text-[15px] font-semibold" style={{ color: WA_DARK }}>WhatsApp Business — API Oficial</p>
+            <p className="text-xs" style={{ color: WA_GREY }}>Conexão via Meta Cloud API — sem QR Code</p>
           </div>
         </div>
 
         <div className="px-8 py-8 space-y-6">
           <div>
-            <p className="text-[20px] font-light" style={{ color: "#41525d" }}>Conectar WhatsApp</p>
+            <p className="text-[20px] font-light" style={{ color: "#41525d" }}>Conectar WhatsApp Business</p>
             <p className="text-sm mt-1" style={{ color: WA_GREY }}>
-              Informe os dados da API Evolution para gerar o QR Code de conexão.
+              Use suas credenciais do Meta Business Manager para ativar o envio de mensagens.
             </p>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: "#8696a0" }}>
-                URL da API Evolution
+                Phone Number ID
               </label>
               <Input
-                value={apiUrl}
-                onChange={e => setApiUrl(e.target.value)}
-                placeholder="https://sua-api.exemplo.com"
+                value={phoneNumberId}
+                onChange={e => setPhoneNumberId(e.target.value)}
+                placeholder="Ex: 123456789012345"
                 className="h-11 text-sm"
               />
+              <p className="text-[11px] mt-1.5" style={{ color: "#8696a0" }}>
+                Meta Business Manager → WhatsApp → Configuração da API → Phone Number ID
+              </p>
             </div>
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: "#8696a0" }}>
-                API Token (Global Key)
+                Token de Acesso Permanente
               </label>
               <Input
                 type="password"
-                value={apiToken}
-                onChange={e => setApiToken(e.target.value)}
-                placeholder="Sua chave de API"
+                value={accessToken}
+                onChange={e => setAccessToken(e.target.value)}
+                placeholder="EAAxxxxxxxxxxxxxxxx..."
                 className="h-11 text-sm"
               />
+              <p className="text-[11px] mt-1.5" style={{ color: "#8696a0" }}>
+                Token do System User gerado no Meta Business Manager
+              </p>
             </div>
           </div>
 
@@ -165,14 +177,14 @@ const WhatsAppSetupScreen = ({ onConfigSaved }: { onConfigSaved: (cfg: Config) =
             className="w-full h-11 text-sm font-semibold gap-2 text-white"
             style={{ backgroundColor: WA_GREEN }}
             onClick={handleSave}
-            disabled={saving || !apiUrl.trim() || !apiToken.trim()}
+            disabled={saving || !accessToken.trim() || !phoneNumberId.trim()}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
-            {saving ? "Salvando..." : "Salvar e gerar QR Code"}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Smartphone className="w-4 h-4" />}
+            {saving ? "Salvando..." : "Ativar WhatsApp Business"}
           </Button>
 
           <p className="text-[11px] text-center" style={{ color: "#8696a0" }}>
-            Esta configuração é feita uma única vez. Após salvar, o QR Code será gerado automaticamente.
+            Configuração única. Não é necessário escanear QR Code.
           </p>
         </div>
       </div>
@@ -180,228 +192,6 @@ const WhatsAppSetupScreen = ({ onConfigSaved }: { onConfigSaved: (cfg: Config) =
   );
 };
 
-/* ═══════════════════════════════════════════════════════════════════════
-   QR CODE SCREEN
-═══════════════════════════════════════════════════════════════════════ */
-interface QRScreenProps {
-  config: Config;
-  instanceName: string;
-  onInstanceChange: (v: string) => void;
-  onConnected: () => void;
-}
-const QRScreen = ({ config, instanceName, onInstanceChange, onConnected }: QRScreenProps) => {
-  const [status, setStatus] = useState<"idle" | "checking" | "open" | "close">("idle");
-  const [qrBase64, setQrBase64] = useState<string | null>(null);
-  const [qrLoading, setQrLoading] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const autoFetchedRef = useRef(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const cdRef  = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  /* Use Supabase function as proxy to avoid CORS */
-  const callApi = useCallback(async (endpoint: string, method = "GET") => {
-    const { data, error } = await supabase.functions.invoke("integracao-enviar", {
-      body: {
-        config_id: config.id,
-        endpoint,
-        method,
-        plataforma: "system",
-        contato_externo: "__wa_system__",
-      },
-    });
-    if (error) throw error;
-    return data?.data ?? data;
-  }, [config.id]);
-
-  const checkStatus = useCallback(async (): Promise<boolean> => {
-    if (!instanceName.trim()) return false;
-    try {
-      const data = await callApi(`/instance/connectionState/${instanceName.trim()}`);
-      const state: string = data?.instance?.state || data?.state || "close";
-      const open = state === "open";
-      setStatus(open ? "open" : "close");
-      return open;
-    } catch {
-      setStatus("close");
-      return false;
-    }
-  }, [callApi, instanceName]);
-
-  const fetchQR = useCallback(async () => {
-    if (!instanceName.trim() || qrLoading) return;
-    setQrLoading(true);
-    setQrBase64(null);
-    try {
-      const data = await callApi(`/instance/connect/${instanceName.trim()}`);
-      const qr = data?.base64 || data?.qrcode?.base64 || data?.qr;
-      if (qr) {
-        setQrBase64(qr);
-        setCountdown(30);
-      } else {
-        toast({ title: "QR Code não retornado", description: "Verifique o nome da instância e token", variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Erro ao obter QR Code", description: "Verifique a URL e token da API", variant: "destructive" });
-    } finally {
-      setQrLoading(false);
-    }
-  }, [callApi, instanceName, qrLoading]);
-
-  const handleVerify = async () => {
-    setStatus("checking");
-    const open = await checkStatus();
-    if (open) {
-      toast({ title: "✅ WhatsApp conectado!", description: `Instância "${instanceName}" está ativa.` });
-      onConnected();
-    } else {
-      toast({ title: "Não conectado", description: "Gere o QR Code e escaneie com o WhatsApp", variant: "destructive" });
-    }
-  };
-
-  /* Poll every 3s after QR is shown */
-  useEffect(() => {
-    if (!qrBase64 || status === "open") return;
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(async () => {
-      const open = await checkStatus();
-      if (open) {
-        clearInterval(pollRef.current!);
-        toast({ title: "✅ WhatsApp conectado!" });
-        onConnected();
-      }
-    }, 3000);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [qrBase64, status]);
-
-  /* 30-second countdown + auto-refresh */
-  useEffect(() => {
-    if (countdown <= 0) return;
-    if (cdRef.current) clearInterval(cdRef.current);
-    cdRef.current = setInterval(() => {
-      setCountdown(c => {
-        if (c <= 1) {
-          clearInterval(cdRef.current!);
-          fetchQR();
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
-    return () => { if (cdRef.current) clearInterval(cdRef.current); };
-  }, [countdown]);
-
-  /* Auto-check connection then fetch QR on mount */
-  useEffect(() => {
-    if (autoFetchedRef.current || !instanceName.trim()) return;
-    autoFetchedRef.current = true;
-    checkStatus().then(open => {
-      if (!open) fetchQR();
-    });
-  }, [instanceName]); // eslint-disable-line
-
-  return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] p-4 bg-background">
-      <div className="w-full max-w-3xl rounded-2xl overflow-hidden shadow-2xl border border-border animate-scale-in bg-white">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ background: WA_HEADER }}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: WA_TEAL }}>
-            <MessageSquare className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <p className="text-[15px] font-semibold" style={{ color: WA_DARK }}>WhatsApp — Conectar Dispositivo</p>
-            <p className="text-xs" style={{ color: WA_GREY }}>Use o WhatsApp no navegador do Gestor Inteligente</p>
-          </div>
-          <div className="ml-auto">
-            {status === "checking" && <span className="flex items-center gap-1.5 text-xs" style={{ color: WA_GREY }}><Loader2 className="w-3.5 h-3.5 animate-spin" /> Verificando...</span>}
-            {status === "open"     && <span className="flex items-center gap-1.5 text-xs text-emerald-600"><Wifi className="w-3.5 h-3.5" /> Conectado</span>}
-            {status === "close"    && <span className="flex items-center gap-1.5 text-xs text-red-500"><WifiOff className="w-3.5 h-3.5" /> Desconectado</span>}
-          </div>
-        </div>
-
-        <div className="flex flex-col md:flex-row">
-          {/* Left — instructions + inputs */}
-          <div className="flex-1 px-8 py-8 space-y-6">
-            <div>
-              <p className="text-[22px] font-light" style={{ color: "#41525d" }}>Vincule seu WhatsApp</p>
-              <p className="text-sm mt-1" style={{ color: WA_GREY }}>Conecte seu número para enviar e receber mensagens dos eleitores.</p>
-            </div>
-
-            <ol className="space-y-3.5">
-              {[
-                "Abra o WhatsApp no seu celular",
-                "Toque em Menu (⋮) ou Configurações",
-                "Selecione Dispositivos conectados",
-                "Toque em Conectar dispositivo e escaneie o QR code",
-              ].map((text, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5"
-                    style={{ backgroundColor: WA_GREEN }}>{i + 1}</span>
-                  <span className="text-sm" style={{ color: "#41525d" }}>{text}</span>
-                </li>
-              ))}
-            </ol>
-
-            {/* Actions */}
-            <div className="space-y-3 pt-3 border-t border-[#e9edef]">
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1 h-10 text-sm gap-2"
-                  onClick={handleVerify}
-                  disabled={status === "checking"}
-                >
-                  {status === "checking" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
-                  Verificar conexão
-                </Button>
-                <Button
-                  className="flex-1 h-10 text-sm gap-2 text-white"
-                  style={{ backgroundColor: WA_GREEN }}
-                  onClick={fetchQR}
-                  disabled={qrLoading}
-                >
-                  {qrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
-                  Novo QR Code
-                </Button>
-              </div>
-              <p className="text-[11px]" style={{ color: "#8696a0" }}>
-                O QR Code é gerado automaticamente. Escaneie com seu celular.
-              </p>
-            </div>
-          </div>
-
-          {/* Right — QR display */}
-          <div className="w-full md:w-[300px] flex flex-col items-center justify-center px-8 py-8 border-t md:border-t-0 md:border-l border-[#e9edef] bg-[#fafafa]">
-            {qrLoading ? (
-              <div className="w-[196px] h-[196px] border border-[#e9edef] rounded-xl flex items-center justify-center bg-white shadow-sm">
-                <Loader2 className="w-10 h-10 animate-spin" style={{ color: WA_GREEN }} />
-              </div>
-            ) : qrBase64 ? (
-              <div className="text-center space-y-3">
-                <div className="w-[196px] h-[196px] p-2 bg-white border border-[#e9edef] rounded-xl shadow-md overflow-hidden">
-                  <img src={qrBase64} alt="QR Code WhatsApp" className="w-full h-full object-contain" />
-                </div>
-                <button onClick={fetchQR}
-                  className="flex items-center gap-1.5 text-xs font-medium mx-auto"
-                  style={{ color: WA_GREEN }}>
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  {countdown > 0 ? `Atualiza em ${countdown}s` : "Atualizar QR Code"}
-                </button>
-                <p className="text-[11px]" style={{ color: "#8696a0" }}>Verificando conexão automaticamente...</p>
-              </div>
-            ) : (
-              <div className="text-center space-y-4">
-                <div className="w-[196px] h-[196px] border border-[#e9edef] rounded-xl flex flex-col items-center justify-center gap-3 bg-white shadow-sm mx-auto">
-                  <QrCode className="w-14 h-14 text-[#d1d7db]" />
-                  <p className="text-xs px-4" style={{ color: "#8696a0" }}>Clique em "Gerar QR Code"</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 /* ═══════════════════════════════════════════════════════════════════════
    MAIN WHATSAPP PAGE
@@ -415,11 +205,10 @@ const WhatsApp = () => {
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  /* ── Instance / Connection ── */
-  const [instanceName, setInstanceName] = useState(() => {
-    try { return localStorage.getItem("wa-instance") || "gabinete-inteligente"; } catch { return "gabinete-inteligente"; }
+  /* ── Phone Number ID (Meta Cloud API) ── */
+  const [phoneNumberId, setPhoneNumberId] = useState(() => {
+    try { return localStorage.getItem("wa_phone_number_id") || ""; } catch { return ""; }
   });
-  const [connected, setConnected] = useState(false);
 
   /* ── UI State ── */
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
@@ -446,10 +235,10 @@ const WhatsApp = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  /* ── Save instance ── */
+  /* ── Save phoneNumberId ── */
   useEffect(() => {
-    try { localStorage.setItem("wa-instance", instanceName); } catch {}
-  }, [instanceName]);
+    try { localStorage.setItem("wa_phone_number_id", phoneNumberId); } catch {}
+  }, [phoneNumberId]);
 
   /* ── Notification sound ── */
   useEffect(() => {
@@ -477,9 +266,9 @@ const WhatsApp = () => {
     setLoading(false);
   };
 
-  /* ── Realtime messages (only when connected) ── */
+  /* ── Realtime messages ── */
   useEffect(() => {
-    if (!config || !connected) return;
+    if (!config) return;
     fetchMensagens();
     const channel = supabase.channel("whatsapp-msgs")
       .on("postgres_changes", {
@@ -511,7 +300,7 @@ const WhatsApp = () => {
         }
       }).subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [config?.id, connected, selectedContact]);
+  }, [config?.id, selectedContact]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [mensagens, selectedContact]);
 
@@ -599,7 +388,7 @@ const WhatsApp = () => {
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(false); dragCountRef.current = 0;
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"));
-    if (!files.length || !selectedContact || !config || !instanceName) return;
+    if (!files.length || !selectedContact || !config || !phoneNumberId) return;
     setUploadingImage(true);
     for (const file of files) {
       const fileName = `whatsapp-img/${Date.now()}-${file.name}`;
@@ -607,9 +396,20 @@ const WhatsApp = () => {
       if (uploadError) continue;
       const { data: urlData } = supabase.storage.from("agent-uploads").getPublicUrl(fileName);
       await supabase.functions.invoke("integracao-enviar", {
-        body: { config_id: config.id, endpoint: `/message/sendMedia/${instanceName}`, method: "POST",
-          body: { number: selectedContact.replace(/\D/g, ""), mediatype: "image", media: urlData.publicUrl },
-          plataforma: "whatsapp", contato_externo: selectedContact },
+        body: {
+          config_id: config.id,
+          endpoint: `/${phoneNumberId}/messages`,
+          method: "POST",
+          body: {
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to: selectedContact.replace(/\D/g, ""),
+            type: "image",
+            image: { link: urlData.publicUrl },
+          },
+          plataforma: "whatsapp",
+          contato_externo: selectedContact,
+        },
       });
     }
     setUploadingImage(false);
@@ -638,18 +438,7 @@ const WhatsApp = () => {
 
   if (!config) return (
     <AppLayout>
-      <WhatsAppSetupScreen onConfigSaved={(cfg) => setConfig(cfg)} />
-    </AppLayout>
-  );
-
-  if (!connected) return (
-    <AppLayout>
-      <QRScreen
-        config={config}
-        instanceName={instanceName}
-        onInstanceChange={v => setInstanceName(v)}
-        onConnected={() => setConnected(true)}
-      />
+      <WhatsAppSetupScreen onConfigSaved={(cfg) => { setConfig(cfg); setPhoneNumberId(localStorage.getItem("wa_phone_number_id") || ""); }} />
     </AppLayout>
   );
 
@@ -682,10 +471,10 @@ const WhatsApp = () => {
                 </AvatarFallback>
               </Avatar>
               <div className="ml-1">
-                <p className="text-xs font-semibold leading-none" style={{ color: WA_DARK }}>{instanceName}</p>
+                <p className="text-xs font-semibold leading-none" style={{ color: WA_DARK }}>WhatsApp Business</p>
                 <div className="flex items-center gap-1 mt-0.5">
                   <Circle className="w-2 h-2 fill-emerald-500 text-emerald-500" />
-                  <span className="text-[10px]" style={{ color: WA_GREY }}>Conectado</span>
+                  <span className="text-[10px]" style={{ color: WA_GREY }}>API Oficial</span>
                 </div>
               </div>
             </div>
@@ -709,8 +498,8 @@ const WhatsApp = () => {
                     <Star className="w-4 h-4 mr-2" /> Mensagens favoritas
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setConnected(false)} className="text-red-500">
-                    <LogOut className="w-4 h-4 mr-2" /> Desconectar
+                  <DropdownMenuItem onClick={() => setConfig(null)} className="text-red-500">
+                    <LogOut className="w-4 h-4 mr-2" /> Reconfigurar API
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -832,7 +621,7 @@ const WhatsApp = () => {
               </p>
               <div className="flex items-center gap-2 mt-2 text-xs" style={{ color: "#8696a0" }}>
                 <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: "#25d366" }} />
-                Instância: {instanceName}
+                API Oficial · ID: {phoneNumberId || "não configurado"}
               </div>
             </div>
           ) : (
@@ -1074,7 +863,7 @@ const WhatsApp = () => {
               {/* Input bar */}
               <ChatInputBar
                 config={config}
-                instanceName={instanceName}
+                phoneNumberId={phoneNumberId}
                 numero={numero}
                 onSent={() => setSelectedContact(numero)}
                 editingMessage={editingMessage}

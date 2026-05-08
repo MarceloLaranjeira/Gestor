@@ -202,7 +202,7 @@ export default function Proposituras() {
               Proposituras Parlamentares
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {filtered.length} de {items.length} registros
+              Projetos de lei, indicações, emendas e requerimentos · {filtered.length} de {items.length} registros
             </p>
           </div>
           <Button onClick={openNew} size="sm" className="gap-1.5">

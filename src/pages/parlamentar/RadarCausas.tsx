@@ -139,7 +139,7 @@ export default function RadarCausas() {
             <h1 className="text-2xl font-bold">Gestão Parlamentar</h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Radar de Causas · Vereadora Thaysa Lippi · Câmara Municipal de Manaus
+            Radar de causas e atuação parlamentar
           </p>
         </div>
 

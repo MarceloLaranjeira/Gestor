@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import CampanhaLayout from "@/components/campanha/CampanhaLayout";
@@ -27,6 +28,7 @@ interface Calha {
 const emptyForm = { nome: "", municipios: 0, votos_validos: 0, percentual_cristaos: 0, potencial_votos: 0, regiao: "", latitude: "" as string, longitude: "" as string };
 
 const CampanhaCalhas = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [calhas, setCalhas] = useState<Calha[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
@@ -36,6 +38,14 @@ const CampanhaCalhas = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const isGestor = user?.role === "Gestor";
+
+  // Auto-open dialog when ?inserir=1 is in URL
+  useEffect(() => {
+    if (searchParams.get("inserir") === "1" && isGestor) {
+      setOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, isGestor, setSearchParams]);
 
   const fetchData = async () => {
     const { data } = await supabase.from("campanha_calhas").select("*").order("nome");
@@ -90,9 +100,22 @@ const CampanhaCalhas = () => {
                   <div><Label>Nome</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label>Municípios</Label><Input type="number" value={form.municipios} onChange={(e) => setForm({ ...form, municipios: +e.target.value })} /></div>
-                    <div><Label>Votos Válidos</Label><Input type="number" value={form.votos_validos} onChange={(e) => setForm({ ...form, votos_validos: +e.target.value })} /></div>
-                    <div><Label>% Cristãos</Label><Input type="number" step="0.1" value={form.percentual_cristaos} onChange={(e) => setForm({ ...form, percentual_cristaos: +e.target.value })} /></div>
-                    <div><Label>Potencial Votos</Label><Input type="number" value={form.potencial_votos} onChange={(e) => setForm({ ...form, potencial_votos: +e.target.value })} /></div>
+                    <div><Label>Votos Válidos</Label>
+                      <Input type="number" value={form.votos_validos} onChange={(e) => {
+                        const vv = +e.target.value;
+                        setForm(f => ({ ...f, votos_validos: vv, potencial_votos: Math.round(vv * f.percentual_cristaos / 100) }));
+                      }} />
+                    </div>
+                    <div><Label>% Cristãos</Label>
+                      <Input type="number" step="0.1" value={form.percentual_cristaos} onChange={(e) => {
+                        const pct = +e.target.value;
+                        setForm(f => ({ ...f, percentual_cristaos: pct, potencial_votos: Math.round(f.votos_validos * pct / 100) }));
+                      }} />
+                    </div>
+                    <div>
+                      <Label className="flex items-center gap-1">Potencial Votos <span className="text-[10px] text-muted-foreground font-normal">(calculado)</span></Label>
+                      <Input type="number" value={form.potencial_votos} readOnly className="bg-muted/40 cursor-default" />
+                    </div>
                   </div>
                   <div><Label>Região</Label><Input value={form.regiao} onChange={(e) => setForm({ ...form, regiao: e.target.value })} /></div>
                   <div className="grid grid-cols-2 gap-3">

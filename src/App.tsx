@@ -71,6 +71,14 @@ import Proposituras from "./pages/parlamentar/Proposituras";
 import GabineteFiscalizacao from "./pages/parlamentar/GabineteFiscalizacao";
 import TrajetoriaPolitica from "./pages/parlamentar/TrajetoriaPolitica";
 
+// Novas páginas
+import Compromissos from "./pages/Compromissos";
+import Alertas from "./pages/Alertas";
+import PowerBI from "./pages/Analytics";
+import Mapa from "./pages/Mapa";
+import RelatorioNPS from "./pages/RelatorioNPS";
+import Pesquisa from "./pages/Pesquisa";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -126,10 +134,14 @@ const AppRoutes = () => (
     <Route path="/calendario" element={<PermissionRoute><Calendario /></PermissionRoute>} />
     <Route path="/movimentos" element={<PermissionRoute><Movimentos /></PermissionRoute>} />
     <Route path="/movimentos/:id" element={<PermissionRoute><MovimentoDetalhes /></PermissionRoute>} />
-    <Route path="/relatorios" element={<PermissionRoute><Relatorios /></PermissionRoute>} />
+    <Route path="/compromissos" element={<PermissionRoute><Compromissos /></PermissionRoute>} />
+    <Route path="/alertas" element={<PermissionRoute><Alertas /></PermissionRoute>} />
+<Route path="/relatorios" element={<PermissionRoute><Relatorios /></PermissionRoute>} />
     <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
     <Route path="/usuarios" element={<PermissionRoute><GerenciarUsuarios /></PermissionRoute>} />
     <Route path="/relatorio-coordenacao" element={<PermissionRoute><RelatorioCoordenacao /></PermissionRoute>} />
+    <Route path="/relatorio-nps" element={<PermissionRoute><RelatorioNPS /></PermissionRoute>} />
+    <Route path="/pesquisa" element={<PermissionRoute><Pesquisa /></PermissionRoute>} />
     <Route path="/coordenacoes" element={<PermissionRoute><Coordenacoes /></PermissionRoute>} />
     <Route path="/coordenacao/:id" element={<PermissionRoute><CoordenacaoPage /></PermissionRoute>} />
     {/* Coordenações Estratégicas (dentro de Campanha) */}
@@ -167,6 +179,8 @@ const AppRoutes = () => (
     {/* Integração */}
     <Route path="/integracao" element={<PermissionRoute><Integracao /></PermissionRoute>} />
     <Route path="/whatsapp" element={<PermissionRoute><WhatsApp /></PermissionRoute>} />
+    <Route path="/powerbi" element={<PermissionRoute><PowerBI /></PermissionRoute>} />
+    <Route path="/mapa" element={<PermissionRoute><Mapa /></PermissionRoute>} />
     <Route path="/webchat" element={<PermissionRoute><WebChat /></PermissionRoute>} />
     {/* Módulo Parlamentar */}
     <Route path="/parlamentar" element={<PermissionRoute><RadarCausas /></PermissionRoute>} />

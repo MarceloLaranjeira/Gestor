@@ -23,6 +23,13 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  DISPONIBILIDADE_BADGE_CLASS,
+  DISPONIBILIDADE_LABEL,
+  normalizeDisponibilidadeMensagem,
+  normalizeDisponibilidadeStatus,
+  type DisponibilidadeStatus,
+} from "@/lib/userAvailability";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -31,6 +38,9 @@ interface UserRow {
   nome: string;
   email: string;
   cargo: string | null;
+  disponibilidade_atualizada_em: string | null;
+  disponibilidade_mensagem: string;
+  disponibilidade_status: DisponibilidadeStatus;
   role: AppRole;
   coordenacao_ids: string[];
 }
@@ -78,7 +88,7 @@ const GerenciarUsuarios = () => {
   const fetchData = async () => {
     setLoading(true);
     const [profilesRes, coordsRes, ucRes, rolesRes] = await Promise.all([
-      supabase.from("profiles").select("user_id, nome, email, cargo"),
+      supabase.from("profiles").select("user_id, nome, email, cargo, disponibilidade_status, disponibilidade_mensagem, disponibilidade_atualizada_em"),
       supabase.from("coordenacoes").select("id, nome").order("nome"),
       supabase.from("user_coordenacoes").select("user_id, coordenacao_id"),
       supabase.from("user_roles").select("user_id, role"),
@@ -99,6 +109,9 @@ const GerenciarUsuarios = () => {
         nome: p.nome,
         email: p.email,
         cargo: p.cargo,
+        disponibilidade_atualizada_em: p.disponibilidade_atualizada_em || null,
+        disponibilidade_mensagem: normalizeDisponibilidadeMensagem(p.disponibilidade_mensagem),
+        disponibilidade_status: normalizeDisponibilidadeStatus(p.disponibilidade_status),
         role: (userRole?.role as AppRole) || "assessor",
         coordenacao_ids: userCoords,
       };
@@ -260,7 +273,7 @@ const GerenciarUsuarios = () => {
   return (
     <AppLayout>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold font-display text-foreground">Gerenciar Usuários</h1>
             <p className="text-sm text-muted-foreground">
@@ -299,13 +312,16 @@ const GerenciarUsuarios = () => {
         </div>
 
         <div className="glass-card rounded-xl overflow-hidden">
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[920px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Cargo</TableHead>
                 <TableHead>Função</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Ausência</TableHead>
                 <TableHead>Coordenações</TableHead>
                 {isGestor && <TableHead className="w-24">Ações</TableHead>}
               </TableRow>
@@ -313,13 +329,13 @@ const GerenciarUsuarios = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Nenhum usuário encontrado
                   </TableCell>
                 </TableRow>
@@ -333,6 +349,14 @@ const GerenciarUsuarios = () => {
                       <Badge variant={u.role === "gestor" ? "default" : "secondary"}>
                         {roleLabels[u.role]}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${DISPONIBILIDADE_BADGE_CLASS[u.disponibilidade_status]}`}>
+                        {DISPONIBILIDADE_LABEL[u.disponibilidade_status]}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs max-w-[220px]">
+                      {u.disponibilidade_status === "indisponivel" && u.disponibilidade_mensagem ? u.disponibilidade_mensagem : "—"}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
@@ -369,10 +393,11 @@ const GerenciarUsuarios = () => {
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
               Mostrando {(safeCurrentPage - 1) * PAGE_SIZE + 1}–{Math.min(safeCurrentPage * PAGE_SIZE, filtered.length)} de {filtered.length}
             </p>
@@ -393,7 +418,7 @@ const GerenciarUsuarios = () => {
 
       {/* Edit dialog */}
       <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[calc(100vw-1rem)] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Editar Usuário</DialogTitle>
           </DialogHeader>
@@ -450,7 +475,7 @@ const GerenciarUsuarios = () => {
 
       {/* Create dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetCreateForm(); } }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[calc(100vw-1rem)] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Novo Usuário</DialogTitle>
           </DialogHeader>

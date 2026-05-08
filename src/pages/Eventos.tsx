@@ -34,6 +34,12 @@ interface Evento {
 
 const TIPOS = ["Plenário", "Comissão", "Audiência", "Visita", "Religioso", "Interno", "Cultural", "Outro"];
 
+const logEntry = async (userId: string, origemId: string, acao: string, descricao: string) => {
+  await supabase.from("logbook_entradas").insert({
+    user_id: userId, origem: "evento", origem_id: origemId, acao, descricao,
+  });
+};
+
 const tipoColors: Record<string, string> = {
   "Plenário": "bg-primary/10 text-primary",
   "Comissão": "bg-secondary/10 text-secondary",
@@ -142,6 +148,7 @@ const Eventos = () => {
         const { error } = await supabase.from("eventos").update({ ...form }).eq("id", editTarget.id);
         if (error) throw error;
         toast({ title: "Evento atualizado" });
+        await logEntry(user!.user_id, editTarget.id, "atualizado", `Evento "${form.titulo}" atualizado — ${form.data} ${form.hora}`);
       } else {
         const { error, data: inserted } = await supabase.from("eventos").insert({ ...form, user_id: user!.user_id, google_synced: syncToGoogle && gcal.connected }).select("id").single();
         if (error) throw error;
@@ -170,6 +177,7 @@ const Eventos = () => {
         } else {
           toast({ title: "Evento criado com sucesso" });
         }
+        if (inserted?.id) await logEntry(user!.user_id, inserted.id, "criado", `Novo evento: "${form.titulo}" em ${form.data} às ${form.hora}`);
       }
       setShowForm(false);
       fetchEventos();
@@ -184,6 +192,7 @@ const Eventos = () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
+      await logEntry(user!.user_id, deleteTarget.id, "cancelado", `Evento "${deleteTarget.titulo}" excluído`);
       const { error } = await supabase.from("eventos").delete().eq("id", deleteTarget.id);
       if (error) throw error;
       toast({ title: "Evento removido" });

@@ -474,6 +474,154 @@ export type Database = {
           },
         ]
       }
+      chat_mensagem_anexos: {
+        Row: {
+          created_at: string
+          id: string
+          mensagem_id: string
+          nome_arquivo: string
+          storage_bucket: string
+          storage_path: string
+          tamanho_bytes: number | null
+          tipo_arquivo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mensagem_id: string
+          nome_arquivo: string
+          storage_bucket?: string
+          storage_path: string
+          tamanho_bytes?: number | null
+          tipo_arquivo?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mensagem_id?: string
+          nome_arquivo?: string
+          storage_bucket?: string
+          storage_path?: string
+          tamanho_bytes?: number | null
+          tipo_arquivo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_mensagem_anexos_mensagem_id_fkey"
+            columns: ["mensagem_id"]
+            isOneToOne: false
+            referencedRelation: "chat_mensagens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_mensagens: {
+        Row: {
+          conteudo: string
+          created_at: string
+          editada: boolean
+          editada_em: string | null
+          excluida: boolean
+          excluida_em: string | null
+          id: string
+          sala_id: string
+          tipo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conteudo?: string
+          created_at?: string
+          editada?: boolean
+          editada_em?: string | null
+          excluida?: boolean
+          excluida_em?: string | null
+          id?: string
+          sala_id: string
+          tipo?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conteudo?: string
+          created_at?: string
+          editada?: boolean
+          editada_em?: string | null
+          excluida?: boolean
+          excluida_em?: string | null
+          id?: string
+          sala_id?: string
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_mensagens_sala_id_fkey"
+            columns: ["sala_id"]
+            isOneToOne: false
+            referencedRelation: "chat_salas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_salas: {
+        Row: {
+          ativo: boolean
+          coordenadoria_slug: string | null
+          cor: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          grupo: string
+          icone: string
+          id: string
+          nome: string
+          ordem: number
+          participantes: string[] | null
+          slug: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          coordenadoria_slug?: string | null
+          cor?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          grupo?: string
+          icone?: string
+          id?: string
+          nome: string
+          ordem?: number
+          participantes?: string[] | null
+          slug?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          coordenadoria_slug?: string | null
+          cor?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          grupo?: string
+          icone?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          participantes?: string[] | null
+          slug?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       coordenacoes: {
         Row: {
           created_at: string
@@ -503,13 +651,28 @@ export type Database = {
       }
       demandas: {
         Row: {
+          atendimento_grupo: string | null
+          atendimento_prazo_dias: number | null
+          atendimento_tipo: string | null
           categoria: string
+          coluna_kanban: string
+          coordenacao_id: string | null
+          coordenadoria_nome: string | null
+          coordenadoria_slug: string | null
           created_at: string
           data_prazo: string | null
           descricao: string
+          alerta_manual: boolean
+          alerta_observacao: string
+          alerta_vencimento_em: string | null
           id: string
+          nivel_alerta: string
+          notas_internas: string
           prioridade: string
           responsavel: string
+          setor_sac: string | null
+          solicitante_cpf: string
+          solicitante_telefone: string
           solicitante: string
           status: string
           titulo: string
@@ -517,13 +680,28 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          atendimento_grupo?: string | null
+          atendimento_prazo_dias?: number | null
+          atendimento_tipo?: string | null
           categoria?: string
+          coluna_kanban?: string
+          coordenacao_id?: string | null
+          coordenadoria_nome?: string | null
+          coordenadoria_slug?: string | null
           created_at?: string
           data_prazo?: string | null
           descricao?: string
+          alerta_manual?: boolean
+          alerta_observacao?: string
+          alerta_vencimento_em?: string | null
           id?: string
+          nivel_alerta?: string
+          notas_internas?: string
           prioridade?: string
           responsavel?: string
+          setor_sac?: string | null
+          solicitante_cpf?: string
+          solicitante_telefone?: string
           solicitante?: string
           status?: string
           titulo: string
@@ -531,13 +709,28 @@ export type Database = {
           user_id: string
         }
         Update: {
+          atendimento_grupo?: string | null
+          atendimento_prazo_dias?: number | null
+          atendimento_tipo?: string | null
           categoria?: string
+          coluna_kanban?: string
+          coordenacao_id?: string | null
+          coordenadoria_nome?: string | null
+          coordenadoria_slug?: string | null
           created_at?: string
           data_prazo?: string | null
           descricao?: string
+          alerta_manual?: boolean
+          alerta_observacao?: string
+          alerta_vencimento_em?: string | null
           id?: string
+          nivel_alerta?: string
+          notas_internas?: string
           prioridade?: string
           responsavel?: string
+          setor_sac?: string | null
+          solicitante_cpf?: string
+          solicitante_telefone?: string
           solicitante?: string
           status?: string
           titulo?: string
@@ -545,6 +738,109 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      demanda_anexos: {
+        Row: {
+          created_at: string
+          demanda_id: string
+          id: string
+          nome_arquivo: string
+          storage_bucket: string
+          storage_path: string
+          tamanho_bytes: number | null
+          tipo_arquivo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          demanda_id: string
+          id?: string
+          nome_arquivo: string
+          storage_bucket?: string
+          storage_path: string
+          tamanho_bytes?: number | null
+          tipo_arquivo?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          demanda_id?: string
+          id?: string
+          nome_arquivo?: string
+          storage_bucket?: string
+          storage_path?: string
+          tamanho_bytes?: number | null
+          tipo_arquivo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demanda_anexos_demanda_id_fkey"
+            columns: ["demanda_id"]
+            isOneToOne: false
+            referencedRelation: "demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demanda_alertas: {
+        Row: {
+          ativo: boolean
+          causa: string
+          contexto: string
+          created_at: string
+          demanda_id: string
+          id: string
+          mensagem: string
+          origem: string
+          referencia: string
+          tipo: string
+          titulo: string
+          tratado_em: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          causa: string
+          contexto: string
+          created_at?: string
+          demanda_id: string
+          id?: string
+          mensagem?: string
+          origem: string
+          referencia?: string
+          tipo: string
+          titulo: string
+          tratado_em?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          causa?: string
+          contexto?: string
+          created_at?: string
+          demanda_id?: string
+          id?: string
+          mensagem?: string
+          origem?: string
+          referencia?: string
+          tipo?: string
+          titulo?: string
+          tratado_em?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demanda_alertas_demanda_id_fkey"
+            columns: ["demanda_id"]
+            isOneToOne: false
+            referencedRelation: "demandas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       eventos: {
         Row: {
@@ -877,6 +1173,7 @@ export type Database = {
           icone: string
           id: string
           nome: string
+          slug: string
           updated_at: string
         }
         Insert: {
@@ -886,6 +1183,7 @@ export type Database = {
           icone?: string
           id?: string
           nome: string
+          slug: string
           updated_at?: string
         }
         Update: {
@@ -895,6 +1193,7 @@ export type Database = {
           icone?: string
           id?: string
           nome?: string
+          slug?: string
           updated_at?: string
         }
         Relationships: []
@@ -985,6 +1284,9 @@ export type Database = {
           avatar_url: string | null
           cargo: string | null
           created_at: string
+          disponibilidade_atualizada_em: string | null
+          disponibilidade_mensagem: string
+          disponibilidade_status: string
           email: string
           id: string
           nome: string
@@ -995,6 +1297,9 @@ export type Database = {
           avatar_url?: string | null
           cargo?: string | null
           created_at?: string
+          disponibilidade_atualizada_em?: string | null
+          disponibilidade_mensagem?: string
+          disponibilidade_status?: string
           email: string
           id?: string
           nome: string
@@ -1005,6 +1310,9 @@ export type Database = {
           avatar_url?: string | null
           cargo?: string | null
           created_at?: string
+          disponibilidade_atualizada_em?: string | null
+          disponibilidade_mensagem?: string
+          disponibilidade_status?: string
           email?: string
           id?: string
           nome?: string

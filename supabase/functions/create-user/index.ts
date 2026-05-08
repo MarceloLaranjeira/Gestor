@@ -75,21 +75,64 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Assign coordenacoes if provided
+    const userId = newUser.user.id;
+
+    const { error: profileError } = await adminClient
+      .from("profiles")
+      .upsert({
+        user_id: userId,
+        nome: nome.trim(),
+        email: email.trim().toLowerCase(),
+        disponibilidade_status: "disponivel",
+        disponibilidade_mensagem: "",
+        disponibilidade_atualizada_em: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+
+    if (profileError) {
+      await adminClient.auth.admin.deleteUser(userId);
+      return new Response(JSON.stringify({ error: profileError.message }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    await adminClient.from("user_roles").delete().eq("user_id", userId);
+    const { error: roleError } = await adminClient
+      .from("user_roles")
+      .insert({ user_id: userId, role: role || "assessor" });
+
+    if (roleError) {
+      await adminClient.auth.admin.deleteUser(userId);
+      return new Response(JSON.stringify({ error: roleError.message }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    await adminClient.from("user_coordenacoes").delete().eq("user_id", userId);
+
     if (coordenacao_ids && coordenacao_ids.length > 0) {
-      await adminClient.from("user_coordenacoes").insert(
+      const { error: coordError } = await adminClient.from("user_coordenacoes").insert(
         coordenacao_ids.map((coordId: string) => ({
-          user_id: newUser.user.id,
+          user_id: userId,
           coordenacao_id: coordId,
         }))
       );
+
+      if (coordError) {
+        await adminClient.auth.admin.deleteUser(userId);
+        return new Response(JSON.stringify({ error: coordError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
-    return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
+    return new Response(JSON.stringify({ success: true, user_id: userId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: "Erro interno do servidor" }), {
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Erro interno do servidor" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

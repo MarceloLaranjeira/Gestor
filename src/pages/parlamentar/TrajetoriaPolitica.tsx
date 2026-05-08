@@ -158,7 +158,7 @@ export default function TrajetoriaPolitica() {
               Trajetória Política
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Linha do tempo — Vereadora Thaysa Lippi
+              Linha do tempo da trajetória política do parlamentar
             </p>
           </div>
           <Button onClick={openNew} size="sm" className="gap-1.5">

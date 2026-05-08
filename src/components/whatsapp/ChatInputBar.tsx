@@ -19,7 +19,7 @@ type MessageType = "text" | "image" | "document" | "audio" | "video";
 
 interface ChatInputBarProps {
   config: { id: string; ativo: boolean };
-  instanceName: string;
+  phoneNumberId: string;
   numero: string;
   onSent: () => void;
   editingMessage?: { id: string; text: string } | null;
@@ -54,7 +54,7 @@ const languages = [
   { code: "hi", label: "🇮🇳 Hindi" },
 ];
 
-const ChatInputBar = ({ config, instanceName, numero, onSent, editingMessage, onCancelEdit, replyingTo, onCancelReply }: ChatInputBarProps) => {
+const ChatInputBar = ({ config, phoneNumberId, numero, onSent, editingMessage, onCancelEdit, replyingTo, onCancelReply }: ChatInputBarProps) => {
   const [tipo, setTipo] = useState<MessageType>("text");
   const [mensagem, setMensagem] = useState(editingMessage?.text || "");
   const [mediaUrl, setMediaUrl] = useState("");
@@ -91,9 +91,33 @@ const ChatInputBar = ({ config, instanceName, numero, onSent, editingMessage, on
   const currentText = tipo === "text" ? mensagem : caption;
 
   const canSend = () => {
-    if (!numero || !instanceName || !config.ativo) return false;
+    if (!numero || !phoneNumberId || !config.ativo) return false;
     if (tipo === "text") return !!mensagem.trim();
     return !!mediaUrl;
+  };
+
+  const buildMetaBody = (cleanNumber: string) => {
+    if (tipo === "text") return {
+      messaging_product: "whatsapp", recipient_type: "individual", to: cleanNumber,
+      type: "text", text: { preview_url: false, body: mensagem },
+      ...(replyingTo && { context: { message_id: replyingTo.id } }),
+    };
+    if (tipo === "image") return {
+      messaging_product: "whatsapp", recipient_type: "individual", to: cleanNumber,
+      type: "image", image: { link: mediaUrl, ...(caption && { caption }) },
+    };
+    if (tipo === "video") return {
+      messaging_product: "whatsapp", recipient_type: "individual", to: cleanNumber,
+      type: "video", video: { link: mediaUrl, ...(caption && { caption }) },
+    };
+    if (tipo === "audio") return {
+      messaging_product: "whatsapp", recipient_type: "individual", to: cleanNumber,
+      type: "audio", audio: { link: mediaUrl },
+    };
+    return {
+      messaging_product: "whatsapp", recipient_type: "individual", to: cleanNumber,
+      type: "document", document: { link: mediaUrl, ...(caption && { caption }), ...(fileName && { filename: fileName }) },
+    };
   };
 
   const sendMessage = async (scheduledFor?: string) => {
@@ -117,18 +141,8 @@ const ChatInputBar = ({ config, instanceName, numero, onSent, editingMessage, on
       }
 
       const cleanNumber = numero.replace(/\D/g, "");
-      const endpoint = tipo === "text"
-        ? `/message/sendText/${instanceName}`
-        : `/message/sendMedia/${instanceName}`;
-      const body = tipo === "text"
-        ? { number: cleanNumber, text: mensagem, ...(replyingTo && { quotedMsgId: replyingTo.id }) }
-        : {
-            number: cleanNumber,
-            mediatype: tipo,
-            media: mediaUrl,
-            ...(caption && { caption }),
-            ...(tipo === "document" && fileName && { fileName }),
-          };
+      const endpoint = `/${phoneNumberId}/messages`;
+      const body = buildMetaBody(cleanNumber);
 
       if (scheduledFor) {
         await supabase.from("integracao_agente_mensagens").insert({
@@ -482,7 +496,11 @@ const ChatInputBar = ({ config, instanceName, numero, onSent, editingMessage, on
                 ref={textareaRef}
                 value={tipo === "text" ? mensagem : caption}
                 onChange={(e) => {
-                  tipo === "text" ? setMensagem(e.target.value) : setCaption(e.target.value);
+                  if (tipo === "text") {
+                    setMensagem(e.target.value);
+                  } else {
+                    setCaption(e.target.value);
+                  }
                   // Auto-resize
                   e.target.style.height = "auto";
                   e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";

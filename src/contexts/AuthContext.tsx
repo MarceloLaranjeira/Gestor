@@ -9,6 +9,9 @@ interface UserProfile {
   user_id: string;
   cargo?: string;
   avatar_url?: string | null;
+  disponibilidade_status?: string;
+  disponibilidade_mensagem?: string;
+  disponibilidade_atualizada_em?: string | null;
 }
 
 interface AuthContextType {
@@ -33,7 +36,7 @@ export const useAuth = () => {
 async function fetchUserProfile(userId: string, authUser?: User): Promise<UserProfile | null> {
   const { data: profile } = await supabase
     .from("profiles")
-    .select("nome, email, user_id, cargo, avatar_url")
+    .select("nome, email, user_id, cargo, avatar_url, disponibilidade_status, disponibilidade_mensagem, disponibilidade_atualizada_em")
     .eq("user_id", userId)
     .single();
 
@@ -48,7 +51,14 @@ async function fetchUserProfile(userId: string, authUser?: User): Promise<UserPr
       "Usuário";
     const email = authUser.email || "";
 
-    await supabase.from("profiles").insert({ user_id: userId, nome, email });
+    await supabase.from("profiles").insert({
+      user_id: userId,
+      nome,
+      email,
+      disponibilidade_status: "disponivel",
+      disponibilidade_mensagem: "",
+      disponibilidade_atualizada_em: new Date().toISOString(),
+    });
     await supabase.from("user_roles").insert({ user_id: userId, role: "gestor" });
 
     return {
@@ -58,6 +68,9 @@ async function fetchUserProfile(userId: string, authUser?: User): Promise<UserPr
       user_id: userId,
       cargo: "",
       avatar_url: authUser.user_metadata?.avatar_url || null,
+      disponibilidade_status: "disponivel",
+      disponibilidade_mensagem: "",
+      disponibilidade_atualizada_em: new Date().toISOString(),
     };
   }
 
@@ -76,6 +89,9 @@ async function fetchUserProfile(userId: string, authUser?: User): Promise<UserPr
     user_id: profile.user_id,
     cargo: profile.cargo || "",
     avatar_url: profile.avatar_url,
+    disponibilidade_status: profile.disponibilidade_status || "disponivel",
+    disponibilidade_mensagem: profile.disponibilidade_mensagem || "",
+    disponibilidade_atualizada_em: profile.disponibilidade_atualizada_em,
   };
 }
 
