@@ -2,13 +2,13 @@
 
 Data: 09/05/2026  
 Projeto oficial: `C:\Users\marce\Downloads\Gestor\Gestor-main`  
-Commit baseline: `fa16a928d3d62f3330c0995be363cf8e4d16c713`
+Commit baseline: `a00c7f53d821ac6f580fd582da3899f23cc7a468`
 
 ## URLs oficiais
 
 - Produção: `https://gestor.automatikus.com.br`
 - Rota crítica validada: `https://gestor.automatikus.com.br/movimentos/tea`
-- Deploy Vercel desta versão: `https://gestor-automatikus-gzd5tgtnh-automatikus-automacoes-projects.vercel.app`
+- Deploy Vercel desta versão: `https://gestor-automatikus-g7cijkut7-automatikus-automacoes-projects.vercel.app`
 
 ## Regra de atualização (obrigatória)
 
