@@ -4,7 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   ArrowLeft,
+  CalendarClock,
   CalendarDays,
+  Clock,
   Download,
   Edit2,
   FileText,
@@ -107,6 +109,14 @@ interface DemandaAnexo {
   user_id: string;
 }
 
+interface HistoricoEntry {
+  id: string;
+  demanda_id: string;
+  acao: string;
+  descricao: string;
+  created_at: string;
+}
+
 interface DemandaSac {
   id: string;
   atendimento_grupo: SaudeAtendimentoGrupo | null;
@@ -148,6 +158,12 @@ interface NPSPending {
   demandaId: string;
   targetColumn: KanbanColumn | null;
 }
+
+const formatDateTime = (dateStr: string) =>
+  new Date(dateStr).toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
 
 const emptyNPS = (): NPSRespostas => ({
   atendimento_satisfatorio: null,
@@ -267,6 +283,7 @@ function SacCard({
   colIdx,
   attachments,
   alerts,
+  historico,
   resolvingAlertId,
   onEdit,
   onDelete,
@@ -279,6 +296,7 @@ function SacCard({
   colIdx: number;
   attachments: DemandaAnexo[];
   alerts: DemandaAlertRecord[];
+  historico: HistoricoEntry[];
   resolvingAlertId: string | null;
   onEdit: (demanda: DemandaSac) => void;
   onDelete: (id: string) => void;
@@ -311,6 +329,10 @@ function SacCard({
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground leading-snug">{demanda.titulo}</p>
+            <p className="text-[10px] text-muted-foreground/60 flex items-center gap-0.5 mt-0.5">
+              <Clock className="w-2.5 h-2.5 shrink-0" />
+              {formatDateTime(demanda.created_at)}
+            </p>
             {demanda.descricao && (
               <p className="text-[11px] text-muted-foreground mt-1 line-clamp-3 whitespace-pre-wrap">
                 {demanda.descricao}
@@ -376,6 +398,25 @@ function SacCard({
 
         {expanded && (
           <div className="space-y-2 pt-2 border-t border-border/40 text-[11px] text-muted-foreground">
+            {historico.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="font-medium text-foreground flex items-center gap-1">
+                  <CalendarClock className="w-3 h-3" />
+                  Histórico
+                </p>
+                <div className="space-y-1">
+                  {historico.map((entry) => (
+                    <div key={entry.id} className="flex items-start gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary/50 mt-1.5 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] text-foreground">{entry.descricao}</p>
+                        <p className="text-[10px] text-muted-foreground/60">{formatDateTime(entry.created_at)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {demanda.responsavel && <p><span className="font-medium text-foreground">Responsável:</span> {demanda.responsavel}</p>}
             {demanda.solicitante_telefone && (
               <p className="flex items-center gap-1">
@@ -476,6 +517,7 @@ const MovimentoDetalhes = () => {
   const [filterPrio, setFilterPrio] = useState("all");
   const [filterAlert, setFilterAlert] = useState<DemandaAlertFilter>("all");
   const [alertsByDemand, setAlertsByDemand] = useState<Record<string, DemandaAlertRecord[]>>({});
+  const [historyByDemand, setHistoryByDemand] = useState<Record<string, HistoricoEntry[]>>({});
   const [demandaDialog, setDemandaDialog] = useState(false);
   const [demandaForm, setDemandaForm] = useState<FormState>(emptyForm());
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -519,13 +561,19 @@ const MovimentoDetalhes = () => {
         try {
           await syncDemandaAlertRecords(supabase, demandasData, user?.user_id);
           const ids = demandasData.map((demanda) => demanda.id);
-          const [{ data: attachmentRows, error: attachmentError }, activeAlerts] = await Promise.all([
+          const [{ data: attachmentRows, error: attachmentError }, activeAlerts, { data: historyRows }] = await Promise.all([
             supabase
               .from("demanda_anexos")
               .select("*")
               .in("demanda_id", ids)
               .order("created_at", { ascending: true }),
             fetchActiveDemandaAlerts(supabase, ids),
+            supabase
+              .from("logbook_entradas")
+              .select("id, demanda_id, acao, descricao, created_at")
+              .in("demanda_id", ids)
+              .in("acao", ["criado", "mover_coluna"])
+              .order("created_at", { ascending: true }),
           ]);
 
           if (options?.cancelled) return;
@@ -537,18 +585,27 @@ const MovimentoDetalhes = () => {
             return acc;
           }, {});
 
+          const historyGrouped = ((historyRows as HistoricoEntry[]) || []).reduce<Record<string, HistoricoEntry[]>>((acc, entry) => {
+            if (!acc[entry.demanda_id]) acc[entry.demanda_id] = [];
+            acc[entry.demanda_id].push(entry);
+            return acc;
+          }, {});
+
           setAttachmentsByDemand(grouped);
           setAlertsByDemand(groupActiveAlertsByDemand(activeAlerts));
+          setHistoryByDemand(historyGrouped);
         } catch (error) {
           console.error("Erro ao carregar anexos ou alertas do setor SAC", error);
           if (!options?.cancelled) {
             setAttachmentsByDemand({});
             setAlertsByDemand({});
+            setHistoryByDemand({});
           }
         }
       } else {
         setAttachmentsByDemand({});
         setAlertsByDemand({});
+        setHistoryByDemand({});
       }
     } catch (error) {
       console.error("Erro ao carregar setor SAC", error);
@@ -824,6 +881,15 @@ const MovimentoDetalhes = () => {
 
       if (!demandaId) throw new Error("Demanda inválida");
 
+      if (!editingId) {
+        await supabase.from("logbook_entradas").insert({
+          user_id: user.user_id,
+          demanda_id: demandaId,
+          acao: "criado",
+          descricao: `Demanda registrada em ${KANBAN_COLUMN_LABELS[demandaForm.coluna_kanban]}`,
+        });
+      }
+
       await removeMarkedAttachments();
       await uploadPendingFiles(demandaId);
 
@@ -869,6 +935,9 @@ const MovimentoDetalhes = () => {
 
   const executeMoveColumn = async (id: string, nextColumn: KanbanColumn) => {
     if (!setor) return;
+    const fromDemanda = demandas.find((d) => d.id === id);
+    const fromColumn = fromDemanda ? demandasColumnValue(fromDemanda) : null;
+
     const { error } = await supabase
       .from("demandas")
       .update({
@@ -881,6 +950,15 @@ const MovimentoDetalhes = () => {
     if (error) {
       toast({ title: "Não foi possível mover a demanda", variant: "destructive" });
       return;
+    }
+
+    if (user?.user_id && fromColumn) {
+      await supabase.from("logbook_entradas").insert({
+        user_id: user.user_id,
+        demanda_id: id,
+        acao: "mover_coluna",
+        descricao: `${KANBAN_COLUMN_LABELS[fromColumn]} → ${KANBAN_COLUMN_LABELS[nextColumn]}`,
+      });
     }
 
     toast({ title: "Status atualizado" });
@@ -1088,6 +1166,7 @@ const MovimentoDetalhes = () => {
                           colIdx={colIdx}
                           attachments={attachmentsByDemand[demanda.id] || []}
                           alerts={alertsByDemand[demanda.id] || []}
+                          historico={historyByDemand[demanda.id] || []}
                           resolvingAlertId={resolvingAlertId}
                           onEdit={openEdit}
                           onDelete={(id) => setDeleteTarget(demandas.find((item) => item.id === id) || null)}
