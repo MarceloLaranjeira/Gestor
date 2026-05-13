@@ -378,7 +378,7 @@ const Dashboard = () => {
         <motion.div variants={fadeUp}>
           <SectionLabel label="Atividade" icon={ClipboardList} />
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-3">
-            <StatCard title="Demandas"     value={demandaTotal}         subtitle={`${demandaPendente} pendentes`}          icon={<MessageSquare className="w-5 h-5" style={{color:"hsl(38,92%,50%)"}}   />} href="/demandas"     accentColor="hsl(38,92%,50%)"   onEdit={() => setQDemanda(true)}  />
+            <StatCard title="Demandas"     value={demandaTotal}         subtitle={`${demandaPendente} pendentes`}          icon={<MessageSquare className="w-5 h-5" style={{color:"hsl(38,92%,50%)"}}   />} href="/movimentos"   accentColor="hsl(38,92%,50%)"   onEdit={() => setQDemanda(true)}  />
             <StatCard title="Compromissos" value={compromissosPending}  subtitle="pendentes"                               icon={<Handshake      className="w-5 h-5" style={{color:"hsl(205,70%,45%)"}}  />} href="/compromissos" accentColor="hsl(205,70%,45%)"  onEdit={() => setQComp(true)}     />
             <StatCard title="Próx. Eventos" value={proximosEventos.length} subtitle="agendados a partir de hoje"           icon={<Calendar       className="w-5 h-5" style={{color:"hsl(239,84%,67%)"}}  />} href="/eventos"      accentColor="hsl(239,84%,67%)"  onEdit={() => setQEvento(true)}   />
             <StatCard title="Alertas"      value={alertasCount}         subtitle="não lidos"                               icon={<Bell           className="w-5 h-5" style={{color:"hsl(0,72%,51%)"}}    />} href="/alertas"      accentColor="hsl(0,72%,51%)"    onEdit={() => setQAlerta(true)}   />
@@ -388,7 +388,7 @@ const Dashboard = () => {
         {/* Atividade — conteúdo */}
         <motion.div variants={fadeUp} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Demandas por status */}
-          <div className="bg-card border border-border/50 rounded-xl p-5 cursor-pointer hover:shadow-md transition-all" onClick={() => navigate("/demandas")}>
+          <div className="bg-card border border-border/50 rounded-xl p-5 cursor-pointer hover:shadow-md transition-all" onClick={() => navigate("/movimentos")}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-foreground">Demandas por Status</h3>
               <span className="text-xs text-primary flex items-center gap-1 hover:underline">Ver todas <ArrowRight className="w-3 h-3" /></span>
