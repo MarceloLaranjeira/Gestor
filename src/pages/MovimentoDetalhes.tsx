@@ -2,10 +2,13 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Activity,
   AlertTriangle,
   ArrowLeft,
+  BarChart3,
   CalendarClock,
   CalendarDays,
+  CheckCircle2,
   Clock,
   Download,
   Edit2,
@@ -18,7 +21,10 @@ import {
   Plus,
   Search,
   SmilePlus,
+  Table2,
+  Timer,
   Trash2,
+  TrendingUp,
   User,
   Users,
 } from "lucide-react";
@@ -144,6 +150,7 @@ interface DemandaSac {
   alerta_vencimento_em: string | null;
   user_id: string;
   created_at: string;
+  updated_at: string;
 }
 
 interface NPSRespostas {
@@ -333,6 +340,12 @@ function SacCard({
               <Clock className="w-2.5 h-2.5 shrink-0" />
               {formatDateTime(demanda.created_at)}
             </p>
+            {demanda.updated_at && demanda.updated_at !== demanda.created_at && (
+              <p className="text-[10px] text-muted-foreground/50 flex items-center gap-0.5">
+                <Activity className="w-2.5 h-2.5 shrink-0" />
+                Editado {formatDateTime(demanda.updated_at)}
+              </p>
+            )}
             {demanda.descricao && (
               <p className="text-[11px] text-muted-foreground mt-1 line-clamp-3 whitespace-pre-wrap">
                 {demanda.descricao}
@@ -518,6 +531,7 @@ const MovimentoDetalhes = () => {
   const [filterAlert, setFilterAlert] = useState<DemandaAlertFilter>("all");
   const [alertsByDemand, setAlertsByDemand] = useState<Record<string, DemandaAlertRecord[]>>({});
   const [historyByDemand, setHistoryByDemand] = useState<Record<string, HistoricoEntry[]>>({});
+  const [activeTab, setActiveTab] = useState<"kanban" | "relatorio" | "kpis">("kanban");
   const [demandaDialog, setDemandaDialog] = useState(false);
   const [demandaForm, setDemandaForm] = useState<FormState>(emptyForm());
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -1106,18 +1120,37 @@ const MovimentoDetalhes = () => {
 
         <div className="space-y-4">
           <div className="flex items-center gap-1 border-b border-border/60">
-            <div className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-primary text-primary">
-              <LayoutList className="w-3.5 h-3.5" />
-              Kanban de Demandas
-              {demandas.length > 0 && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-primary/10 text-primary">
-                  {demandas.length}
-                </span>
-              )}
-            </div>
+            {(["kanban", "relatorio", "kpis"] as const).map((tab) => {
+              const tabMeta = {
+                kanban: { label: "Kanban", icon: LayoutList },
+                relatorio: { label: "Relatório", icon: Table2 },
+                kpis: { label: "KPIs", icon: BarChart3 },
+              }[tab];
+              const TabIcon = tabMeta.icon;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+                    activeTab === tab
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <TabIcon className="w-3.5 h-3.5" />
+                  {tabMeta.label}
+                  {tab === "kanban" && demandas.length > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-primary/10 text-primary">
+                      {demandas.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:flex-wrap">
+          {activeTab === "kanban" && <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:flex-wrap">
             <div className="relative flex-1 min-w-[220px] max-w-xs">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar demanda ou solicitante..." className="pl-8 h-8 text-xs" />
@@ -1138,9 +1171,9 @@ const MovimentoDetalhes = () => {
                 <SelectItem value="danger">Urgentes</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div>}
 
-          <div className="flex gap-3 overflow-x-auto pb-2 items-start">
+          {activeTab === "kanban" && <div className="flex gap-3 overflow-x-auto pb-2 items-start">
             {KANBAN_COLUMNS.map((column, colIdx) => {
               const cfg = COLUMN_CONFIG[column];
               const cards = byColumn(column);
@@ -1187,7 +1220,209 @@ const MovimentoDetalhes = () => {
                 </div>
               );
             })}
-          </div>
+          </div>}
+
+          {activeTab === "relatorio" && (() => {
+            const exportCsv = () => {
+              const header = ["Nome", "Telefone", "CPF", "Resumo", "Categoria", "Status", "Prioridade", "Criado em", "Última modificação"];
+              const rows = demandas.map((d) => [
+                d.solicitante || "",
+                d.solicitante_telefone || "",
+                d.solicitante_cpf || "",
+                d.titulo,
+                d.categoria || "",
+                KANBAN_COLUMN_LABELS[demandasColumnValue(d)] || d.coluna_kanban,
+                PRIORIDADE_LABEL[d.prioridade],
+                formatDateTime(d.created_at),
+                d.updated_at ? formatDateTime(d.updated_at) : "",
+              ]);
+              const csv = [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+              const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url; a.download = `relatorio-${setor.slug}-${new Date().toISOString().slice(0, 10)}.csv`;
+              a.click(); URL.revokeObjectURL(url);
+            };
+            return (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">{demandas.length} demanda{demandas.length !== 1 ? "s" : ""} registradas</p>
+                  <button onClick={exportCsv} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                    <Download className="w-3 h-3" /> Exportar CSV
+                  </button>
+                </div>
+                <div className="rounded-xl border border-border/60 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-muted/50 border-b border-border/60">
+                          <th className="text-left px-3 py-2.5 font-semibold text-foreground">Nome</th>
+                          <th className="text-left px-3 py-2.5 font-semibold text-foreground">Telefone</th>
+                          <th className="text-left px-3 py-2.5 font-semibold text-foreground min-w-[200px]">Resumo da Solicitação</th>
+                          <th className="text-left px-3 py-2.5 font-semibold text-foreground">Status</th>
+                          <th className="text-left px-3 py-2.5 font-semibold text-foreground whitespace-nowrap">Criado em</th>
+                          <th className="text-left px-3 py-2.5 font-semibold text-foreground whitespace-nowrap">Última Modificação</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {demandas.map((d, i) => {
+                          const col = demandasColumnValue(d);
+                          const cfg = COLUMN_CONFIG[col];
+                          return (
+                            <tr key={d.id} className={cn("border-b border-border/40 transition-colors hover:bg-muted/30", i % 2 === 0 ? "" : "bg-muted/10")}>
+                              <td className="px-3 py-2.5">
+                                <p className="font-medium text-foreground truncate max-w-[140px]">{d.solicitante || <span className="text-muted-foreground/50 italic">—</span>}</p>
+                                {d.solicitante_cpf && <p className="text-[10px] text-muted-foreground/60 font-mono">{d.solicitante_cpf}</p>}
+                              </td>
+                              <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{d.solicitante_telefone || "—"}</td>
+                              <td className="px-3 py-2.5">
+                                <p className="font-medium text-foreground leading-snug">{d.titulo}</p>
+                                {d.descricao && <p className="text-muted-foreground/70 line-clamp-2 mt-0.5">{d.descricao}</p>}
+                              </td>
+                              <td className="px-3 py-2.5">
+                                <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full", cfg.badge)}>
+                                  {KANBAN_COLUMN_LABELS[col]}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{formatDateTime(d.created_at)}</td>
+                              <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{d.updated_at ? formatDateTime(d.updated_at) : "—"}</td>
+                            </tr>
+                          );
+                        })}
+                        {demandas.length === 0 && (
+                          <tr><td colSpan={6} className="px-3 py-8 text-center text-muted-foreground/50">Nenhuma demanda registrada</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {activeTab === "kpis" && (() => {
+            const total = demandas.length;
+            const porColuna = KANBAN_COLUMNS.reduce<Record<KanbanColumn, number>>((acc, col) => {
+              acc[col] = demandas.filter((d) => demandasColumnValue(d) === col).length;
+              return acc;
+            }, { Recebida: 0, "Em Andamento": 0, Concluida: 0, Finalizado: 0, Cancelada: 0 });
+            const concluidas = porColuna["Concluida"] + porColuna["Finalizado"];
+            const taxaConclusao = total > 0 ? Math.round((concluidas / total) * 100) : 0;
+            const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+            const atrasadas = demandas.filter((d) => {
+              if (!d.alerta_vencimento_em) return false;
+              return new Date(d.alerta_vencimento_em) < hoje && demandasColumnValue(d) !== "Concluida" && demandasColumnValue(d) !== "Finalizado" && demandasColumnValue(d) !== "Cancelada";
+            }).length;
+            const porPrioridade = PRIORIDADES.reduce<Record<string, number>>((acc, p) => { acc[p] = demandas.filter((d) => d.prioridade === p).length; return acc; }, {});
+            const porCategoria = demandas.reduce<Record<string, number>>((acc, d) => {
+              const cat = d.categoria || "Sem categoria";
+              acc[cat] = (acc[cat] || 0) + 1;
+              return acc;
+            }, {});
+            const topCategorias = Object.entries(porCategoria).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+            const temposResolucao = demandas
+              .filter((d) => (demandasColumnValue(d) === "Concluida" || demandasColumnValue(d) === "Finalizado") && d.updated_at)
+              .map((d) => Math.round((new Date(d.updated_at).getTime() - new Date(d.created_at).getTime()) / (1000 * 60 * 60 * 24)));
+            const tempoMedio = temposResolucao.length > 0 ? Math.round(temposResolucao.reduce((a, b) => a + b, 0) / temposResolucao.length) : null;
+
+            return (
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Total</p>
+                    <p className="text-3xl font-bold text-foreground">{total}</p>
+                    <p className="text-[11px] text-muted-foreground">demandas registradas</p>
+                  </div>
+                  <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Concluídas</p>
+                    <p className="text-3xl font-bold text-green-600 dark:text-green-400">{taxaConclusao}%</p>
+                    <p className="text-[11px] text-muted-foreground">{concluidas} de {total}</p>
+                  </div>
+                  <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Em Atraso</p>
+                    <p className={cn("text-3xl font-bold", atrasadas > 0 ? "text-red-600 dark:text-red-400" : "text-foreground")}>{atrasadas}</p>
+                    <p className="text-[11px] text-muted-foreground">com prazo vencido</p>
+                  </div>
+                  <div className="rounded-xl border border-border/60 bg-card p-4 space-y-1">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Tempo Médio</p>
+                    <p className="text-3xl font-bold text-foreground">{tempoMedio !== null ? tempoMedio : "—"}</p>
+                    <p className="text-[11px] text-muted-foreground">{tempoMedio !== null ? "dias até conclusão" : "sem dados"}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
+                    <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-primary" /> Por Status</p>
+                    <div className="space-y-2">
+                      {KANBAN_COLUMNS.map((col) => {
+                        const cfg = COLUMN_CONFIG[col];
+                        const count = porColuna[col];
+                        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                        return (
+                          <div key={col} className="space-y-1">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-muted-foreground">{KANBAN_COLUMN_LABELS[col]}</span>
+                              <span className="font-semibold text-foreground">{count} <span className="text-muted-foreground/60">({pct}%)</span></span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div className={cn("h-full rounded-full transition-all", cfg.badge.split(" ")[0])} style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
+                    <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-primary" /> Por Prioridade</p>
+                    <div className="space-y-2">
+                      {PRIORIDADES.map((p) => {
+                        const count = porPrioridade[p] || 0;
+                        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                        return (
+                          <div key={p} className="space-y-1">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className={cn("font-medium", PRIORIDADE_COLORS[p].split(" ")[1])}>{PRIORIDADE_LABEL[p]}</span>
+                              <span className="font-semibold text-foreground">{count} <span className="text-muted-foreground/60">({pct}%)</span></span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                              <div className={cn("h-full rounded-full", PRIORIDADE_COLORS[p].split(" ")[0])} style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2 rounded-xl border border-border/60 bg-card p-4 space-y-3">
+                    <p className="text-xs font-semibold text-foreground flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> Top Categorias</p>
+                    {topCategorias.length === 0 ? (
+                      <p className="text-xs text-muted-foreground/50">Sem dados de categoria</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {topCategorias.map(([cat, count]) => {
+                          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                          return (
+                            <div key={cat} className="space-y-1">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-muted-foreground truncate max-w-[200px]">{cat}</span>
+                                <span className="font-semibold text-foreground shrink-0">{count} <span className="text-muted-foreground/60">({pct}%)</span></span>
+                              </div>
+                              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                <div className="h-full rounded-full bg-primary/60" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
         </div>
       </motion.div>
 
