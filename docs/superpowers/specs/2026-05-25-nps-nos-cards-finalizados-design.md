@@ -15,7 +15,7 @@ Exibir nos cards da coluna `Finalizado` todas as pesquisas NPS salvas para a dem
 ## Fora Do Escopo
 
 - Alterar o calculo ou layout do relatorio geral NPS.
-- Criar nova tabela ou mudar a politica de acesso do logbook.
+- Criar nova tabela ou liberar dados fora das demandas que o usuario ja pode consultar.
 - Exibir dados NPS nos cards que ainda nao estejam em `Finalizado`.
 
 ## Arquitetura E Dados
@@ -26,7 +26,9 @@ O componente `SacCard` recebera a lista `npsEntries`. Quando a coluna normalizad
 
 ## Acesso E Erros
 
-Nenhum acesso adicional sera concedido. A consulta usa a tabela com RLS ja ativa, portanto o usuario visualizara apenas registros autorizados pela sessao atual. Se um registro contiver JSON invalido, ele sera ignorado na apresentacao ou exibido sem respostas estruturadas, sem interromper o carregamento do kanban.
+Como `demandas` ja permite leitura dos cards para usuarios autenticados, mas o logbook inicialmente limita leitura ao autor de cada entrada, sera adicionada uma politica `SELECT` complementar: ela permite consultar entradas cuja `origem = 'demanda'` e cuja demanda vinculada esteja visivel pela politica RLS de `demandas`. Escrita e administracao dos registros continuam com as restricoes existentes.
+
+Se um registro contiver JSON invalido, ele sera ignorado na apresentacao, sem interromper o carregamento do kanban.
 
 ## Validacao
 

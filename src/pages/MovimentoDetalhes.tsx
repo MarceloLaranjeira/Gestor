@@ -161,6 +161,12 @@ interface NPSRespostas {
   comentario: string;
 }
 
+interface NPSEntry {
+  id: string;
+  created_at: string;
+  respostas: NPSRespostas;
+}
+
 interface NPSPending {
   demandaId: string;
   targetColumn: KanbanColumn | null;
@@ -179,6 +185,27 @@ const emptyNPS = (): NPSRespostas => ({
   nota: null,
   comentario: "",
 });
+
+const parseNpsEntry = (entry: HistoricoEntry): NPSEntry | null => {
+  try {
+    const respostas = JSON.parse(entry.descricao) as Partial<NPSRespostas>;
+    return {
+      id: entry.id,
+      created_at: entry.created_at,
+      respostas: {
+        atendimento_satisfatorio: typeof respostas.atendimento_satisfatorio === "boolean" ? respostas.atendimento_satisfatorio : null,
+        problema_resolvido: typeof respostas.problema_resolvido === "boolean" ? respostas.problema_resolvido : null,
+        recomendaria: typeof respostas.recomendaria === "boolean" ? respostas.recomendaria : null,
+        nota: typeof respostas.nota === "number" ? respostas.nota : null,
+        comentario: typeof respostas.comentario === "string" ? respostas.comentario : "",
+      },
+    };
+  } catch {
+    return null;
+  }
+};
+
+const respostaLabel = (value: boolean | null) => value === null ? "Não informado" : value ? "Sim" : "Não";
 
 function SimNao({ value, onChange }: { value: boolean | null; onChange: (v: boolean) => void }) {
   return (
@@ -291,6 +318,7 @@ function SacCard({
   attachments,
   alerts,
   historico,
+  npsEntries,
   resolvingAlertId,
   onEdit,
   onDelete,
@@ -304,6 +332,7 @@ function SacCard({
   attachments: DemandaAnexo[];
   alerts: DemandaAlertRecord[];
   historico: HistoricoEntry[];
+  npsEntries: NPSEntry[];
   resolvingAlertId: string | null;
   onEdit: (demanda: DemandaSac) => void;
   onDelete: (id: string) => void;
@@ -318,6 +347,7 @@ function SacCard({
   const topAlert = getTopActiveAlert(alerts);
   const alertMeta = getAlertPresentation(alerts);
   const AlertIcon = topAlert ? ALERT_CONFIG[topAlert.tipo as AlertLevel].icon : null;
+  const finalizadoNps = column === "Finalizado" ? npsEntries : [];
 
   return (
     <motion.div
@@ -388,6 +418,12 @@ function SacCard({
               {attachments.length}
             </span>
           )}
+          {finalizadoNps.length > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-semibold">
+              <SmilePlus className="w-3 h-3 inline mr-1" />
+              NPS ({finalizadoNps.length})
+            </span>
+          )}
         </div>
 
         {demanda.solicitante && (
@@ -411,6 +447,32 @@ function SacCard({
 
         {expanded && (
           <div className="space-y-2 pt-2 border-t border-border/40 text-[11px] text-muted-foreground">
+            {finalizadoNps.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="font-medium text-foreground flex items-center gap-1">
+                  <SmilePlus className="w-3 h-3" />
+                  Pesquisas de satisfação
+                </p>
+                {finalizadoNps.map((entry, index) => (
+                  <div key={entry.id} className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-2.5 py-2 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[10px] font-semibold text-foreground">
+                        NPS {index + 1}{entry.respostas.nota !== null ? ` - Nota ${entry.respostas.nota}/10` : ""}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/60">{formatDateTime(entry.created_at)}</p>
+                    </div>
+                    <p className="text-[10px]">Atendimento satisfatório: {respostaLabel(entry.respostas.atendimento_satisfatorio)}</p>
+                    <p className="text-[10px]">Problema resolvido: {respostaLabel(entry.respostas.problema_resolvido)}</p>
+                    <p className="text-[10px]">Recomendaria: {respostaLabel(entry.respostas.recomendaria)}</p>
+                    {entry.respostas.comentario && (
+                      <p className="text-[10px] text-foreground whitespace-pre-wrap">
+                        Comentário: {entry.respostas.comentario}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
             {historico.length > 0 && (
               <div className="space-y-1.5">
                 <p className="font-medium text-foreground flex items-center gap-1">
@@ -531,6 +593,7 @@ const MovimentoDetalhes = () => {
   const [filterAlert, setFilterAlert] = useState<DemandaAlertFilter>("all");
   const [alertsByDemand, setAlertsByDemand] = useState<Record<string, DemandaAlertRecord[]>>({});
   const [historyByDemand, setHistoryByDemand] = useState<Record<string, HistoricoEntry[]>>({});
+  const [npsByDemand, setNpsByDemand] = useState<Record<string, NPSEntry[]>>({});
   const [activeTab, setActiveTab] = useState<"kanban" | "relatorio" | "kpis">("kanban");
   const [demandaDialog, setDemandaDialog] = useState(false);
   const [demandaForm, setDemandaForm] = useState<FormState>(emptyForm());
@@ -587,7 +650,7 @@ const MovimentoDetalhes = () => {
               .select("id, origem_id, acao, descricao, created_at")
               .eq("origem", "demanda")
               .in("origem_id", ids)
-              .in("acao", ["criado", "mover_coluna"])
+              .in("acao", ["criado", "mover_coluna", "nps"])
               .order("created_at", { ascending: true }),
           ]);
 
@@ -601,27 +664,38 @@ const MovimentoDetalhes = () => {
             return acc;
           }, {});
 
-          const historyGrouped = ((historyRows as HistoricoEntry[]) || []).reduce<Record<string, HistoricoEntry[]>>((acc, entry) => {
+          const logEntries = (historyRows as HistoricoEntry[]) || [];
+          const historyGrouped = logEntries.filter((entry) => entry.acao !== "nps").reduce<Record<string, HistoricoEntry[]>>((acc, entry) => {
             if (!acc[entry.origem_id]) acc[entry.origem_id] = [];
             acc[entry.origem_id].push(entry);
+            return acc;
+          }, {});
+          const npsGrouped = logEntries.filter((entry) => entry.acao === "nps").reduce<Record<string, NPSEntry[]>>((acc, entry) => {
+            const parsed = parseNpsEntry(entry);
+            if (!parsed) return acc;
+            if (!acc[entry.origem_id]) acc[entry.origem_id] = [];
+            acc[entry.origem_id].push(parsed);
             return acc;
           }, {});
 
           setAttachmentsByDemand(grouped);
           setAlertsByDemand(groupActiveAlertsByDemand(activeAlerts));
           setHistoryByDemand(historyGrouped);
+          setNpsByDemand(npsGrouped);
         } catch (error) {
           console.error("Erro ao carregar anexos ou alertas do setor SAC", error);
           if (!options?.cancelled) {
             setAttachmentsByDemand({});
             setAlertsByDemand({});
             setHistoryByDemand({});
+            setNpsByDemand({});
           }
         }
       } else {
         setAttachmentsByDemand({});
         setAlertsByDemand({});
         setHistoryByDemand({});
+        setNpsByDemand({});
       }
     } catch (error) {
       console.error("Erro ao carregar setor SAC", error);
@@ -631,6 +705,8 @@ const MovimentoDetalhes = () => {
         setDemandas([]);
         setAttachmentsByDemand({});
         setAlertsByDemand({});
+        setHistoryByDemand({});
+        setNpsByDemand({});
         toast({
           title: "Erro ao carregar setor",
           description: error instanceof Error ? error.message : "Tente novamente em instantes.",
@@ -1210,6 +1286,7 @@ const MovimentoDetalhes = () => {
                           attachments={attachmentsByDemand[demanda.id] || []}
                           alerts={alertsByDemand[demanda.id] || []}
                           historico={historyByDemand[demanda.id] || []}
+                          npsEntries={npsByDemand[demanda.id] || []}
                           resolvingAlertId={resolvingAlertId}
                           onEdit={openEdit}
                           onDelete={(id) => setDeleteTarget(demandas.find((item) => item.id === id) || null)}
