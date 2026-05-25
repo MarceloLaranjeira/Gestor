@@ -117,7 +117,7 @@ interface DemandaAnexo {
 
 interface HistoricoEntry {
   id: string;
-  demanda_id: string;
+  origem_id: string;
   acao: string;
   descricao: string;
   created_at: string;
@@ -575,7 +575,7 @@ const MovimentoDetalhes = () => {
         try {
           await syncDemandaAlertRecords(supabase, demandasData, user?.user_id);
           const ids = demandasData.map((demanda) => demanda.id);
-          const [{ data: attachmentRows, error: attachmentError }, activeAlerts, { data: historyRows }] = await Promise.all([
+          const [{ data: attachmentRows, error: attachmentError }, activeAlerts, { data: historyRows, error: historyError }] = await Promise.all([
             supabase
               .from("demanda_anexos")
               .select("*")
@@ -584,14 +584,16 @@ const MovimentoDetalhes = () => {
             fetchActiveDemandaAlerts(supabase, ids),
             supabase
               .from("logbook_entradas")
-              .select("id, demanda_id, acao, descricao, created_at")
-              .in("demanda_id", ids)
+              .select("id, origem_id, acao, descricao, created_at")
+              .eq("origem", "demanda")
+              .in("origem_id", ids)
               .in("acao", ["criado", "mover_coluna"])
               .order("created_at", { ascending: true }),
           ]);
 
           if (options?.cancelled) return;
           if (attachmentError) throw attachmentError;
+          if (historyError) throw historyError;
 
           const grouped = ((attachmentRows as DemandaAnexo[]) || []).reduce<Record<string, DemandaAnexo[]>>((acc, attachment) => {
             if (!acc[attachment.demanda_id]) acc[attachment.demanda_id] = [];
@@ -600,8 +602,8 @@ const MovimentoDetalhes = () => {
           }, {});
 
           const historyGrouped = ((historyRows as HistoricoEntry[]) || []).reduce<Record<string, HistoricoEntry[]>>((acc, entry) => {
-            if (!acc[entry.demanda_id]) acc[entry.demanda_id] = [];
-            acc[entry.demanda_id].push(entry);
+            if (!acc[entry.origem_id]) acc[entry.origem_id] = [];
+            acc[entry.origem_id].push(entry);
             return acc;
           }, {});
 
@@ -896,12 +898,14 @@ const MovimentoDetalhes = () => {
       if (!demandaId) throw new Error("Demanda inválida");
 
       if (!editingId) {
-        await supabase.from("logbook_entradas").insert({
+        const { error: logError } = await supabase.from("logbook_entradas").insert({
           user_id: user.user_id,
-          demanda_id: demandaId,
+          origem: "demanda",
+          origem_id: demandaId,
           acao: "criado",
           descricao: `Demanda registrada em ${KANBAN_COLUMN_LABELS[demandaForm.coluna_kanban]}`,
         });
+        if (logError) throw logError;
       }
 
       await removeMarkedAttachments();
@@ -967,12 +971,16 @@ const MovimentoDetalhes = () => {
     }
 
     if (user?.user_id && fromColumn) {
-      await supabase.from("logbook_entradas").insert({
+      const { error: logError } = await supabase.from("logbook_entradas").insert({
         user_id: user.user_id,
-        demanda_id: id,
+        origem: "demanda",
+        origem_id: id,
         acao: "mover_coluna",
         descricao: `${KANBAN_COLUMN_LABELS[fromColumn]} → ${KANBAN_COLUMN_LABELS[nextColumn]}`,
       });
+      if (logError) {
+        toast({ title: "Status atualizado, mas o histórico não foi salvo", variant: "destructive" });
+      }
     }
 
     toast({ title: "Status atualizado" });
@@ -1009,12 +1017,14 @@ const MovimentoDetalhes = () => {
     if (!npsPending || !setor || !user?.user_id) return;
     setNpsSaving(true);
     try {
-      await supabase.from("logbook_entradas").insert({
+      const { error: logError } = await supabase.from("logbook_entradas").insert({
         user_id: user.user_id,
-        demanda_id: npsPending.demandaId,
+        origem: "demanda",
+        origem_id: npsPending.demandaId,
         acao: "nps",
         descricao: JSON.stringify(npsRespostas),
       });
+      if (logError) throw logError;
 
       if (npsPending.targetColumn) {
         await executeMoveColumn(npsPending.demandaId, npsPending.targetColumn);

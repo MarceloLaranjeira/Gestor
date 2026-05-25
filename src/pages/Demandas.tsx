@@ -358,7 +358,12 @@ const Demandas = () => {
   };
 
   const handleNPSSubmit = async () => {
-    if (!npsRespostas.bem_atendido === null || npsRespostas.nota === null) return;
+    if (
+      npsRespostas.bem_atendido === null ||
+      npsRespostas.orientacao_ok === null ||
+      npsRespostas.ficou_duvida === null ||
+      npsRespostas.nota === null
+    ) return;
     setNpsSubmitting(true);
     try {
       const descricao = JSON.stringify({

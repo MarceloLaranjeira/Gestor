@@ -50,7 +50,7 @@ interface NPSRespostas {
 
 interface LogbookEntrada {
   id: string;
-  demanda_id: string | null;
+  origem_id: string | null;
   acao: string;
   descricao: string;
   created_at: string;
@@ -118,14 +118,15 @@ export default function RelatorioNPS() {
       try {
         const { data: logRows, error: logError } = await supabase
           .from("logbook_entradas")
-          .select("id, demanda_id, acao, descricao, created_at, user_id")
+          .select("id, origem_id, acao, descricao, created_at, user_id")
+          .eq("origem", "demanda")
           .eq("acao", "nps")
           .order("created_at", { ascending: false });
 
         if (logError) throw logError;
 
         const rows = (logRows as LogbookEntrada[]) || [];
-        const demandaIds = [...new Set(rows.map((r) => r.demanda_id).filter(Boolean))] as string[];
+        const demandaIds = [...new Set(rows.map((r) => r.origem_id).filter(Boolean))] as string[];
 
         let demandasMap: Record<string, DemandaInfo> = {};
         if (demandaIds.length > 0) {
@@ -141,10 +142,10 @@ export default function RelatorioNPS() {
           try { respostas = JSON.parse(row.descricao) as NPSRespostas; } catch {}
           return {
             id: row.id,
-            demanda_id: row.demanda_id,
+            demanda_id: row.origem_id,
             created_at: row.created_at,
             respostas,
-            demanda: row.demanda_id ? demandasMap[row.demanda_id] ?? null : null,
+            demanda: row.origem_id ? demandasMap[row.origem_id] ?? null : null,
           };
         });
 
