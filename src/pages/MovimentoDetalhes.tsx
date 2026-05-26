@@ -635,10 +635,16 @@ const MovimentoDetalhes = () => {
       setDemandas(demandasData);
 
       if (demandasData.length > 0) {
+        const ids = demandasData.map((demanda) => demanda.id);
+        const ownedDemandas = demandasData.filter((demanda) => demanda.user_id === user?.user_id);
+
         try {
-          await syncDemandaAlertRecords(supabase, demandasData, user?.user_id);
-          const ids = demandasData.map((demanda) => demanda.id);
-          const [{ data: attachmentRows, error: attachmentError }, activeAlerts, { data: historyRows, error: historyError }] = await Promise.all([
+          await syncDemandaAlertRecords(supabase, ownedDemandas, user?.user_id);
+        } catch (error) {
+          console.error("Erro ao sincronizar alertas do setor SAC", error);
+        }
+
+        const [attachmentResult, alertResult, historyResult] = await Promise.allSettled([
             supabase
               .from("demanda_anexos")
               .select("*")
@@ -652,18 +658,35 @@ const MovimentoDetalhes = () => {
               .in("origem_id", ids)
               .in("acao", ["criado", "mover_coluna", "nps"])
               .order("created_at", { ascending: true }),
-          ]);
+        ]);
 
-          if (options?.cancelled) return;
-          if (attachmentError) throw attachmentError;
-          if (historyError) throw historyError;
+        if (options?.cancelled) return;
 
+        if (attachmentResult.status === "fulfilled" && !attachmentResult.value.error) {
+          const attachmentRows = attachmentResult.value.data;
           const grouped = ((attachmentRows as DemandaAnexo[]) || []).reduce<Record<string, DemandaAnexo[]>>((acc, attachment) => {
             if (!acc[attachment.demanda_id]) acc[attachment.demanda_id] = [];
             acc[attachment.demanda_id].push(attachment);
             return acc;
           }, {});
+          setAttachmentsByDemand(grouped);
+        } else {
+          console.error(
+            "Erro ao carregar anexos do setor SAC",
+            attachmentResult.status === "rejected" ? attachmentResult.reason : attachmentResult.value.error,
+          );
+          setAttachmentsByDemand({});
+        }
 
+        if (alertResult.status === "fulfilled") {
+          setAlertsByDemand(groupActiveAlertsByDemand(alertResult.value));
+        } else {
+          console.error("Erro ao carregar alertas do setor SAC", alertResult.reason);
+          setAlertsByDemand({});
+        }
+
+        if (historyResult.status === "fulfilled" && !historyResult.value.error) {
+          const historyRows = historyResult.value.data;
           const logEntries = (historyRows as HistoricoEntry[]) || [];
           const historyGrouped = logEntries.filter((entry) => entry.acao !== "nps").reduce<Record<string, HistoricoEntry[]>>((acc, entry) => {
             if (!acc[entry.origem_id]) acc[entry.origem_id] = [];
@@ -678,18 +701,15 @@ const MovimentoDetalhes = () => {
             return acc;
           }, {});
 
-          setAttachmentsByDemand(grouped);
-          setAlertsByDemand(groupActiveAlertsByDemand(activeAlerts));
           setHistoryByDemand(historyGrouped);
           setNpsByDemand(npsGrouped);
-        } catch (error) {
-          console.error("Erro ao carregar anexos ou alertas do setor SAC", error);
-          if (!options?.cancelled) {
-            setAttachmentsByDemand({});
-            setAlertsByDemand({});
-            setHistoryByDemand({});
-            setNpsByDemand({});
-          }
+        } else {
+          console.error(
+            "Erro ao carregar histórico do setor SAC",
+            historyResult.status === "rejected" ? historyResult.reason : historyResult.value.error,
+          );
+          setHistoryByDemand({});
+          setNpsByDemand({});
         }
       } else {
         setAttachmentsByDemand({});
