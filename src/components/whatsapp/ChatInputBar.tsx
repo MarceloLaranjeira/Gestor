@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionErrorMessage } from "@/lib/supabaseError";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -160,7 +161,7 @@ const ChatInputBar = ({ config, phoneNumberId, numero, onSent, editingMessage, o
           body: { config_id: config.id, endpoint, method: "POST", body, plataforma: "whatsapp", contato_externo: numero },
         });
         if (res.error) {
-          toast({ title: "Erro ao enviar", description: res.error.message, variant: "destructive" });
+          toast({ title: "Erro ao enviar", description: await getFunctionErrorMessage(res.error, "Erro desconhecido"), variant: "destructive" });
         } else if (res.data?.success) {
           toast({ title: "Mensagem enviada! ✅" });
         } else {

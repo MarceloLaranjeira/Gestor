@@ -32,6 +32,7 @@ import {
   normalizeDisponibilidadeStatus,
   type DisponibilidadeStatus,
 } from "@/lib/userAvailability";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SearchResult {
   type: "pessoa" | "demanda" | "evento" | "pagina" | "tarefa";

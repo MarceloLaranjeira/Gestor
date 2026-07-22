@@ -1,0 +1,15 @@
+ALTER VIEW public.analytics_alertas SET (security_invoker = true);
+ALTER VIEW public.analytics_campanha_calhas SET (security_invoker = true);
+ALTER VIEW public.analytics_campanha_visitas SET (security_invoker = true);
+ALTER VIEW public.analytics_coord_assuntos SET (security_invoker = true);
+ALTER VIEW public.analytics_demandas_mensal SET (security_invoker = true);
+ALTER VIEW public.analytics_demandas_por_coord SET (security_invoker = true);
+ALTER VIEW public.analytics_demandas_por_status SET (security_invoker = true);
+ALTER VIEW public.analytics_eventos_mensal SET (security_invoker = true);
+ALTER VIEW public.analytics_financeiro_mensal SET (security_invoker = true);
+ALTER VIEW public.analytics_financeiro_por_categoria SET (security_invoker = true);
+ALTER VIEW public.analytics_pessoas_mensal SET (security_invoker = true);
+ALTER VIEW public.analytics_pessoas_por_tipo SET (security_invoker = true);
+ALTER VIEW public.analytics_relatorios_coord SET (security_invoker = true);
+ALTER VIEW public.analytics_tarefas_mensal SET (security_invoker = true);
+ALTER VIEW public.analytics_tarefas_por_coord SET (security_invoker = true);

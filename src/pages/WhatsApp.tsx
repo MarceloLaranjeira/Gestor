@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionErrorMessage } from "@/lib/supabaseError";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -390,12 +391,14 @@ const WhatsApp = () => {
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"));
     if (!files.length || !selectedContact || !config || !phoneNumberId) return;
     setUploadingImage(true);
+    let sent = 0;
+    let lastError = "";
     for (const file of files) {
       const fileName = `whatsapp-img/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage.from("agent-uploads").upload(fileName, file, { contentType: file.type });
-      if (uploadError) continue;
+      if (uploadError) { lastError = uploadError.message; continue; }
       const { data: urlData } = supabase.storage.from("agent-uploads").getPublicUrl(fileName);
-      await supabase.functions.invoke("integracao-enviar", {
+      const res = await supabase.functions.invoke("integracao-enviar", {
         body: {
           config_id: config.id,
           endpoint: `/${phoneNumberId}/messages`,
@@ -411,9 +414,18 @@ const WhatsApp = () => {
           contato_externo: selectedContact,
         },
       });
+      if (res.error || res.data?.success === false) {
+        lastError = res.error ? await getFunctionErrorMessage(res.error, "Falha no envio") : "Falha no envio";
+      } else {
+        sent++;
+      }
     }
     setUploadingImage(false);
-    toast({ title: "📷 Imagem enviada!" });
+    if (sent > 0) {
+      toast({ title: `📷 ${sent} imagem${sent > 1 ? "s" : ""} enviada${sent > 1 ? "s" : ""}!` });
+    } else {
+      toast({ title: "Erro ao enviar imagem", description: lastError || "Tente novamente", variant: "destructive" });
+    }
   };
 
   const getMediaPreview = (msg: Mensagem) => {

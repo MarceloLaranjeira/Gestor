@@ -159,7 +159,7 @@ const Dashboard = () => {
           supabase.from("demandas").select("status"),
           supabase.from("eventos").select("id,titulo,data,hora,local,tipo")
             .gte("data", todayStr).order("data").order("hora").limit(4),
-          supabase.from("compromissos").select("id", { count: "exact", head: true })
+          supabase.from("compromissos_politicos").select("id", { count: "exact", head: true })
             .eq("status", "pendente"),
           supabase.from("alertas_sistema").select("id", { count: "exact", head: true })
             .eq("lido", false),
@@ -239,8 +239,8 @@ const Dashboard = () => {
         const { data } = await supabase.from("eventos").select("id,titulo,data,hora,local,tipo").gte("data", todayStr).order("data").order("hora").limit(4);
         setProximosEventos((data as ProximoEvento[]) || []);
       }).subscribe(),
-      supabase.channel("rt-compromissos-db").on("postgres_changes", { event: "*", schema: "public", table: "compromissos" }, async () => {
-        const { count } = await supabase.from("compromissos").select("id", { count: "exact", head: true }).eq("status", "pendente");
+      supabase.channel("rt-compromissos-db").on("postgres_changes", { event: "*", schema: "public", table: "compromissos_politicos" }, async () => {
+        const { count } = await supabase.from("compromissos_politicos").select("id", { count: "exact", head: true }).eq("status", "pendente");
         setCompromissosPending(count || 0);
       }).subscribe(),
       supabase.channel("rt-alertas-db").on("postgres_changes", { event: "*", schema: "public", table: "alertas_sistema" }, async () => {
@@ -282,7 +282,7 @@ const Dashboard = () => {
   const saveComp = async () => {
     if (!qCompForm.titulo.trim()) return;
     setSaving(true);
-    const { error } = await supabase.from("compromissos").insert({ titulo: qCompForm.titulo, data: qCompForm.data, descricao: qCompForm.descricao, status: "pendente" });
+    const { error } = await supabase.from("compromissos_politicos").insert({ titulo: qCompForm.titulo, data_inicio: qCompForm.data, descricao: qCompForm.descricao, status: "pendente", user_id: user?.user_id });
     setSaving(false);
     if (error) { toast.error("Erro ao salvar compromisso"); return; }
     toast.success("Compromisso criado!");

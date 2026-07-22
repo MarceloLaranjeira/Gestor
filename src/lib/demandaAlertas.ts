@@ -91,7 +91,7 @@ const buildAlertSpecs = (
   demanda: DemandaAlertTarget,
   fallbackUserId?: string | null,
 ): AlertSpec[] => {
-  const userId = demanda.user_id || fallbackUserId;
+  const userId = fallbackUserId || demanda.user_id;
   if (!userId) return [];
 
   const specs: AlertSpec[] = [];

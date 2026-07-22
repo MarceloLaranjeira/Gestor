@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionErrorMessage } from "@/lib/supabaseError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,7 +70,7 @@ const WhatsAppTestSender = ({ configId, ativo }: WhatsAppTestSenderProps) => {
         body: { config_id: configId, endpoint, method: "POST", body, plataforma: "whatsapp", contato_externo: numero },
       });
       if (res.error) {
-        toast({ title: "Erro ao enviar", description: res.error.message, variant: "destructive" });
+        toast({ title: "Erro ao enviar", description: await getFunctionErrorMessage(res.error, "Erro desconhecido"), variant: "destructive" });
       } else if (res.data?.success) {
         toast({ title: "Mensagem enviada! ✅", description: `${typeConfig[tipo].label} enviado para ${numero}` });
         setNumero("");

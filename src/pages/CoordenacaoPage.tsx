@@ -51,6 +51,7 @@ import {
   type DemandaAlertRecord,
 } from "@/lib/demandaAlertas";
 import { getCoordenadoriaCategorias } from "@/data/coordenadoriaDemandas";
+import { getSupabaseErrorMessage } from "@/lib/supabaseError";
 
 /* â”€â”€ slug â†’ icon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const SLUG_ICON: Record<string, any> = {
@@ -395,8 +396,16 @@ const CoordenacaoPage = () => {
       updated_at: new Date().toISOString(),
     };
     let error;
+    let updatedData: { id: string } | null = null;
     if (editingId) {
-      ({ error } = await supabase.from("demandas").update(payload).eq("id", editingId));
+      const result = await supabase
+        .from("demandas")
+        .update(payload)
+        .eq("id", editingId)
+        .select("id")
+        .maybeSingle();
+      error = result.error;
+      updatedData = result.data as { id: string } | null;
     } else {
       ({ error } = await supabase.from("demandas").insert(payload));
     }
@@ -404,13 +413,28 @@ const CoordenacaoPage = () => {
     if (error && payload.categoria !== coord.nome) {
       const retryPayload = { ...payload, categoria: coord.nome };
       if (editingId) {
-        ({ error } = await supabase.from("demandas").update(retryPayload).eq("id", editingId));
+        const result = await supabase
+          .from("demandas")
+          .update(retryPayload)
+          .eq("id", editingId)
+          .select("id")
+          .maybeSingle();
+        error = result.error;
+        updatedData = result.data as { id: string } | null;
       } else {
         ({ error } = await supabase.from("demandas").insert(retryPayload));
       }
     }
     setSaving(false);
-    if (error) { toast({ title: "Erro ao salvar demanda", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: "Erro ao salvar demanda", description: getSupabaseErrorMessage(error), variant: "destructive" }); return; }
+    if (editingId && !updatedData) {
+      toast({
+        title: "Erro ao salvar demanda",
+        description: "Nenhuma linha foi atualizada. Saia e entre novamente; se persistir, revise a permissao deste usuario.",
+        variant: "destructive",
+      });
+      return;
+    }
     toast({ title: editingId ? "Demanda atualizada!" : "Demanda registrada!" });
     setDemandaDialog(false);
     loadDemandas(coord.id);
@@ -440,7 +464,7 @@ const CoordenacaoPage = () => {
       .eq("id", id)
       .select("id", { count: "exact", head: true });
     if (error) {
-      toast({ title: "Erro ao mover demanda", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao mover demanda", description: getSupabaseErrorMessage(error), variant: "destructive" });
       return;
     }
     if (count === 0) {

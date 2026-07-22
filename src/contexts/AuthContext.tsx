@@ -34,11 +34,16 @@ export const useAuth = () => {
 };
 
 async function fetchUserProfile(userId: string, authUser?: User): Promise<UserProfile | null> {
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("nome, email, user_id, cargo, avatar_url, disponibilidade_status, disponibilidade_mensagem, disponibilidade_atualizada_em")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
+
+  if (profileError) {
+    console.error("Erro ao carregar perfil do usuario", profileError);
+    return null;
+  }
 
   if (!profile) {
     if (!authUser) return null;
@@ -51,7 +56,7 @@ async function fetchUserProfile(userId: string, authUser?: User): Promise<UserPr
       "Usuário";
     const email = authUser.email || "";
 
-    await supabase.from("profiles").insert({
+    const { error: insertProfileError } = await supabase.from("profiles").insert({
       user_id: userId,
       nome,
       email,
@@ -59,12 +64,16 @@ async function fetchUserProfile(userId: string, authUser?: User): Promise<UserPr
       disponibilidade_mensagem: "",
       disponibilidade_atualizada_em: new Date().toISOString(),
     });
-    await supabase.from("user_roles").insert({ user_id: userId, role: "gestor" });
+
+    if (insertProfileError) {
+      console.error("Erro ao criar perfil do usuario", insertProfileError);
+      return null;
+    }
 
     return {
       name: nome,
       email,
-      role: "Gestor",
+      role: "Assessor",
       user_id: userId,
       cargo: "",
       avatar_url: authUser.user_metadata?.avatar_url || null,

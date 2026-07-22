@@ -38,7 +38,7 @@ const TIPO_CONFIG: Record<TipoAlerta, { label: string; icon: any; style: string;
 
 const Alertas = () => {
   const { user } = useAuth();
-  const { toast: showToast } = toast;
+  const showToast = toast;
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);

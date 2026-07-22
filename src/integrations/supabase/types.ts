@@ -88,6 +88,42 @@ export type Database = {
         }
         Relationships: []
       }
+      alertas_sistema: {
+        Row: {
+          created_at: string
+          id: string
+          lido: boolean
+          link: string | null
+          mensagem: string | null
+          origem: string | null
+          tipo: string
+          titulo: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lido?: boolean
+          link?: string | null
+          mensagem?: string | null
+          origem?: string | null
+          tipo?: string
+          titulo: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lido?: boolean
+          link?: string | null
+          mensagem?: string | null
+          origem?: string | null
+          tipo?: string
+          titulo?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       apoiadores: {
         Row: {
           beneficios_relacionados: string
@@ -474,6 +510,48 @@ export type Database = {
           },
         ]
       }
+      causas_sociais: {
+        Row: {
+          categoria: string
+          cor: string | null
+          created_at: string | null
+          descricao: string | null
+          documentos: Json | null
+          icone: string | null
+          id: string
+          impacto_estimado: number | null
+          nome: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          categoria: string
+          cor?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          documentos?: Json | null
+          icone?: string | null
+          id?: string
+          impacto_estimado?: number | null
+          nome: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          categoria?: string
+          cor?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          documentos?: Json | null
+          icone?: string | null
+          id?: string
+          impacto_estimado?: number | null
+          nome?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chat_mensagem_anexos: {
         Row: {
           created_at: string
@@ -521,40 +599,40 @@ export type Database = {
       chat_mensagens: {
         Row: {
           conteudo: string
-          created_at: string
+          created_at: string | null
           editada: boolean
           editada_em: string | null
           excluida: boolean
           excluida_em: string | null
           id: string
           sala_id: string
-          tipo: string
+          tipo: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          conteudo?: string
-          created_at?: string
+          conteudo: string
+          created_at?: string | null
           editada?: boolean
           editada_em?: string | null
           excluida?: boolean
           excluida_em?: string | null
           id?: string
           sala_id: string
-          tipo?: string
+          tipo?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           conteudo?: string
-          created_at?: string
+          created_at?: string | null
           editada?: boolean
           editada_em?: string | null
           excluida?: boolean
           excluida_em?: string | null
           id?: string
           sala_id?: string
-          tipo?: string
+          tipo?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -572,216 +650,312 @@ export type Database = {
         Row: {
           ativo: boolean
           coordenadoria_slug: string | null
-          cor: string
-          created_at: string
+          cor: string | null
+          created_at: string | null
           created_by: string | null
           descricao: string | null
           grupo: string
-          icone: string
+          icone: string | null
           id: string
           nome: string
           ordem: number
           participantes: string[] | null
           slug: string | null
-          tipo: string
-          updated_at: string
+          tipo: string | null
+          updated_at: string | null
         }
         Insert: {
           ativo?: boolean
           coordenadoria_slug?: string | null
-          cor?: string
-          created_at?: string
+          cor?: string | null
+          created_at?: string | null
           created_by?: string | null
           descricao?: string | null
           grupo?: string
-          icone?: string
+          icone?: string | null
           id?: string
           nome: string
           ordem?: number
           participantes?: string[] | null
           slug?: string | null
-          tipo?: string
-          updated_at?: string
+          tipo?: string | null
+          updated_at?: string | null
         }
         Update: {
           ativo?: boolean
           coordenadoria_slug?: string | null
-          cor?: string
-          created_at?: string
+          cor?: string | null
+          created_at?: string | null
           created_by?: string | null
           descricao?: string | null
           grupo?: string
-          icone?: string
+          icone?: string | null
           id?: string
           nome?: string
           ordem?: number
           participantes?: string[] | null
           slug?: string | null
-          tipo?: string
-          updated_at?: string
+          tipo?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
-      coordenacoes: {
+      compromissos_politicos: {
         Row: {
+          created_at: string | null
+          data_fim: string | null
+          data_inicio: string
+          descricao: string | null
+          id: string
+          local: string | null
+          municipio: string | null
+          observacoes: string | null
+          orgao_parceiro: string | null
+          participantes: string | null
+          pauta: string | null
+          prioridade: string
+          responsavel: string | null
+          resultado: string | null
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          descricao?: string | null
+          id?: string
+          local?: string | null
+          municipio?: string | null
+          observacoes?: string | null
+          orgao_parceiro?: string | null
+          participantes?: string | null
+          pauta?: string | null
+          prioridade?: string
+          responsavel?: string | null
+          resultado?: string | null
+          status?: string
+          tipo?: string
+          titulo: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          descricao?: string | null
+          id?: string
+          local?: string | null
+          municipio?: string | null
+          observacoes?: string | null
+          orgao_parceiro?: string | null
+          participantes?: string | null
+          pauta?: string | null
+          prioridade?: string
+          responsavel?: string | null
+          resultado?: string | null
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      contratos_templates: {
+        Row: {
+          area: string | null
+          ativo: boolean | null
+          conteudo: string
+          created_at: string | null
+          id: string
+          tipo: string | null
+          titulo: string
+          user_id: string
+          uso_count: number | null
+          variaveis: string[] | null
+        }
+        Insert: {
+          area?: string | null
+          ativo?: boolean | null
+          conteudo: string
+          created_at?: string | null
+          id?: string
+          tipo?: string | null
+          titulo: string
+          user_id: string
+          uso_count?: number | null
+          variaveis?: string[] | null
+        }
+        Update: {
+          area?: string | null
+          ativo?: boolean | null
+          conteudo?: string
+          created_at?: string | null
+          id?: string
+          tipo?: string | null
+          titulo?: string
+          user_id?: string
+          uso_count?: number | null
+          variaveis?: string[] | null
+        }
+        Relationships: []
+      }
+      coord_assuntos: {
+        Row: {
+          coordenacao_id: string
           created_at: string
           descricao: string | null
           id: string
+          prazo: string | null
+          prioridade: string
+          responsavel: string | null
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          coordenacao_id: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          prazo?: string | null
+          prioridade?: string
+          responsavel?: string | null
+          status?: string
+          tipo?: string
+          titulo: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          coordenacao_id?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          prazo?: string | null
+          prioridade?: string
+          responsavel?: string | null
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coord_assuntos_coordenacao_id_fkey"
+            columns: ["coordenacao_id"]
+            isOneToOne: false
+            referencedRelation: "coordenacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coordenacoes: {
+        Row: {
+          ativo: boolean
+          coordenador: string | null
+          coordenador_email: string | null
+          coordenador_telefone: string | null
+          cor: string | null
+          created_at: string
+          descricao: string | null
+          icone: string | null
+          id: string
+          meta_tarefas: number | null
           nome: string
           slug: string
           updated_at: string
         }
         Insert: {
+          ativo?: boolean
+          coordenador?: string | null
+          coordenador_email?: string | null
+          coordenador_telefone?: string | null
+          cor?: string | null
           created_at?: string
           descricao?: string | null
+          icone?: string | null
           id?: string
+          meta_tarefas?: number | null
           nome: string
           slug: string
           updated_at?: string
         }
         Update: {
+          ativo?: boolean
+          coordenador?: string | null
+          coordenador_email?: string | null
+          coordenador_telefone?: string | null
+          cor?: string | null
           created_at?: string
           descricao?: string | null
+          icone?: string | null
           id?: string
+          meta_tarefas?: number | null
           nome?: string
           slug?: string
           updated_at?: string
         }
         Relationships: []
       }
-      demandas: {
+      cpis_fiscalizacao: {
         Row: {
-          atendimento_grupo: string | null
-          atendimento_prazo_dias: number | null
-          atendimento_tipo: string | null
-          categoria: string
-          coluna_kanban: string
-          coordenacao_id: string | null
-          coordenadoria_nome: string | null
-          coordenadoria_slug: string | null
-          created_at: string
-          data_prazo: string | null
-          descricao: string
-          alerta_manual: boolean
-          alerta_observacao: string
-          alerta_vencimento_em: string | null
+          alvo_investigacao: string | null
+          autores: string[] | null
+          coluna_kanban: string | null
+          created_at: string | null
+          data_instauracao: string | null
+          documentos_investigacao: string[] | null
           id: string
-          nivel_alerta: string
-          notas_internas: string
-          prioridade: string
-          responsavel: string
-          setor_sac: string | null
-          solicitante_cpf: string
-          solicitante_telefone: string
-          solicitante: string
-          status: string
-          titulo: string
-          updated_at: string
-          user_id: string
+          impacto_esperado: string | null
+          nome_cpi: string
+          recomendacoes: string | null
+          resultado_final: string | null
+          status_investigacao: string | null
+          tipo_irregularidade: string[] | null
+          updated_at: string | null
         }
         Insert: {
-          atendimento_grupo?: string | null
-          atendimento_prazo_dias?: number | null
-          atendimento_tipo?: string | null
-          categoria?: string
-          coluna_kanban?: string
-          coordenacao_id?: string | null
-          coordenadoria_nome?: string | null
-          coordenadoria_slug?: string | null
-          created_at?: string
-          data_prazo?: string | null
-          descricao?: string
-          alerta_manual?: boolean
-          alerta_observacao?: string
-          alerta_vencimento_em?: string | null
+          alvo_investigacao?: string | null
+          autores?: string[] | null
+          coluna_kanban?: string | null
+          created_at?: string | null
+          data_instauracao?: string | null
+          documentos_investigacao?: string[] | null
           id?: string
-          nivel_alerta?: string
-          notas_internas?: string
-          prioridade?: string
-          responsavel?: string
-          setor_sac?: string | null
-          solicitante_cpf?: string
-          solicitante_telefone?: string
-          solicitante?: string
-          status?: string
-          titulo: string
-          updated_at?: string
-          user_id: string
+          impacto_esperado?: string | null
+          nome_cpi: string
+          recomendacoes?: string | null
+          resultado_final?: string | null
+          status_investigacao?: string | null
+          tipo_irregularidade?: string[] | null
+          updated_at?: string | null
         }
         Update: {
-          atendimento_grupo?: string | null
-          atendimento_prazo_dias?: number | null
-          atendimento_tipo?: string | null
-          categoria?: string
-          coluna_kanban?: string
-          coordenacao_id?: string | null
-          coordenadoria_nome?: string | null
-          coordenadoria_slug?: string | null
-          created_at?: string
-          data_prazo?: string | null
-          descricao?: string
-          alerta_manual?: boolean
-          alerta_observacao?: string
-          alerta_vencimento_em?: string | null
+          alvo_investigacao?: string | null
+          autores?: string[] | null
+          coluna_kanban?: string | null
+          created_at?: string | null
+          data_instauracao?: string | null
+          documentos_investigacao?: string[] | null
           id?: string
-          nivel_alerta?: string
-          notas_internas?: string
-          prioridade?: string
-          responsavel?: string
-          setor_sac?: string | null
-          solicitante_cpf?: string
-          solicitante_telefone?: string
-          solicitante?: string
-          status?: string
-          titulo?: string
-          updated_at?: string
-          user_id?: string
+          impacto_esperado?: string | null
+          nome_cpi?: string
+          recomendacoes?: string | null
+          resultado_final?: string | null
+          status_investigacao?: string | null
+          tipo_irregularidade?: string[] | null
+          updated_at?: string | null
         }
         Relationships: []
-      }
-      demanda_anexos: {
-        Row: {
-          created_at: string
-          demanda_id: string
-          id: string
-          nome_arquivo: string
-          storage_bucket: string
-          storage_path: string
-          tamanho_bytes: number | null
-          tipo_arquivo: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          demanda_id: string
-          id?: string
-          nome_arquivo: string
-          storage_bucket?: string
-          storage_path: string
-          tamanho_bytes?: number | null
-          tipo_arquivo?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          demanda_id?: string
-          id?: string
-          nome_arquivo?: string
-          storage_bucket?: string
-          storage_path?: string
-          tamanho_bytes?: number | null
-          tipo_arquivo?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "demanda_anexos_demanda_id_fkey"
-            columns: ["demanda_id"]
-            isOneToOne: false
-            referencedRelation: "demandas"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       demanda_alertas: {
         Row: {
@@ -842,6 +1016,274 @@ export type Database = {
           },
         ]
       }
+      demanda_anexos: {
+        Row: {
+          created_at: string
+          demanda_id: string
+          id: string
+          nome_arquivo: string
+          storage_bucket: string
+          storage_path: string
+          tamanho_bytes: number | null
+          tipo_arquivo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          demanda_id: string
+          id?: string
+          nome_arquivo: string
+          storage_bucket?: string
+          storage_path: string
+          tamanho_bytes?: number | null
+          tipo_arquivo?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          demanda_id?: string
+          id?: string
+          nome_arquivo?: string
+          storage_bucket?: string
+          storage_path?: string
+          tamanho_bytes?: number | null
+          tipo_arquivo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demanda_anexos_demanda_id_fkey"
+            columns: ["demanda_id"]
+            isOneToOne: false
+            referencedRelation: "demandas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demandas: {
+        Row: {
+          alerta_manual: boolean
+          alerta_observacao: string
+          alerta_vencimento_em: string | null
+          atendimento_grupo: string | null
+          atendimento_prazo_dias: number | null
+          atendimento_tipo: string | null
+          categoria: string
+          coluna_kanban: string
+          coordenacao_id: string | null
+          coordenadoria_nome: string | null
+          coordenadoria_slug: string | null
+          created_at: string
+          data_prazo: string | null
+          descricao: string
+          id: string
+          nivel_alerta: string
+          notas_internas: string
+          prioridade: string
+          responsavel: string
+          setor_sac: string | null
+          solicitante: string
+          solicitante_cpf: string | null
+          solicitante_nome_mae: string
+          solicitante_nome_pai: string
+          solicitante_telefone: string | null
+          status: string
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alerta_manual?: boolean
+          alerta_observacao?: string
+          alerta_vencimento_em?: string | null
+          atendimento_grupo?: string | null
+          atendimento_prazo_dias?: number | null
+          atendimento_tipo?: string | null
+          categoria?: string
+          coluna_kanban?: string
+          coordenacao_id?: string | null
+          coordenadoria_nome?: string | null
+          coordenadoria_slug?: string | null
+          created_at?: string
+          data_prazo?: string | null
+          descricao?: string
+          id?: string
+          nivel_alerta?: string
+          notas_internas?: string
+          prioridade?: string
+          responsavel?: string
+          setor_sac?: string | null
+          solicitante?: string
+          solicitante_cpf?: string | null
+          solicitante_nome_mae?: string
+          solicitante_nome_pai?: string
+          solicitante_telefone?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alerta_manual?: boolean
+          alerta_observacao?: string
+          alerta_vencimento_em?: string | null
+          atendimento_grupo?: string | null
+          atendimento_prazo_dias?: number | null
+          atendimento_tipo?: string | null
+          categoria?: string
+          coluna_kanban?: string
+          coordenacao_id?: string | null
+          coordenadoria_nome?: string | null
+          coordenadoria_slug?: string | null
+          created_at?: string
+          data_prazo?: string | null
+          descricao?: string
+          id?: string
+          nivel_alerta?: string
+          notas_internas?: string
+          prioridade?: string
+          responsavel?: string
+          setor_sac?: string | null
+          solicitante?: string
+          solicitante_cpf?: string | null
+          solicitante_nome_mae?: string
+          solicitante_nome_pai?: string
+          solicitante_telefone?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demandas_coordenacao_id_fkey"
+            columns: ["coordenacao_id"]
+            isOneToOne: false
+            referencedRelation: "coordenacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      despesas_escritorio: {
+        Row: {
+          categoria: string | null
+          created_at: string | null
+          data_competencia: string
+          data_pagamento: string | null
+          descricao: string
+          id: string
+          recorrente: boolean | null
+          status: string | null
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string | null
+          data_competencia?: string
+          data_pagamento?: string | null
+          descricao: string
+          id?: string
+          recorrente?: boolean | null
+          status?: string | null
+          user_id: string
+          valor: number
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string | null
+          data_competencia?: string
+          data_pagamento?: string | null
+          descricao?: string
+          id?: string
+          recorrente?: boolean | null
+          status?: string | null
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      documentos_gerados: {
+        Row: {
+          cliente_id: string | null
+          conteudo: string
+          created_at: string | null
+          id: string
+          processo_id: string | null
+          status: string | null
+          template_id: string | null
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          conteudo: string
+          created_at?: string | null
+          id?: string
+          processo_id?: string | null
+          status?: string | null
+          template_id?: string | null
+          titulo: string
+          user_id: string
+        }
+        Update: {
+          cliente_id?: string | null
+          conteudo?: string
+          created_at?: string | null
+          id?: string
+          processo_id?: string | null
+          status?: string | null
+          template_id?: string | null
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      equipe: {
+        Row: {
+          ativo: boolean | null
+          cargo: string | null
+          created_at: string | null
+          email: string | null
+          especialidades: string[] | null
+          id: string
+          meta_horas_mes: number | null
+          nome: string
+          oab: string | null
+          telefone: string | null
+          user_id: string
+          valor_hora: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          cargo?: string | null
+          created_at?: string | null
+          email?: string | null
+          especialidades?: string[] | null
+          id?: string
+          meta_horas_mes?: number | null
+          nome: string
+          oab?: string | null
+          telefone?: string | null
+          user_id: string
+          valor_hora?: number | null
+        }
+        Update: {
+          ativo?: boolean | null
+          cargo?: string | null
+          created_at?: string | null
+          email?: string | null
+          especialidades?: string[] | null
+          id?: string
+          meta_horas_mes?: number | null
+          nome?: string
+          oab?: string | null
+          telefone?: string | null
+          user_id?: string
+          valor_hora?: number | null
+        }
+        Relationships: []
+      }
       eventos: {
         Row: {
           created_at: string
@@ -883,6 +1325,30 @@ export type Database = {
           tipo?: string
           titulo?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_calendar_oauth_states: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          state?: string
           user_id?: string
         }
         Relationships: []
@@ -1050,6 +1516,66 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          area_interesse: string | null
+          cliente_id: string | null
+          convertido: boolean | null
+          created_at: string | null
+          data_contato: string | null
+          descricao: string | null
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          origem: string | null
+          prioridade: string | null
+          proximo_contato: string | null
+          status: string | null
+          telefone: string | null
+          user_id: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          area_interesse?: string | null
+          cliente_id?: string | null
+          convertido?: boolean | null
+          created_at?: string | null
+          data_contato?: string | null
+          descricao?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          origem?: string | null
+          prioridade?: string | null
+          proximo_contato?: string | null
+          status?: string | null
+          telefone?: string | null
+          user_id: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          area_interesse?: string | null
+          cliente_id?: string | null
+          convertido?: boolean | null
+          created_at?: string | null
+          data_contato?: string | null
+          descricao?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          origem?: string | null
+          prioridade?: string | null
+          proximo_contato?: string | null
+          status?: string | null
+          telefone?: string | null
+          user_id?: string
+          valor_estimado?: number | null
+        }
+        Relationships: []
+      }
       logbook_calhas: {
         Row: {
           created_at: string
@@ -1071,6 +1597,39 @@ export type Database = {
           id?: string
           nome?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      logbook_entradas: {
+        Row: {
+          acao: string
+          created_at: string | null
+          dados: Json | null
+          descricao: string | null
+          id: string
+          origem: string
+          origem_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string | null
+          dados?: Json | null
+          descricao?: string | null
+          id?: string
+          origem: string
+          origem_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string | null
+          dados?: Json | null
+          descricao?: string | null
+          id?: string
+          origem?: string
+          origem_id?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1165,6 +1724,144 @@ export type Database = {
           },
         ]
       }
+      mapa_pontos: {
+        Row: {
+          cor: string
+          created_at: string
+          descricao: string | null
+          id: string
+          latitude: number
+          longitude: number
+          nome: string
+          tipo: string
+          user_id: string | null
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          nome: string
+          tipo?: string
+          user_id?: string | null
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          nome?: string
+          tipo?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      mapa_raios: {
+        Row: {
+          cor: string
+          created_at: string
+          descricao: string | null
+          id: string
+          latitude: number
+          longitude: number
+          nome: string
+          raio_km: number
+          user_id: string | null
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          nome: string
+          raio_km?: number
+          user_id?: string | null
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          nome?: string
+          raio_km?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      mapa_territorios: {
+        Row: {
+          coordenadas: Json
+          cor: string
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          tipo: string
+          user_id: string | null
+        }
+        Insert: {
+          coordenadas?: Json
+          cor?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          tipo?: string
+          user_id?: string | null
+        }
+        Update: {
+          coordenadas?: Json
+          cor?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          tipo?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      metas_financeiras: {
+        Row: {
+          ano: number
+          created_at: string | null
+          id: string
+          mes: number
+          meta_horas: number | null
+          meta_novos_clientes: number | null
+          meta_receita: number | null
+          user_id: string
+        }
+        Insert: {
+          ano: number
+          created_at?: string | null
+          id?: string
+          mes: number
+          meta_horas?: number | null
+          meta_novos_clientes?: number | null
+          meta_receita?: number | null
+          user_id: string
+        }
+        Update: {
+          ano?: number
+          created_at?: string | null
+          id?: string
+          mes?: number
+          meta_horas?: number | null
+          meta_novos_clientes?: number | null
+          meta_receita?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       movimentos: {
         Row: {
           cor: string
@@ -1236,6 +1933,110 @@ export type Database = {
           valor?: number
         }
         Relationships: []
+      }
+      pesquisa_pessoas: {
+        Row: {
+          cargo: string | null
+          cor: string
+          created_at: string | null
+          email: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cargo?: string | null
+          cor?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cargo?: string | null
+          cor?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      pesquisa_zonas: {
+        Row: {
+          censo_apoiadores: number | null
+          censo_populacao: number | null
+          censo_residencias: number | null
+          censo_visitados: number | null
+          coordinates: Json
+          cor: string
+          created_at: string | null
+          id: string
+          lider_cor: string
+          lider_nome: string | null
+          lider_telefone: string | null
+          meta: Json | null
+          nome: string
+          responsavel_id: string | null
+          tipo: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          censo_apoiadores?: number | null
+          censo_populacao?: number | null
+          censo_residencias?: number | null
+          censo_visitados?: number | null
+          coordinates: Json
+          cor?: string
+          created_at?: string | null
+          id?: string
+          lider_cor?: string
+          lider_nome?: string | null
+          lider_telefone?: string | null
+          meta?: Json | null
+          nome: string
+          responsavel_id?: string | null
+          tipo: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          censo_apoiadores?: number | null
+          censo_populacao?: number | null
+          censo_residencias?: number | null
+          censo_visitados?: number | null
+          coordinates?: Json
+          cor?: string
+          created_at?: string | null
+          id?: string
+          lider_cor?: string
+          lider_nome?: string | null
+          lider_telefone?: string | null
+          meta?: Json | null
+          nome?: string
+          responsavel_id?: string | null
+          tipo?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pesquisa_zonas_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "pesquisa_pessoas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pessoas: {
         Row: {
@@ -1321,6 +2122,124 @@ export type Database = {
         }
         Relationships: []
       }
+      proposituras: {
+        Row: {
+          abstencoes: number | null
+          ano: number
+          beneficiarios: number | null
+          causa_id: string | null
+          created_at: string | null
+          data_apresentacao: string | null
+          data_votacao: string | null
+          descricao: string | null
+          documentos_anexos: string[] | null
+          id: string
+          impacto_estimado: string | null
+          numero: string
+          resultado_votacao: string | null
+          status: string | null
+          tipo: string
+          titulo: string
+          updated_at: string | null
+          votos_a_favor: number | null
+          votos_contra: number | null
+        }
+        Insert: {
+          abstencoes?: number | null
+          ano?: number
+          beneficiarios?: number | null
+          causa_id?: string | null
+          created_at?: string | null
+          data_apresentacao?: string | null
+          data_votacao?: string | null
+          descricao?: string | null
+          documentos_anexos?: string[] | null
+          id?: string
+          impacto_estimado?: string | null
+          numero: string
+          resultado_votacao?: string | null
+          status?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string | null
+          votos_a_favor?: number | null
+          votos_contra?: number | null
+        }
+        Update: {
+          abstencoes?: number | null
+          ano?: number
+          beneficiarios?: number | null
+          causa_id?: string | null
+          created_at?: string | null
+          data_apresentacao?: string | null
+          data_votacao?: string | null
+          descricao?: string | null
+          documentos_anexos?: string[] | null
+          id?: string
+          impacto_estimado?: string | null
+          numero?: string
+          resultado_votacao?: string | null
+          status?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string | null
+          votos_a_favor?: number | null
+          votos_contra?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposituras_causa_id_fkey"
+            columns: ["causa_id"]
+            isOneToOne: false
+            referencedRelation: "causas_sociais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      relatorios_coordenacao: {
+        Row: {
+          conteudo: string | null
+          coordenacao_id: string
+          created_at: string
+          id: string
+          periodo: string | null
+          status: string
+          titulo: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          conteudo?: string | null
+          coordenacao_id: string
+          created_at?: string
+          id?: string
+          periodo?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          conteudo?: string | null
+          coordenacao_id?: string
+          created_at?: string
+          id?: string
+          periodo?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorios_coordenacao_coordenacao_id_fkey"
+            columns: ["coordenacao_id"]
+            isOneToOne: false
+            referencedRelation: "coordenacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -1383,6 +2302,7 @@ export type Database = {
       tarefas: {
         Row: {
           canal: string | null
+          categoria: string
           created_at: string
           data_fim: string | null
           data_inicio: string | null
@@ -1396,6 +2316,7 @@ export type Database = {
         }
         Insert: {
           canal?: string | null
+          categoria?: string
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
@@ -1409,6 +2330,7 @@ export type Database = {
         }
         Update: {
           canal?: string | null
+          categoria?: string
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
@@ -1484,6 +2406,90 @@ export type Database = {
           },
         ]
       }
+      time_entries: {
+        Row: {
+          categoria: string | null
+          cliente_id: string | null
+          created_at: string | null
+          data: string
+          descricao: string
+          faturado: boolean | null
+          faturavel: boolean | null
+          horas: number
+          id: string
+          processo_id: string | null
+          user_id: string
+          valor_hora: number | null
+        }
+        Insert: {
+          categoria?: string | null
+          cliente_id?: string | null
+          created_at?: string | null
+          data?: string
+          descricao: string
+          faturado?: boolean | null
+          faturavel?: boolean | null
+          horas?: number
+          id?: string
+          processo_id?: string | null
+          user_id: string
+          valor_hora?: number | null
+        }
+        Update: {
+          categoria?: string | null
+          cliente_id?: string | null
+          created_at?: string | null
+          data?: string
+          descricao?: string
+          faturado?: boolean | null
+          faturavel?: boolean | null
+          horas?: number
+          id?: string
+          processo_id?: string | null
+          user_id?: string
+          valor_hora?: number | null
+        }
+        Relationships: []
+      }
+      trajetoria_politica: {
+        Row: {
+          created_at: string | null
+          data: string
+          descricao: string | null
+          destaque: boolean | null
+          documentos: string[] | null
+          id: string
+          impacto_politico: string | null
+          tipo: string
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data: string
+          descricao?: string | null
+          destaque?: boolean | null
+          documentos?: string[] | null
+          id?: string
+          impacto_politico?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data?: string
+          descricao?: string | null
+          destaque?: boolean | null
+          documentos?: string[] | null
+          id?: string
+          impacto_politico?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_coordenacoes: {
         Row: {
           coordenacao_id: string
@@ -1530,7 +2536,154 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      analytics_alertas: {
+        Row: {
+          lido: boolean | null
+          tipo: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      analytics_campanha_calhas: {
+        Row: {
+          municipios: number | null
+          nome: string | null
+          percentual_cristaos: number | null
+          potencial_votos: number | null
+          regiao: string | null
+          votos_validos: number | null
+        }
+        Insert: {
+          municipios?: number | null
+          nome?: string | null
+          percentual_cristaos?: never
+          potencial_votos?: number | null
+          regiao?: string | null
+          votos_validos?: number | null
+        }
+        Update: {
+          municipios?: number | null
+          nome?: string | null
+          percentual_cristaos?: never
+          potencial_votos?: number | null
+          regiao?: string | null
+          votos_validos?: number | null
+        }
+        Relationships: []
+      }
+      analytics_campanha_visitas: {
+        Row: {
+          status: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      analytics_coord_assuntos: {
+        Row: {
+          coordenacao: string | null
+          prioridade: string | null
+          status: string | null
+          tipo: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      analytics_demandas_mensal: {
+        Row: {
+          mes: string | null
+          status: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      analytics_demandas_por_coord: {
+        Row: {
+          coluna_kanban: string | null
+          coordenacao: string | null
+          status: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      analytics_demandas_por_status: {
+        Row: {
+          status: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      analytics_eventos_mensal: {
+        Row: {
+          mes: string | null
+          tipo: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      analytics_financeiro_mensal: {
+        Row: {
+          despesas: number | null
+          mes: string | null
+          receitas: number | null
+          saldo: number | null
+        }
+        Relationships: []
+      }
+      analytics_financeiro_por_categoria: {
+        Row: {
+          categoria: string | null
+          qtd: number | null
+          tipo: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      analytics_pessoas_mensal: {
+        Row: {
+          mes: string | null
+          tipo: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      analytics_pessoas_por_tipo: {
+        Row: {
+          tipo: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      analytics_relatorios_coord: {
+        Row: {
+          coordenacao: string | null
+          created_at: string | null
+          periodo: string | null
+          status: string | null
+          titulo: string | null
+        }
+        Relationships: []
+      }
+      analytics_tarefas_mensal: {
+        Row: {
+          concluidas: number | null
+          mes: string | null
+          pendentes: number | null
+          total: number | null
+        }
+        Relationships: []
+      }
+      analytics_tarefas_por_coord: {
+        Row: {
+          atrasadas: number | null
+          concluidas: number | null
+          coordenacao: string | null
+          pct_concluido: number | null
+          pendentes: number | null
+          slug: string | null
+          total: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {

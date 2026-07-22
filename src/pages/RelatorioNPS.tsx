@@ -29,7 +29,6 @@ import {
 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -50,7 +49,6 @@ interface NPSRespostas {
 
 interface LogbookEntrada {
   id: string;
-  demanda_id: string | null;
   acao: string;
   descricao: string;
   created_at: string;
@@ -90,6 +88,44 @@ const CATEGORIA_CONFIG: Record<Categoria, { label: string; color: string; bg: st
 
 const MONTHS_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
+const emptyRespostas = (): NPSRespostas => ({
+  atendimento_satisfatorio: null,
+  problema_resolvido: null,
+  recomendaria: null,
+  nota: null,
+  comentario: "",
+});
+
+const parseNpsDescricao = (descricao: string) => {
+  try {
+    const raw = JSON.parse(descricao || "{}") as Record<string, unknown>;
+    return {
+      demandaId: typeof raw.demanda_id === "string" ? raw.demanda_id : null,
+      respostas: {
+        atendimento_satisfatorio: typeof raw.atendimento_satisfatorio === "boolean"
+          ? raw.atendimento_satisfatorio
+          : typeof raw.bem_atendido === "boolean"
+            ? raw.bem_atendido
+            : null,
+        problema_resolvido: typeof raw.problema_resolvido === "boolean"
+          ? raw.problema_resolvido
+          : typeof raw.orientacao_ok === "boolean"
+            ? raw.orientacao_ok
+            : null,
+        recomendaria: typeof raw.recomendaria === "boolean" ? raw.recomendaria : null,
+        nota: typeof raw.nota === "number" ? raw.nota : null,
+        comentario: typeof raw.comentario === "string"
+          ? raw.comentario
+          : typeof raw.melhoria === "string"
+            ? raw.melhoria
+            : "",
+      },
+    };
+  } catch {
+    return { demandaId: null, respostas: emptyRespostas() };
+  }
+};
+
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; fill: string }[]; label?: string }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -106,7 +142,6 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
 };
 
 export default function RelatorioNPS() {
-  const { toast } = useToast();
   const [entries, setEntries] = useState<NPSEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterSetor, setFilterSetor] = useState("all");
@@ -118,14 +153,15 @@ export default function RelatorioNPS() {
       try {
         const { data: logRows, error: logError } = await supabase
           .from("logbook_entradas")
-          .select("id, demanda_id, acao, descricao, created_at, user_id")
+          .select("id, acao, descricao, created_at, user_id")
           .eq("acao", "nps")
           .order("created_at", { ascending: false });
 
         if (logError) throw logError;
 
         const rows = (logRows as LogbookEntrada[]) || [];
-        const demandaIds = [...new Set(rows.map((r) => r.demanda_id).filter(Boolean))] as string[];
+        const parsedRows = rows.map((row) => ({ row, ...parseNpsDescricao(row.descricao) }));
+        const demandaIds = [...new Set(parsedRows.map((item) => item.demandaId).filter(Boolean))] as string[];
 
         let demandasMap: Record<string, DemandaInfo> = {};
         if (demandaIds.length > 0) {
@@ -136,27 +172,26 @@ export default function RelatorioNPS() {
           (demandasRows as DemandaInfo[] || []).forEach((d) => { demandasMap[d.id] = d; });
         }
 
-        const parsed: NPSEntry[] = rows.map((row) => {
-          let respostas: NPSRespostas = { atendimento_satisfatorio: null, problema_resolvido: null, recomendaria: null, nota: null, comentario: "" };
-          try { respostas = JSON.parse(row.descricao) as NPSRespostas; } catch {}
+        const parsed: NPSEntry[] = parsedRows.map(({ row, demandaId, respostas }) => {
           return {
             id: row.id,
-            demanda_id: row.demanda_id,
+            demanda_id: demandaId,
             created_at: row.created_at,
             respostas,
-            demanda: row.demanda_id ? demandasMap[row.demanda_id] ?? null : null,
+            demanda: demandaId ? demandasMap[demandaId] ?? null : null,
           };
         });
 
         setEntries(parsed);
       } catch (error) {
-        toast({ title: "Erro ao carregar dados NPS", description: error instanceof Error ? error.message : undefined, variant: "destructive" });
+        console.error("Erro ao carregar dados NPS", error);
+        setEntries([]);
       } finally {
         setLoading(false);
       }
     };
     void load();
-  }, [toast]);
+  }, []);
 
   const filtered = useMemo(() => {
     const now = new Date();

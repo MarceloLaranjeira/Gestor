@@ -30,6 +30,9 @@ import {
   normalizeDisponibilidadeStatus,
   type DisponibilidadeStatus,
 } from "@/lib/userAvailability";
+import { getFunctionErrorMessage } from "@/lib/supabaseError";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -191,13 +194,16 @@ const GerenciarUsuarios = () => {
       toast({ title: "Preencha nome, email e senha", variant: "destructive" });
       return;
     }
+    if (!EMAIL_REGEX.test(newEmail.trim())) {
+      toast({ title: "Email inválido. Verifique se digitou apenas o endereço de email.", variant: "destructive" });
+      return;
+    }
     if (newPassword.length < 6) {
       toast({ title: "A senha deve ter no mínimo 6 caracteres", variant: "destructive" });
       return;
     }
     setCreating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await supabase.functions.invoke("create-user", {
         body: {
           email: newEmail.trim(),
@@ -208,7 +214,8 @@ const GerenciarUsuarios = () => {
         },
       });
       if (res.error || res.data?.error) {
-        toast({ title: res.data?.error || "Erro ao criar usuário", variant: "destructive" });
+        const message = res.data?.error || (await getFunctionErrorMessage(res.error, "Erro ao criar usuário"));
+        toast({ title: message, variant: "destructive" });
       } else {
         toast({ title: "Usuário criado com sucesso" });
         setShowCreate(false);
@@ -238,7 +245,8 @@ const GerenciarUsuarios = () => {
         body: { user_id: deleteUser.user_id },
       });
       if (res.error || res.data?.error) {
-        toast({ title: res.data?.error || "Erro ao excluir usuário", variant: "destructive" });
+        const message = res.data?.error || (await getFunctionErrorMessage(res.error, "Erro ao excluir usuário"));
+        toast({ title: message, variant: "destructive" });
       } else {
         toast({ title: "Usuário excluído com sucesso" });
         setDeleteUser(null);

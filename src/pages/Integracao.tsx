@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getFunctionErrorMessage } from "@/lib/supabaseError";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -159,7 +160,7 @@ const Integracao = () => {
         },
       });
       if (res.error) {
-        toast({ title: "Erro no teste", description: res.error.message || "Erro desconhecido", variant: "destructive" });
+        toast({ title: "Erro no teste", description: await getFunctionErrorMessage(res.error, "Erro desconhecido"), variant: "destructive" });
       } else {
         toast({ title: res.data?.success ? "Conexão OK!" : "Falha na conexão", description: JSON.stringify(res.data?.data || res.data || {}).slice(0, 200) });
       }

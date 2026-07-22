@@ -82,7 +82,7 @@ const emptyForm = (): Omit<Compromisso, "id" | "created_at" | "user_id"> => ({
 
 const Compromissos = () => {
   const { user } = useAuth();
-  const { toast: showToast } = toast;
+  const showToast = toast;
   const [items, setItems] = useState<Compromisso[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);

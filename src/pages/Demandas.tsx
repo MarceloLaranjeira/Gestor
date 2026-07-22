@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { getSupabaseErrorMessage } from "@/lib/supabaseError";
 
 type Status = "pendente" | "andamento" | "concluida" | "atrasada";
 type Prioridade = "urgente" | "alta" | "media" | "baixa";
@@ -300,26 +301,58 @@ const Demandas = () => {
     setDetailTarget(null);
   };
 
+  const saveDemanda = async (targetId: string | null, formData: typeof form) => {
+    if (targetId) {
+      const { data, error } = await supabase
+        .from("demandas")
+        .update({ ...formData })
+        .eq("id", targetId)
+        .select("id")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error("A demanda nao foi atualizada. Saia e entre novamente; se persistir, revise a permissao deste usuario.");
+      return targetId;
+    }
+
+    const { data: inserted, error } = await supabase
+      .from("demandas")
+      .insert({ ...formData, user_id: user!.user_id })
+      .select("id")
+      .single();
+
+    if (error) throw error;
+    if (!inserted?.id) throw new Error("A demanda foi salva, mas o ID não foi retornado.");
+    return inserted.id;
+  };
+
+  const finishDemandSave = async (targetId: string | null, savedId: string, formData: typeof form) => {
+    if (targetId) {
+      toast({ title: "Demanda atualizada" });
+      await logEntry(user!.user_id, savedId, "atualizado", `Demanda "${formData.titulo}" atualizada — status: ${formData.status}`);
+    } else {
+      toast({ title: "Demanda criada com sucesso" });
+      await logEntry(user!.user_id, savedId, "criado", `Nova demanda: "${formData.titulo}" — prioridade: ${formData.prioridade}`);
+    }
+    setShowForm(false);
+    fetchDemandas();
+    fetchNPSFeitos();
+  };
+
   /* Salvar a demanda de verdade */
   const persistSave = async (targetId: string | null, formData: typeof form) => {
     setSaving(true);
     try {
-      if (targetId) {
-        const { error } = await supabase.from("demandas").update({ ...formData }).eq("id", targetId);
-        if (error) throw error;
-        toast({ title: "Demanda atualizada" });
-        await logEntry(user!.user_id, targetId, "atualizado", `Demanda "${formData.titulo}" atualizada — status: ${formData.status}`);
-      } else {
-        const { data: inserted, error } = await supabase.from("demandas").insert({ ...formData, user_id: user!.user_id }).select("id").single();
-        if (error) throw error;
-        toast({ title: "Demanda criada com sucesso" });
-        if (inserted?.id) await logEntry(user!.user_id, inserted.id, "criado", `Nova demanda: "${formData.titulo}" — prioridade: ${formData.prioridade}`);
-      }
-      setShowForm(false);
-      fetchDemandas();
-      fetchNPSFeitos();
-    } catch {
-      toast({ title: "Erro ao salvar", variant: "destructive" });
+      const savedId = await saveDemanda(targetId, formData);
+      await finishDemandSave(targetId, savedId, formData);
+      return savedId;
+    } catch (error) {
+      console.error("Erro ao salvar demanda:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: getSupabaseErrorMessage(error),
+        variant: "destructive",
+      });
+      return null;
     } finally {
       setSaving(false);
     }
@@ -358,10 +391,30 @@ const Demandas = () => {
   };
 
   const handleNPSSubmit = async () => {
-    if (!npsRespostas.bem_atendido === null || npsRespostas.nota === null) return;
+    if (
+      npsRespostas.bem_atendido === null ||
+      npsRespostas.orientacao_ok === null ||
+      npsRespostas.ficou_duvida === null ||
+      npsRespostas.nota === null
+    ) return;
+
     setNpsSubmitting(true);
+    let shouldResetNps = false;
     try {
+      let origemId = npsDemandaId;
+
+      if (npsPendingForm) {
+        origemId = await persistSave(npsDemandaId, npsPendingForm);
+        if (!origemId) {
+          toast({ title: "Não foi possível salvar a demanda", variant: "destructive" });
+          return;
+        }
+        setNpsDemandaId(origemId);
+        setNpsPendingForm(null);
+      }
+
       const descricao = JSON.stringify({
+        demanda_id: origemId,
         bem_atendido: npsRespostas.bem_atendido,
         orientacao_ok: npsRespostas.orientacao_ok,
         ficou_duvida: npsRespostas.ficou_duvida,
@@ -369,31 +422,32 @@ const Demandas = () => {
         melhoria: npsRespostas.melhoria,
       });
 
-      const origemId = npsDemandaId || "novo";
-      await supabase.from("logbook_entradas").insert({
+      if (!origemId) throw new Error("Não foi possível identificar a demanda para registrar o NPS.");
+
+      const { error } = await supabase.from("logbook_entradas").insert({
         user_id: user!.user_id,
         origem: "demanda",
         origem_id: origemId,
         acao: "nps",
         descricao,
       });
+      if (error) throw error;
 
       toast({ title: `NPS registrado! Nota: ${npsRespostas.nota}/10 ⭐` });
       setDemandasComNPS((prev) => new Set([...prev, origemId]));
 
-      /* Se havia um save pendente, executa agora */
-      if (npsPendingForm) {
-        setNpsOpen(false);
-        await persistSave(npsDemandaId, npsPendingForm);
-      } else {
-        setNpsOpen(false);
-      }
-    } catch {
+      setNpsOpen(false);
+      shouldResetNps = true;
+      fetchNPSFeitos();
+    } catch (error) {
+      console.error("Erro ao registrar NPS:", error);
       toast({ title: "Erro ao registrar NPS", variant: "destructive" });
     } finally {
       setNpsSubmitting(false);
-      setNpsPendingForm(null);
-      setNpsDemandaId(null);
+      if (shouldResetNps) {
+        setNpsPendingForm(null);
+        setNpsDemandaId(null);
+      }
     }
   };
 

@@ -88,6 +88,7 @@ import {
   type DemandaAlertFilter,
   type DemandaAlertRecord,
 } from "@/lib/demandaAlertas";
+import { getSupabaseErrorMessage } from "@/lib/supabaseError";
 
 interface MovimentoRow {
   slug: string;
@@ -560,7 +561,7 @@ const MovimentoDetalhes = () => {
         setAlertsByDemand({});
         toast({
           title: "Erro ao carregar setor",
-          description: error instanceof Error ? error.message : "Tente novamente em instantes.",
+          description: getSupabaseErrorMessage(error, "Tente novamente em instantes."),
           variant: "destructive",
         });
       }
@@ -796,8 +797,14 @@ const MovimentoDetalhes = () => {
       const persistDemanda = async (categoria: string) => {
         const payloadToPersist = { ...payload, categoria };
         if (editingId) {
-          const { error } = await supabase.from("demandas").update(payloadToPersist).eq("id", editingId);
+          const { data, error } = await supabase
+            .from("demandas")
+            .update(payloadToPersist)
+            .eq("id", editingId)
+            .select("id")
+            .maybeSingle();
           if (error) throw error;
+          if (!data) throw new Error("A demanda nao foi atualizada. Verifique se a usuaria tem permissao para editar este card.");
           return editingId;
         }
 
@@ -837,7 +844,7 @@ const MovimentoDetalhes = () => {
     } catch (error) {
       toast({
         title: "Erro ao salvar demanda",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description: getSupabaseErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -868,23 +875,38 @@ const MovimentoDetalhes = () => {
   };
 
   const executeMoveColumn = async (id: string, nextColumn: KanbanColumn) => {
-    if (!setor) return;
-    const { error } = await supabase
+    if (!setor) return false;
+    const { data, error } = await supabase
       .from("demandas")
       .update({
         coluna_kanban: nextColumn,
         status: mapColumnToStatus(nextColumn),
         updated_at: new Date().toISOString(),
       })
-      .eq("id", id);
+      .eq("id", id)
+      .select("id")
+      .maybeSingle();
 
     if (error) {
-      toast({ title: "Não foi possível mover a demanda", variant: "destructive" });
-      return;
+      toast({
+        title: "Não foi possível mover a demanda",
+        description: getSupabaseErrorMessage(error),
+        variant: "destructive",
+      });
+      return false;
     }
 
-    toast({ title: "Status atualizado" });
+    if (!data) {
+      toast({
+        title: "Não foi possível mover a demanda",
+        description: "Nenhuma linha foi atualizada. Saia e entre novamente; se persistir, revise a permissao deste usuario.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     await fetchData(setor);
+    return true;
   };
 
   const moveDemanda = async (id: string, dir: "left" | "right") => {
@@ -904,37 +926,75 @@ const MovimentoDetalhes = () => {
       return;
     }
 
-    await executeMoveColumn(id, nextColumn);
+    const moved = await executeMoveColumn(id, nextColumn);
+    if (moved) toast({ title: "Status atualizado" });
   };
 
   const openNpsForCard = (demandaId: string) => {
+    const demanda = demandas.find((item) => item.id === demandaId);
+    const targetColumn = demanda && demandasColumnValue(demanda) === "Concluida" ? "Finalizado" : null;
+
     setNpsRespostas(emptyNPS());
-    setNpsPending({ demandaId, targetColumn: null });
+    setNpsPending({ demandaId, targetColumn });
     setNpsOpen(true);
+  };
+
+  const saveNpsEntry = async (demandaId: string) => {
+    const descricao = JSON.stringify({ ...npsRespostas, demanda_id: demandaId });
+
+    const primary = await supabase.from("logbook_entradas").insert({
+      user_id: user!.user_id,
+      origem: "demanda",
+      origem_id: demandaId,
+      acao: "nps",
+      descricao,
+    });
+
+    if (!primary.error) return null;
+
+    const fallback = await supabase.from("logbook_entradas").insert({
+      user_id: user!.user_id,
+      demanda_id: demandaId,
+      acao: "nps",
+      descricao,
+    });
+
+    return fallback.error ?? primary.error;
   };
 
   const handleNpsSubmit = async () => {
     if (!npsPending || !setor || !user?.user_id) return;
     setNpsSaving(true);
     try {
-      await supabase.from("logbook_entradas").insert({
-        user_id: user.user_id,
-        demanda_id: npsPending.demandaId,
-        acao: "nps",
-        descricao: JSON.stringify(npsRespostas),
-      });
+      const pending = npsPending;
+      const npsError = await saveNpsEntry(pending.demandaId);
 
-      if (npsPending.targetColumn) {
-        await executeMoveColumn(npsPending.demandaId, npsPending.targetColumn);
+      if (pending.targetColumn) {
+        const moved = await executeMoveColumn(pending.demandaId, pending.targetColumn);
+        if (!moved) return;
       }
 
       setNpsOpen(false);
       setNpsPending(null);
       setNpsRespostas(emptyNPS());
-      toast({ title: npsPending.targetColumn ? "NPS registrado e card movido!" : "NPS registrado!" });
-      if (!npsPending.targetColumn) await fetchData(setor);
-    } catch {
-      toast({ title: "Erro ao registrar NPS", variant: "destructive" });
+      toast({
+        title: npsError
+          ? pending.targetColumn
+            ? "Card finalizado, mas o NPS não foi salvo no relatório"
+            : "Não foi possível salvar o NPS no relatório"
+          : pending.targetColumn
+            ? "NPS registrado e card movido!"
+            : "NPS registrado!",
+        description: npsError?.message,
+        variant: npsError && !pending.targetColumn ? "destructive" : undefined,
+      });
+      if (!pending.targetColumn) await fetchData(setor);
+    } catch (error) {
+      toast({
+        title: "Erro ao registrar NPS",
+        description: getSupabaseErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setNpsSaving(false);
     }
