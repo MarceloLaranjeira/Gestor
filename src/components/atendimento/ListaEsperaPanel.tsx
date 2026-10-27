@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowUp, MessageCircle, Search } from "lucide-react";
+import { ArrowUp, CalendarPlus, MessageCircle, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,7 @@ interface ListaEsperaPanelProps {
   entradas: EntradaLista[];
   nomeEspecialidade: string;
   onOpenPaciente: (pacienteId: string) => void;
+  onAgendar: (pacienteId: string) => void;
 }
 
 const Kpi = ({ label, value, tone }: { label: string; value: string | number; tone: string }) => (
@@ -39,7 +40,7 @@ const Kpi = ({ label, value, tone }: { label: string; value: string | number; to
   </div>
 );
 
-export function ListaEsperaPanel({ entradas, nomeEspecialidade, onOpenPaciente }: ListaEsperaPanelProps) {
+export function ListaEsperaPanel({ entradas, nomeEspecialidade, onOpenPaciente, onAgendar }: ListaEsperaPanelProps) {
   const [filtro, setFiltro] = useState<Filtro>("fila");
   const [busca, setBusca] = useState("");
   const atualizar = useAtualizarEntrada();
@@ -108,7 +109,7 @@ export function ListaEsperaPanel({ entradas, nomeEspecialidade, onOpenPaciente }
               <TableHead className="hidden md:table-cell">Responsável</TableHead>
               <TableHead className="hidden lg:table-cell">Inscrição</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="w-24 text-right">Ações</TableHead>
+              <TableHead className="w-32 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -168,6 +169,16 @@ export function ListaEsperaPanel({ entradas, nomeEspecialidade, onOpenPaciente }
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      {p && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onAgendar(p.id)} aria-label="Agendar">
+                              <CalendarPlus className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Agendar atendimento</TooltipContent>
+                        </Tooltip>
+                      )}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button

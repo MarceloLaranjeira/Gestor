@@ -1,96 +1,34 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Link2, Loader2, Plus, Search, Users } from "lucide-react";
+import { BarChart3, CalendarDays, Link2, ListOrdered, Loader2, Plus, UserX, Users } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AgendaPanel } from "@/components/atendimento/AgendaPanel";
+import { AgendamentoDetalheDialog } from "@/components/atendimento/AgendamentoDetalheDialog";
+import { AgendamentoDialog, type AgendarPreset } from "@/components/atendimento/AgendamentoDialog";
+import { AnamneseDialog } from "@/components/atendimento/AnamneseDialog";
+import { FaltasPanel } from "@/components/atendimento/FaltasPanel";
 import { LinksInscricao } from "@/components/atendimento/LinksInscricao";
 import { ListaEsperaPanel } from "@/components/atendimento/ListaEsperaPanel";
 import { NovaInscricaoDialog } from "@/components/atendimento/NovaInscricaoDialog";
 import { PacienteDialog } from "@/components/atendimento/PacienteDialog";
-import { useEspecialidades, useListaEspera, usePacientes, type EntradaLista, type Paciente } from "@/hooks/useAtendimento";
-import { STATUS_ATIVOS, STATUS_LABEL, formatIdade, maskCpf, maskPhone, type Especialidade, type StatusLista } from "@/lib/atendimento";
+import { PacientesPanel } from "@/components/atendimento/PacientesPanel";
+import { RelatoriosPanel } from "@/components/atendimento/RelatoriosPanel";
+import { useEspecialidades, useListaEspera, usePacientes } from "@/hooks/useAtendimento";
+import type { Agendamento } from "@/hooks/useAgenda";
+import { cn } from "@/lib/utils";
 
-const TAB_PACIENTES = "pacientes";
-const TAB_LINKS = "links";
+const SECOES = [
+  { id: "lista", label: "Lista de espera", icon: ListOrdered, porEspecialidade: true },
+  { id: "agenda", label: "Agenda", icon: CalendarDays, porEspecialidade: true },
+  { id: "faltas", label: "Faltas", icon: UserX, porEspecialidade: false },
+  { id: "relatorios", label: "Relatórios", icon: BarChart3, porEspecialidade: true },
+  { id: "pacientes", label: "Pacientes", icon: Users, porEspecialidade: false },
+  { id: "links", label: "Links de inscrição", icon: Link2, porEspecialidade: false },
+] as const;
 
-function PacientesTab({
-  pacientes,
-  entradas,
-  especialidades,
-  onOpen,
-}: {
-  pacientes: Paciente[];
-  entradas: EntradaLista[];
-  especialidades: Especialidade[];
-  onOpen: (id: string) => void;
-}) {
-  const [busca, setBusca] = useState("");
-  const termo = busca.trim().toLowerCase();
-  const visiveis = termo
-    ? pacientes.filter((p) => [p.nome, p.responsavel_nome, p.cpf, p.telefone, p.cartao_sus].some((v) => v?.toLowerCase().includes(termo)))
-    : pacientes;
-  const nomeEsp = (slug: string) => especialidades.find((e) => e.slug === slug)?.nome ?? slug;
-
-  return (
-    <div className="space-y-4">
-      <div className="relative max-w-xl">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome, responsável, CPF, telefone ou cartão do SUS" className="pl-9" />
-      </div>
-      <div className="overflow-x-auto rounded-xl border border-border/60 bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Paciente</TableHead>
-              <TableHead className="hidden md:table-cell">CPF</TableHead>
-              <TableHead className="hidden md:table-cell">Responsável</TableHead>
-              <TableHead>Situação na lista</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visiveis.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="py-12 text-center text-sm text-muted-foreground">
-                  Nenhum paciente encontrado.
-                </TableCell>
-              </TableRow>
-            )}
-            {visiveis.map((p) => {
-              const ativas = entradas.filter((e) => e.paciente_id === p.id && STATUS_ATIVOS.includes(e.status as StatusLista));
-              return (
-                <TableRow key={p.id} className="cursor-pointer" onClick={() => onOpen(p.id)}>
-                  <TableCell>
-                    <span className="block font-medium">{p.nome}</span>
-                    <span className="text-xs text-muted-foreground">{formatIdade(p.data_nascimento)}</span>
-                  </TableCell>
-                  <TableCell className="hidden font-mono text-xs md:table-cell">{p.cpf ? maskCpf(p.cpf) : "—"}</TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <span className="block text-sm">{p.responsavel_nome || "—"}</span>
-                    <span className="text-xs text-muted-foreground">{p.telefone ? maskPhone(p.telefone) : ""}</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {ativas.length === 0 && <span className="text-xs text-muted-foreground">Fora da fila</span>}
-                      {ativas.map((e) => (
-                        <Badge key={e.id} variant="secondary" className="text-[10px] font-normal">
-                          {nomeEsp(e.especialidade_slug)} · {STATUS_LABEL[e.status as StatusLista]}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  );
-}
+type SecaoId = (typeof SECOES)[number]["id"];
 
 const Atendimento = () => {
   const [params, setParams] = useSearchParams();
@@ -99,13 +37,20 @@ const Atendimento = () => {
   const { data: pacientes = [] } = usePacientes();
   const [novaAberta, setNovaAberta] = useState(false);
   const [pacienteId, setPacienteId] = useState<string | null>(null);
+  const [agendar, setAgendar] = useState<AgendarPreset | null>(null);
+  const [aberto, setAberto] = useState<Agendamento | null>(null);
+  const [anamnese, setAnamnese] = useState<Agendamento | null>(null);
 
-  const tab = params.get("aba") ?? especialidades[0]?.slug ?? TAB_LINKS;
-  const setTab = (value: string) => setParams({ aba: value }, { replace: true });
-  const especialidadeAtual = especialidades.some((e) => e.slug === tab) ? tab : undefined;
+  const secaoParam = params.get("aba");
+  const secao: SecaoId = SECOES.some((s) => s.id === secaoParam) ? (secaoParam as SecaoId) : "lista";
+  const espParam = params.get("esp");
+  const especialidade = especialidades.find((e) => e.slug === espParam) ?? especialidades[0];
+  const navegar = (aba: SecaoId, esp = especialidade?.slug) => setParams(esp ? { aba, esp } : { aba }, { replace: true });
+
+  const porEspecialidade = SECOES.find((s) => s.id === secao)?.porEspecialidade;
   const pacienteAberto = pacientes.find((p) => p.id === pacienteId) ?? entradas.find((e) => e.paciente?.id === pacienteId)?.paciente ?? null;
-
   const aguardando = (slug: string) => entradas.filter((e) => e.especialidade_slug === slug && e.status === "aguardando").length;
+  const nomeEsp = (slug: string) => especialidades.find((e) => e.slug === slug)?.nome ?? slug;
 
   if (loadingEsp || loadingLista) {
     return (
@@ -124,58 +69,117 @@ const Atendimento = () => {
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground">Atendimento TEA</h1>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              Lista de espera por especialidade, cadastro dos pacientes e links de inscrição para as famílias.
+              Lista de espera, agendas, faltas e relatórios por especialidade.
             </p>
           </div>
-          <Button onClick={() => setNovaAberta(true)}>
-            <Plus className="mr-1.5 h-4 w-4" /> Nova inscrição
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setAgendar({ especialidade: especialidade?.slug })}>
+              <CalendarDays className="mr-1.5 h-4 w-4" /> Agendar
+            </Button>
+            <Button onClick={() => setNovaAberta(true)}>
+              <Plus className="mr-1.5 h-4 w-4" /> Nova inscrição
+            </Button>
+          </div>
         </div>
 
         {isError && (
           <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-            Não foi possível carregar a lista de espera. Verifique sua permissão de acesso ao módulo Atendimento.
+            Não foi possível carregar os dados. Verifique sua permissão de acesso ao módulo Atendimento.
           </p>
         )}
 
-        <Tabs value={tab} onValueChange={setTab}>
+        <Tabs value={secao} onValueChange={(v) => navegar(v as SecaoId)}>
           <TabsList className="h-auto flex-wrap justify-start">
-            {especialidades.map((esp) => (
-              <TabsTrigger key={esp.slug} value={esp.slug} className="gap-2">
-                {esp.nome}
-                <span className="rounded-full bg-amber-500/15 px-1.5 text-[10px] font-semibold tabular-nums text-amber-700 dark:text-amber-300">
-                  {aguardando(esp.slug)}
-                </span>
+            {SECOES.map((s) => (
+              <TabsTrigger key={s.id} value={s.id} className="gap-1.5">
+                <s.icon className="h-3.5 w-3.5" /> {s.label}
               </TabsTrigger>
             ))}
-            <TabsTrigger value={TAB_PACIENTES} className="gap-1.5">
-              <Users className="h-3.5 w-3.5" /> Pacientes
-            </TabsTrigger>
-            <TabsTrigger value={TAB_LINKS} className="gap-1.5">
-              <Link2 className="h-3.5 w-3.5" /> Links de inscrição
-            </TabsTrigger>
           </TabsList>
-
-          {especialidades.map((esp) => (
-            <TabsContent key={esp.slug} value={esp.slug} className="mt-5">
-              <ListaEsperaPanel
-                entradas={entradas.filter((e) => e.especialidade_slug === esp.slug)}
-                nomeEspecialidade={esp.nome}
-                onOpenPaciente={setPacienteId}
-              />
-            </TabsContent>
-          ))}
-          <TabsContent value={TAB_PACIENTES} className="mt-5">
-            <PacientesTab pacientes={pacientes} entradas={entradas} especialidades={especialidades} onOpen={setPacienteId} />
-          </TabsContent>
-          <TabsContent value={TAB_LINKS} className="mt-5">
-            <LinksInscricao especialidades={especialidades} />
-          </TabsContent>
         </Tabs>
+
+        {porEspecialidade && (
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Especialidade">
+            {especialidades.map((esp) => {
+              const ativa = esp.slug === especialidade?.slug;
+              return (
+                <button
+                  key={esp.slug}
+                  type="button"
+                  role="tab"
+                  aria-selected={ativa}
+                  onClick={() => navegar(secao, esp.slug)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                    ativa ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {esp.nome}
+                  {secao === "lista" && (
+                    <span className={cn("rounded-full px-1.5 text-[10px] tabular-nums", ativa ? "bg-white/20" : "bg-amber-500/15 text-amber-700 dark:text-amber-300")}>
+                      {aguardando(esp.slug)}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {secao === "lista" && especialidade && (
+          <ListaEsperaPanel
+            key={especialidade.slug}
+            entradas={entradas.filter((e) => e.especialidade_slug === especialidade.slug)}
+            nomeEspecialidade={especialidade.nome}
+            onOpenPaciente={setPacienteId}
+            onAgendar={(id) => setAgendar({ pacienteId: id, especialidade: especialidade.slug })}
+          />
+        )}
+        {secao === "agenda" && especialidade && (
+          <AgendaPanel
+            key={especialidade.slug}
+            especialidade={especialidade}
+            onAgendar={() => setAgendar({ especialidade: especialidade.slug })}
+            onAbrir={setAberto}
+          />
+        )}
+        {secao === "faltas" && (
+          <FaltasPanel especialidades={especialidades} onReagendar={(id, esp) => setAgendar({ pacienteId: id, especialidade: esp })} />
+        )}
+        {secao === "relatorios" && especialidade && (
+          <RelatoriosPanel key={especialidade.slug} especialidade={especialidade} entradas={entradas} />
+        )}
+        {secao === "pacientes" && (
+          <PacientesPanel pacientes={pacientes} entradas={entradas} especialidades={especialidades} onOpen={setPacienteId} />
+        )}
+        {secao === "links" && <LinksInscricao especialidades={especialidades} />}
       </div>
 
-      <NovaInscricaoDialog open={novaAberta} onOpenChange={setNovaAberta} especialidades={especialidades} especialidadeAtual={especialidadeAtual} />
+      <NovaInscricaoDialog open={novaAberta} onOpenChange={setNovaAberta} especialidades={especialidades} especialidadeAtual={especialidade?.slug} />
       <PacienteDialog paciente={pacienteAberto} entradas={entradas} especialidades={especialidades} onClose={() => setPacienteId(null)} />
+      <AgendamentoDialog preset={agendar} onClose={() => setAgendar(null)} especialidades={especialidades} pacientes={pacientes} entradas={entradas} />
+      <AgendamentoDetalheDialog
+        agendamento={aberto}
+        especialidades={especialidades}
+        onClose={() => setAberto(null)}
+        onAnamnese={(a) => {
+          setAberto(null);
+          setAnamnese(a);
+        }}
+      />
+      <AnamneseDialog
+        alvo={
+          anamnese
+            ? {
+                pacienteId: anamnese.paciente_id,
+                pacienteNome: anamnese.paciente?.nome ?? "",
+                especialidade: anamnese.especialidade_slug,
+                especialidadeNome: nomeEsp(anamnese.especialidade_slug),
+              }
+            : null
+        }
+        onClose={() => setAnamnese(null)}
+      />
     </AppLayout>
   );
 };

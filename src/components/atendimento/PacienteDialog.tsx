@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { useAtualizarPaciente, type EntradaLista, type Paciente } from "@/hooks/useAtendimento";
+import { useHistoricoPaciente } from "@/hooks/useAgenda";
+import { STATUS_AGENDAMENTO_CLASS, STATUS_AGENDAMENTO_LABEL, type StatusAgendamento } from "@/lib/agenda";
 import { cn } from "@/lib/utils";
 import {
   STATUS_CLASS,
@@ -84,6 +86,7 @@ const CAMPOS: { key: keyof Form; label: string; type?: string; wide?: boolean }[
 function PacienteEditor({ paciente, entradas, especialidades, onClose }: PacienteDialogProps & { paciente: Paciente }) {
   const [form, setForm] = useState<Form>(() => toForm(paciente));
   const atualizar = useAtualizarPaciente();
+  const { data: atendimentos = [] } = useHistoricoPaciente(paciente.id);
   const nomeEsp = (slug: string) => especialidades.find((e) => e.slug === slug)?.nome ?? slug;
   const historico = entradas.filter((e) => e.paciente_id === paciente.id).sort((a, b) => b.created_at.localeCompare(a.created_at));
 
@@ -153,7 +156,20 @@ function PacienteEditor({ paciente, entradas, especialidades, onClose }: Pacient
         </div>
 
         <aside className="space-y-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Histórico na lista de espera</h4>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Histórico de atendimentos</h4>
+          {atendimentos.length === 0 && <p className="text-sm text-muted-foreground">Nenhum atendimento agendado.</p>}
+          <ul className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
+            {atendimentos.map((h) => (
+              <li key={h.id} className="flex items-center justify-between gap-2 rounded-md bg-muted/30 px-2 py-1.5 text-xs">
+                <span className="tabular-nums">{format(new Date(h.data_hora), "dd/MM/yy HH:mm")}</span>
+                <span className="truncate text-muted-foreground">{nomeEsp(h.especialidade_slug)}</span>
+                <Badge variant="outline" className={cn("shrink-0 px-1.5 py-0 text-[10px]", STATUS_AGENDAMENTO_CLASS[h.status as StatusAgendamento])}>
+                  {STATUS_AGENDAMENTO_LABEL[h.status as StatusAgendamento]}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+          <h4 className="pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Histórico na lista de espera</h4>
           {historico.length === 0 && <p className="text-sm text-muted-foreground">Sem inscrições.</p>}
           {historico.map((e) => (
             <div key={e.id} className="rounded-lg border border-border/60 p-3">

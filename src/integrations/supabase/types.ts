@@ -1328,6 +1328,7 @@ export type Database = {
           descricao: string | null
           nome: string
           ordem: number
+          retorno_dias: number | null
           slug: string
         }
         Insert: {
@@ -1336,6 +1337,7 @@ export type Database = {
           descricao?: string | null
           nome: string
           ordem?: number
+          retorno_dias?: number | null
           slug: string
         }
         Update: {
@@ -1344,7 +1346,144 @@ export type Database = {
           descricao?: string | null
           nome?: string
           ordem?: number
+          retorno_dias?: number | null
           slug?: string
+        }
+        Relationships: []
+      }
+      agendamentos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_hora: string
+          duracao_min: number
+          especialidade_slug: string
+          etapa: string | null
+          evolucao: string | null
+          id: string
+          lista_espera_id: string | null
+          motivo_cancelamento: string | null
+          observacoes: string | null
+          paciente_id: string
+          profissional: string | null
+          retorno_gerado_id: string | null
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_hora: string
+          duracao_min?: number
+          especialidade_slug: string
+          etapa?: string | null
+          evolucao?: string | null
+          id?: string
+          lista_espera_id?: string | null
+          motivo_cancelamento?: string | null
+          observacoes?: string | null
+          paciente_id: string
+          profissional?: string | null
+          retorno_gerado_id?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_hora?: string
+          duracao_min?: number
+          especialidade_slug?: string
+          etapa?: string | null
+          evolucao?: string | null
+          id?: string
+          lista_espera_id?: string | null
+          motivo_cancelamento?: string | null
+          observacoes?: string | null
+          paciente_id?: string
+          profissional?: string | null
+          retorno_gerado_id?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_especialidade_slug_fkey"
+            columns: ["especialidade_slug"]
+            isOneToOne: false
+            referencedRelation: "especialidades"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "agendamentos_lista_espera_id_fkey"
+            columns: ["lista_espera_id"]
+            isOneToOne: false
+            referencedRelation: "lista_espera"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      anamneses: {
+        Row: {
+          comportamento: string | null
+          created_at: string
+          created_by: string | null
+          desenvolvimento: string | null
+          escola_social: string | null
+          especialidade_slug: string
+          gestacao_parto: string | null
+          historico_familiar: string | null
+          id: string
+          observacoes: string | null
+          paciente_id: string
+          queixa_principal: string | null
+          saude_medicamentos: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          comportamento?: string | null
+          created_at?: string
+          created_by?: string | null
+          desenvolvimento?: string | null
+          escola_social?: string | null
+          especialidade_slug: string
+          gestacao_parto?: string | null
+          historico_familiar?: string | null
+          id?: string
+          observacoes?: string | null
+          paciente_id: string
+          queixa_principal?: string | null
+          saude_medicamentos?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          comportamento?: string | null
+          created_at?: string
+          created_by?: string | null
+          desenvolvimento?: string | null
+          escola_social?: string | null
+          especialidade_slug?: string
+          gestacao_parto?: string | null
+          historico_familiar?: string | null
+          id?: string
+          observacoes?: string | null
+          paciente_id?: string
+          queixa_principal?: string | null
+          saude_medicamentos?: string | null
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }

@@ -9,6 +9,8 @@ export interface Especialidade {
   descricao: string | null;
   ordem: number;
   ativo: boolean;
+  /** Dias até o retorno automático após presença; null = sem retorno automático. */
+  retorno_dias: number | null;
 }
 
 export const STATUS_LISTA = ["aguardando", "agendado", "em_atendimento", "concluido", "cancelado"] as const;

@@ -19,7 +19,7 @@ export function useEspecialidades() {
     queryFn: async (): Promise<Especialidade[]> => {
       const { data, error } = await supabase
         .from("especialidades")
-        .select("slug, nome, descricao, ordem, ativo")
+        .select("slug, nome, descricao, ordem, ativo, retorno_dias")
         .eq("ativo", true)
         .order("ordem");
       if (error) throw error;
