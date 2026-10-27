@@ -1321,6 +1321,153 @@ export type Database = {
         }
         Relationships: []
       }
+      especialidades: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          nome: string
+          ordem: number
+          slug: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          nome: string
+          ordem?: number
+          slug: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          nome?: string
+          ordem?: number
+          slug?: string
+        }
+        Relationships: []
+      }
+      lista_espera: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          dados_inscricao: Json | null
+          descricao_sintomas: string | null
+          especialidade_slug: string
+          id: string
+          motivo: string | null
+          observacoes: string | null
+          origem: string
+          paciente_id: string
+          prioridade: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          dados_inscricao?: Json | null
+          descricao_sintomas?: string | null
+          especialidade_slug: string
+          id?: string
+          motivo?: string | null
+          observacoes?: string | null
+          origem?: string
+          paciente_id: string
+          prioridade?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          dados_inscricao?: Json | null
+          descricao_sintomas?: string | null
+          especialidade_slug?: string
+          id?: string
+          motivo?: string | null
+          observacoes?: string | null
+          origem?: string
+          paciente_id?: string
+          prioridade?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lista_espera_especialidade_slug_fkey"
+            columns: ["especialidade_slug"]
+            isOneToOne: false
+            referencedRelation: "especialidades"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "lista_espera_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pacientes: {
+        Row: {
+          cartao_sus: string | null
+          cep: string | null
+          cpf: string | null
+          created_at: string
+          created_by: string | null
+          data_nascimento: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          origem_conhecimento: string | null
+          possui_laudo: boolean | null
+          responsavel_cpf: string | null
+          responsavel_nome: string | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          cartao_sus?: string | null
+          cep?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_nascimento?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          origem_conhecimento?: string | null
+          possui_laudo?: boolean | null
+          responsavel_cpf?: string | null
+          responsavel_nome?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cartao_sus?: string | null
+          cep?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_nascimento?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          origem_conhecimento?: string | null
+          possui_laudo?: boolean | null
+          responsavel_cpf?: string | null
+          responsavel_nome?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string
@@ -1533,6 +1680,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      inscrever_paciente: {
+        Args: { p: Json }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

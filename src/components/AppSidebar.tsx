@@ -32,6 +32,7 @@ import {
   ScrollText,
   Settings,
   SmilePlus,
+  Stethoscope,
   Users,
   Wallet,
 } from "lucide-react";
@@ -91,6 +92,7 @@ const principalItems: NavItem[] = [
 
 const atividadeItems: NavItem[] = [
   { icon: ClipboardList, label: "Demandas SAC", path: "/movimentos", module: "movimentos" },
+  { icon: Stethoscope, label: "Atendimento TEA", path: "/atendimento", module: "atendimento" },
   { icon: Handshake, label: "Compromissos", path: "/compromissos", module: "compromissos" },
   { icon: Calendar, label: "Eventos", path: "/eventos", module: "eventos" },
   { icon: CalendarSync, label: "Calendário", path: "/calendario", module: "calendario" },

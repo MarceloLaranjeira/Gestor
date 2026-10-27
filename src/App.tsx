@@ -78,6 +78,8 @@ import PowerBI from "./pages/Analytics";
 import Mapa from "./pages/Mapa";
 import RelatorioNPS from "./pages/RelatorioNPS";
 import Pesquisa from "./pages/Pesquisa";
+import Atendimento from "./pages/Atendimento";
+import InscricaoPublica from "./pages/InscricaoPublica";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -156,6 +158,8 @@ const AppRoutes = () => (
     <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
     <Route path="/ebook" element={<EbookVendas />} />
     <Route path="/termos-uso" element={<TermosUso />} />
+    <Route path="/inscricao" element={<InscricaoPublica />} />
+    <Route path="/atendimento" element={<PermissionRoute><Atendimento /></PermissionRoute>} />
     <Route path="/auth/google-calendar/callback" element={<GoogleCalendarCallback />} />
     {/* Campanha */}
     <Route path="/campanha" element={<PermissionRoute><CampanhaDashboard /></PermissionRoute>} />
