@@ -21,6 +21,7 @@ import {
   Plus,
   Search,
   SmilePlus,
+  Stethoscope,
   Table2,
   Timer,
   Trash2,
@@ -1192,11 +1193,17 @@ const MovimentoDetalhes = () => {
               <p className="text-xs text-muted-foreground mt-0.5">{descricao}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 ml-14 sm:ml-0">
+          <div className="flex flex-wrap items-center gap-3 ml-14 sm:ml-0">
             <div className="text-right">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Coordenadoria fixa</p>
               <p className="text-xs font-semibold text-foreground">{setor.coordenadoriaNome}</p>
             </div>
+            {setor.slug === "tea" && (
+              <Button size="sm" variant="outline" onClick={() => navigate("/atendimento")} className="gap-1.5 h-9">
+                <Stethoscope className="w-3.5 h-3.5" />
+                Lista de espera e inscrições
+              </Button>
+            )}
             <Button size="sm" onClick={() => openNew()} className="gap-1.5 h-9">
               <Plus className="w-3.5 h-3.5" />
               Nova Demanda
